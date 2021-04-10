@@ -2,7 +2,7 @@ MyAddon, myadd = ...
 
 
 --TODO: useless before variables loaded event?
-local MyAddonDB = MyAddonDB or {}
+MyAddonDB = MyAddonDB or {}
 
 -- General Programflow: GUI action (-> Request Serveraction -> Request update of possibly changed data) -> Changes to data -> Trigger update to all GUI elements that use that data
 -- Itempreviews not yet included in that workflow. Here Setting slot+category triggers updating the list of displayed items, setting the page and updating the preview models

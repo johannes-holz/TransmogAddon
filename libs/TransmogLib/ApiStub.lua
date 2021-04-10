@@ -62,6 +62,7 @@ local API = LibStub:NewLibrary("RisingAPI", 1)
 
 local Promise = LibStub:GetLibrary("deferred")
 
+--[[
 local currentMog = {
 	[3] = 30053,
 	[5] = 30102,
@@ -71,7 +72,10 @@ local currentMog = {
 	[16] = 48513,
 	[17] = 21269,
 	[10] = 29998,
-}
+}]]
+
+local currentMog = {}
+
 function calculateCosts(set)	
 	local sum, cost = 0, 0
 	for slotID, itemID in pairs(set) do
@@ -263,7 +267,7 @@ end
 
 function API.GetSets()
 	local sets = InitDBValue("sets", {
-		{
+		--[==[{
 			id = 5,
 			name = "Mein erstes Set",
 			isSpecial = false,
@@ -278,7 +282,7 @@ function API.GetSets()
 			transmogs = {
 				[1] = 40829,
 			}
-		}
+		}]==]
 	})
 	
 	return simulateAPICall(sets)
