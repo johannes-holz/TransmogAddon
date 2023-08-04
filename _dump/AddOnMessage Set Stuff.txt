@@ -1,0 +1,103 @@
+
+	--[=====[
+	elseif event == "CHAT_MSG_ADDON" then
+		local prefix, message, channel, sender = ...
+		--myadd.am(prefix, message, channel, sender)
+		if not sender == UnitName("player") and channel == "WHISPER" then return end -- TODO: "" for server? limit interval how often requests can be send? guarantee correct handling of received mogs (no guarantee moggables:0 comes in first?)
+		if prefix == "requestMoggables" then
+			local moggies = {}
+			local slot
+			for k, v in pairs(myadd.warmaneItems) do
+				slot = invSlots[select(9,GetItemInfo(k))]
+				if slot then
+					if GetInventoryItemID("player", GetInventorySlotInfo(slot)) and select(7, GetItemInfo(GetInventoryItemID("player", GetInventorySlotInfo(slot)))) == select(7, GetItemInfo(k)) then
+						if not moggies[slot] then moggies[slot] = {} end
+						moggies[slot][k] = true
+					end
+				end				
+			end
+			--myadd.am(moggies)
+			local count = 0
+			for k, v in pairs(moggies) do
+				local msg,_ = GetInventorySlotInfo(k)
+				msg = msg..":"
+				for id, bool in pairs(v) do
+					if string.len(msg) < 230 then
+						msg = msg..id..","
+					else
+						--myadd.am(count, string.len(msg))
+						SendAddonMessage("moggables:"..count, msg, "WHISPER", UnitName("player"))
+						count = count + 1
+						msg,_ = GetInventorySlotInfo(k)
+						msg = msg..":"
+						msg = msg..id..","
+					end
+				end
+				--myadd.am(count, string.len(msg))
+				SendAddonMessage("moggables:"..count, msg, "WHISPER", UnitName("player"))
+				count = count + 1
+			end
+			--SendAddonMessage("moggables:0", "7:9999", "WHISPER", UnitName("player"))
+		elseif string.find(prefix, "moggables") then
+			local id = tonumber(string.match(prefix, "moggables:(%d+)"))
+			if id == 0 then
+				for k, v in pairs(myadd.availableMogs) do
+					--myadd.availableMogs[k] = {}
+					wipe(myadd.availableMogs)
+				end
+			end
+			parseCanMog(message)
+		end
+	--]=====]
+	
+	
+	
+----parse server messages
+--[=====[ 
+local function parseCanMog(message)
+	--wipe(myadd.availableMogs)
+	if not message then return false end
+	local slotInfos = { strsplit(";", message) }
+	for k, v in pairs(slotInfos) do
+		local slotNumber, itemIDsString = strsplit(":", v)
+		--myadd.am(slotNumber)
+		local itemIDs = { strsplit(", ", itemIDsString) }
+		--myadd.am(idToSlot[slotNumber])
+		--myadd.am(itemIDs)
+		for k2, v2 in pairs(itemIDs) do
+			if tonumber(v2) then
+				if not myadd.availableMogs[idToSlot[slotNumber]] then myadd.availableMogs[idToSlot[slotNumber]] = {} end
+				myadd.availableMogs[idToSlot[slotNumber]][tonumber(v2)] = true
+			end
+		end
+	end
+	if selectedSlot and selectedCategory then
+		--BuildList()
+		--SetPage(1)
+	end
+	for k, v in pairs(myadd.availableMogs) do
+		--myadd.am(k, ": ", v)
+	end
+	UpdateItemSlots()
+end
+--]=====]
+-------slash commands
+
+
+--[==[ --old and not maintained
+SLASH_MYADDON1 = "/test1"
+SLASH_MYADDON2 = "/addontest1"
+SlashCmdList["MYADDON"] = function(msg)
+	windowFrame:Show()
+	model:Hide()
+	model:Show()
+	MyAddonDB.currentChanges = {}
+	model:Undress()
+	local bla, itemString = strsplit("=", msg)
+	local items = { strsplit(":", itemString) }
+	for k, v in pairs(items) do
+		TryOn(model, v) --TODO: make v int and parse the 0.0.0.0.0.0 out
+	end
+	UpdateItemSlots()
+end 
+--]==]

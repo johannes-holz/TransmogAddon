@@ -1,0 +1,57 @@
+## Interface: 30300
+## Title: AAAMoggies
+## Notes: Does Transmog Stuff
+## Author: Qhoernchen
+## SavedVariables: MyAddonDB
+
+#@no-lib-strip@
+libs\LibStub\LibStub.lua
+libs\CallbackHandler-1.0\CallbackHandler-1.0\CallbackHandler-1.0.xml
+
+libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
+libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
+
+libs\RisingAPI\index.xml
+#@end-no-lib-strip@
+
+#libs\AceDB-3.0\AceDB-3.0.xml
+
+API_Extensions.lua
+utilities.lua
+LDB.lua
+
+# FrameTemplates
+Frames\FrameTemplates.lua
+
+filters.lua
+ItemQuery.lua
+_myaddon.lua
+tooltipHooks.lua
+
+# Enchant and item data, loaded after necessary methods are declared
+data\DataUtils.lua
+data\enchants.lua
+data\items.lua
+data\names.lua
+
+# ItemCollectionFrame
+Frames\ItemCollectionFrame\CollectionSlotButton.lua
+Frames\ItemCollectionFrame\ItemTypeDDM.lua
+Frames\ItemCollectionFrame\OptionsDDM.lua
+Frames\ItemCollectionFrame\MannequinFrame.lua
+Frames\ItemCollectionFrame\WardrobeModelFrame.lua
+Frames\ItemCollectionFrame\ItemCollectionFrame.lua
+
+# TransmogFrame
+Frames\TransmogFrame\PreviewModel.lua
+Frames\TransmogFrame\TransmogSlotButton.lua
+Frames\TransmogFrame\SkinDropDown.lua
+Frames\TransmogFrame\TransmogFrame.lua
+
+# WardrobeFrame
+Frames\WardrobeFrame\WardrobeFrame.lua
+
+# Misc Frames
+Frames\ActiveSkinDropDown.lua
+
+BalanceDisplay.lua

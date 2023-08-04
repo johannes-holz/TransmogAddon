@@ -1,5 +1,3 @@
 # Installation:
 - Copy and extract to WoW Addon folder
-- Change folder name to _myaddon
-
-To increase pointbalance use: /run IncreaseBalance()
+- Change folder name to whatever the .toc file is called at the moment

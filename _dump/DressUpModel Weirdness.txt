@@ -1,0 +1,18 @@
+Possibility to preview 2H + Shield (or anything? that can only be equipped in OH) when player can dualwield (or any previous char since the client was opened):
+
+2H -> a special Weapon Diverse Item like Monster sparkle thingy -> Shield
+Now we can equip all "only offhand" items like shields, caster offhands etc without removing our 2H in mainhand
+But if we equip "offhand plunder?" our next offhand item will remove our mainhand again
+
+
+
+SetUnit somehow breaks the current positionings? before working on the final model positions have to solve that shit
+Apparently I found a way to reliably fix this for old slotmodels, have to look it up. /hide /show does not seem to work...
+Have to reset position (and scale?) before doing hide or setunit, otherwise it gets reset, but the new point of origin is in old position, so when trying to set the same position now, it sets to origin...
+
+For Dualwielders only again:
+The hand toggling for 1h weapons is global over all models. so when equipping mannequins with 1Hs, we have to reset first each time with i.e. a polearm?
+this can be used tho for equipping weapons in OH without using an "invisible" weapon tho?
+oh ffs, 1H always go in MH first on a model (unless we already put something else in it). But 2H and even MH weapons can be toggled into the offhand with this trick ...
+
+In general very strange: MH cares about where our 1H toggling is atm, but itself does not cause the next 1H go to the Offhand ...

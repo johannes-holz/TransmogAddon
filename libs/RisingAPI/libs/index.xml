@@ -1,0 +1,15 @@
+<Ui xsi:schemaLocation="http://www.blizzard.com/wow/ui/ ..\FrameXML\UI.xsd">
+	<Include file="CallbackHandler-1.0\CallbackHandler-1.0.xml" />
+	<Script file="deferred\deferred.lua" />
+	<Script file="json.lua\json.lua" />
+
+	<Include file="std-params\index.xml" />
+	<Include file="std-library\index.xml" />
+	<Include file="std-array\index.xml" />
+	<Include file="std-functional\index.xml" />
+	<Include file="std-debug\index.xml" />
+
+	<Script file="Cache\Cache.lua" />
+	<Script file="Logger\Logger.lua" />
+	<Script file="Utils\Utils.lua" />
+</Ui>

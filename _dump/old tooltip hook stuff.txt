@@ -1,0 +1,79 @@
+
+
+	--[[
+	local name, link = tooltip:GetItem()
+	local texture = select(10, GetItemInfo(link))
+	--Add the name and path of the item's texture
+	tooltip:AddLine(texture)
+	--Show the texture graphic on the previous line
+	tooltip:AddTexture(texture)
+	--Repaint tooltip with newly added lines
+	tooltip:Show()
+	
+	die tmog in die itemlinks zu packen, wäre deutlich cleaner? ermöglicht tmogs überall korrekt anzuzeigen, in itemrefs im chat, whereever
+	
+	--local regions = { tooltip:GetRegions() }
+	--for k, v in pairs(regions) do
+	--	am(v:GetName())
+	--end
+	--am(regions)
+	--am(ownerName)
+	
+	--if GameTooltipTextLeft1:GetHeight() > 15 then
+	--	GameTooltipTextLeft1:SetHeight(GameTooltipTextLeft1:GetHeight() / 2)
+	--end
+	--if not tooltipFirstLineHeight then
+	--	tooltipFirstLineHeight = GameTooltipTextLeft1:GetHeight()
+	--end
+	
+	]]
+	--for k, v in pairs({_G["GameTooltipTextLeft1"]}) do
+	--	am(k, v)
+	--end
+	-- usage: local bla = _G["GameTooltipTextLeft1"]
+	
+	--for k, v in pairs({tooltip:GetRegions()}) do
+		--am(v:GetName())
+		--local myText = _G["GameTooltipTextLeft" .. 1]
+		--if v:GetName() then
+		--	am(v:GetTextColor())
+		--end
+		--am(v:GetTextColor())
+	--end
+	
+	-- Attempt at fixing Setbonus display. Uncomplete. Needs Info about Sets (Amount of items needed for Bonus x)
+
+	--am(GameTooltipTextLeft1:GetFontObject())
+	
+	--[[ -- can be removed, itemlink can just be prompted from tooltip
+	if string.find(ownerName, "Character(%a+)Slot") then -- Default UI Inventory
+		local invSlot = string.match(ownerName, "Character(.+)")
+		TooltipAddMogLine(tooltip, GetInventoryItemLink("player", invSlot))
+		return
+	end
+	
+	if string.find(ownerName, "ContainerFrame%d+Item%d+") then -- Default UI all Bags but the Bank
+		local container, slot = string.match(ownerName, "ContainerFrame(%d+)Item(%d+)")		
+		container = container - 1
+		slot = GetContainerNumSlots(container) + 1 - slot
+		--am("Poggers", container, slot)
+		if not myadd.currentMogs["container"][container] then return end
+		local mogID = myadd.currentMogs["container"][container][slot]
+		if mogID ~= nil then
+			TooltipAddMogLine(tooltip, mogID)
+		end
+		return
+	end
+	
+	if string.find(ownerName, "BankFrameItem%d+") then -- Default UI Bank
+		local slot = tonumber(string.match(ownerName, "BankFrameItem(%d+)"))
+		local container = -1
+		--am("Poggers", container, slot)
+		if not myadd.currentMogs["container"][container] then return end
+		local mogID = myadd.currentMogs["container"][container][slot]
+		if mogID ~= nil then
+			TooltipAddMogLine(tooltip, mogID)
+		end
+		return
+	end
+	--]]

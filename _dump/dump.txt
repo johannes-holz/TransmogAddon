@@ -1,0 +1,115 @@
+	["currentSet"] = {
+		["ChestSlot"] = 17005,
+		["BackSlot"] = 12110,
+		["MainHandSlot"] = 33754,
+		["SecondaryHandSlot"] = 33756,
+		["FeetSlot"] = 24766,
+		["HeadSlot"] = 12587,
+		["ShoulderSlot"] = 4196,
+		["WaistSlot"] = 22002,
+		["HandsSlot"] = 22006,
+		["LegsSlot"] = 3315
+		^
+		
+	["currentSet"] = {
+		["ChestSlot"] = 17005,
+		["BackSlot"] = 12110,
+		["MainHandSlot"] = 33754,
+		["SecondaryHandSlot"] = 33756,
+		["FeetSlot"] = 24766,
+		["LegsSlot"] = 3315,
+		["WaistSlot"] = 22002,
+		["ShoulderSlot"] = 4196,
+		["HeadSlot"] = 12587,
+	},
+	
+	
+	local tmpModel
+	--Texturen klappen nur mit Playermodel + erst unit setzen und dann model setzen?
+	--setsequence klappt nur mit model
+	--setsequencetime klappt auch mit playermodel und dressupmodel, elapsed*1000 on update 
+	--potentiell mit setsequencetime und einer folge von verschiedenen positionen auch bewegung möglich. ansonsten nutzbar für posen
+local b = CreateFrame("Frame")
+b:RegisterEvent("PLAYER_LOGIN")
+b:SetScript("OnEvent", function(self)
+  self:UnregisterEvent("VARIABLES_LOADED")
+  self:SetScript("OnEvent", nil)    
+  am("hi")
+  tmpModel = CreateFrame("DressUpModel", nil, UIParent)
+	--tmpModel:SetUnit("player")
+	tmpModel:SetSize(400, 400)
+	tmpModel:SetPoint("RIGHT", UIParent, "RIGHT",-100,0)
+	tmpModel:SetUnit("player")
+	--tmpModel:SetModel("creature\\fish\\fish.m2")
+	--tmpModel:ClearModel()
+	--tmpModel:SetModel("CREATURE/Ancientofarcane/AncientofArcane.m2")
+	tmpModel:Show()
+	tmpModel:Hide()
+	tmpModel:Show()
+	tmpModel.seq = 119
+	am("hi")
+	--tmpModel:SetCamera(1)
+	local elapsed = 0;
+	tmpModel:SetScript("OnUpdate", function(self, elaps)
+		elapsed = elapsed + (elaps * 1000);
+		tmpModel:SetSequenceTime(tmpModel.seq, elapsed);
+	end)
+	--tmpModel:SetPosition(-5, 0, 0)
+	--tmpModel:SetModelScale(10)
+	--tmpModel:SetFogNear(0)
+	--tmpModel:SetFogNear(10)
+	--tmpModel:ClearFog()
+	--tmpModel:SetLight(true, false, 0, -0.707, -0.707, 0.7, 1.0, 1.0, 1.0, 0.8, 1.0, 1.0, 0.8)
+	--tmpModel:Hide()
+	--tmpModel:SetSequence(119)
+  end)
+
+
+		tmpModel:Hide() --TODO. dont forget
+			--model:StopAnimating()
+			--model:ClearModel()
+           -- model:SetModel('interface\\buttons\\talktomequestionmark.m2')
+			--model:SetModel("creature\\fleshgolem\\fleshgolem.m2")
+			--tmpModel:SetUnit("target")
+			--tmpModel:SetModel("SPELLS\\BlackRadiationFog.m2")
+			--model setmodel("file") and setsequence?
+			--tmpModel:SetModel("Character\\NightElf\\Female\\NightElfFemale.mdx")
+			--model:TryOn(9999)
+		--model:SetModel("CREATURE/BloodElfFemaleKid/BloodelfFemaleKid.m2") --coole effekte bastelbar? zB wenn transmog erfolgreich applied wird? "particles\\lootfx.m2" "environments\\stars\\dalaranskybox.m2" coole hintergründe
+		
+		
+		--tmpModel:TryOn(9999)
+		--EquipSet(tmpModel, currentChanges)
+		
+		
+		
+		
+
+
+
+
+---------------------
+-- TMP DEBUG SHIT
+---------------------
+
+myadd.refs = {}
+local refs = myadd.refs
+refs.bar = bar
+refs.windowFrame = windowFrame
+refs.model = model
+refs.itemSlotFrame = itemSlotFrame
+refs.slotModels = slotModels
+refs.pageTextField = pageTextField
+refs.catDDM = catDDM
+refs.setDDM = setDDM
+refs.saveButton = saveButton
+refs.applyButton = applyButton
+refs.costsFrame = costsFrame
+refs.itemSlotOptionsFrame = itemSlotOptionsFrame
+refs.nameFilterTextField = nameFilterTextField
+refs.list = list
+refs.MyAddonDB = MyAddonDB
+refs.listeners = listeners
+refs.slotCategories = slotCategories
+refs.itemInfoWaitFrame = itemInfoWaitFrame
+refs.tooltips = tooltips

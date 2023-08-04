@@ -1,0 +1,18 @@
+Keeping note of changes in Blizzard API behaviour caused by transmog implementation:
+
+- GetInventoryItemTexture: returns the texture of the visual item
+	(overwritten by AddOn to return original item texture again and fix item display in PaperDoll and Inspect frame)
+	
+- GetInventoryItemID: returns the visible item's ID for non-player units
+	(not overwriting this one, because this is the only way to reliably find out other players transmog/skin atm.
+	 GetInventoryItemLink contains no suffix/unique ID for other players, so we can't read out the visualID from there. Even if this gets fixed, it would not contain the visible skin item.
+	 The original item's ID can still be retrieved from GetInventoryItemLink, see core.GetInventoryItemID in Utilities.lua.)
+	 
+- UNIT_INVENTORY_CHANGED event does not fire for units, that have a skin enabled.
+	(this is the reason why item slots in the PaperDoll (and Inspect frame) don't update anymore when a skin is enabled. probably gonna fix by calling update on PLAYER_EQUIPMENT_CHANGED for player.
+	 For InspectFrame it is more complicated, see next point.)
+	
+- GetInventoryItemLink: if the inspect target has a skin enabled, the information returned from GetInventoryItemLink does not get updated without a new NotifyInspect call
+	Unsure how to fix this one. Maybe just periodically call NotifyInspect while the InspectFrame is open or try to find event like UNIT_STATS to hook to, also only while InspectFrame is shown.
+	Call itemslotbutton_update on this, might need delay?
+	- During the first few frames a new unit returns the visual item's link, which is why gear score registers the wrong items initially for a new unit
