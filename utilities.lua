@@ -120,7 +120,7 @@ end
 
 core.GetTextureString = function(texturePath, height)
 	height = height or 0
-	return "|T" .. texturePath .. ":" .. height .. "::2:0|t"
+	return "|T" .. texturePath .. ":" .. height .. ":" .. height .. ":2:0|t"
 end
 
 core.GetCoinTextureString = function(money, texHeight)
@@ -162,13 +162,13 @@ core.GetPriceString = function(points, copper, showZero)
 
 
 	return (points and (points .. core.GetTextureString(core.CURRENCY_ICON)) or "")
-				.. ((points and copper) and ", " or "")
+				.. ((points and copper) and "  " or "")
 				.. (copper and core.GetCoinTextureString(copper) or "")
 end
 
 core.GetShortenedString = function(s, len)
 	len = len and (len >= 3 and len or 3) or 20
-	if strlen(s) < len then
+	if strlen(s) <= len then
 		return s
 	else
 		return strsub(s, 1, len - 3) .. "..."
@@ -203,7 +203,7 @@ core.SetShown = function(region, shown)
 	end
 end
 
-core.SetEnabled = function(self, frame, enabled)
+core.SetEnabled = function(frame, enabled)
 	if enabled then
 		frame:Enable()
 	else
@@ -229,6 +229,13 @@ core.SetTooltip = function(frame, text, r, g, b, a, wrap)
 	frame:HookScript("OnLeave", function(self)
 		GameTooltip:Hide()
 	end)
+end
+
+core.MouseIsOver = function(frame)
+	local x, y = GetCursorPosition()
+	local s = frame:GetEffectiveScale()
+	x, y = x / s, y / s
+	return x >= frame:GetLeft() and x <= frame:GetRight() and y >= frame:GetBottom() and y <= frame:GetTop()
 end
 
 local waitTable = {}
@@ -390,10 +397,6 @@ core.GetContainerVisualID = function(bagID, slotID)
 
 	return core.API.GetVisualFromItemLink(link)
 end
-
-
-
-
 
 local knownTypes = { [0] = "player", [3] = "NPC", [4] = "pet", [5] = "vehicle" }
 core.GetNPCID = function(guid)

@@ -69,6 +69,14 @@ core.AddEnchant = function(visualID, enchantID, spellID)
 	core.enchantInfo["spellID"][enchantID] = spellID
 end
 
+-- /run for _, id in pairs(Addy.enchants[29].enchantIDs) do print(Addy.GetEnchantInfo(id)) end
+core.GetEnchantInfo = function(enchantID)
+	local spellID = core.enchantInfo.spellID[enchantID]
+	if spellID then
+		return GetSpellInfo(spellID)
+	end
+end
+
 core.AddColor = function(color, itemID)
 	--core.am(itemID.." is "..color)
 	--FunctionOnItemInfo(itemID, function()

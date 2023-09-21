@@ -245,7 +245,7 @@ core.PreHook_ModifiedItemClick = function()
 		if (link and string.find(link, "|Htransmogset|h")) then
 			return HandleModifiedItemClickOrig(link, ...)
 		end
-		if not strfind(link, "item:(%d*)") then
+		if not link or not strfind(link, "item:(%d*)") then
 			return HandleModifiedItemClickOrig(link, ...)
 		end
 

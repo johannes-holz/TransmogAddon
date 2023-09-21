@@ -54,4 +54,9 @@ Frames\WardrobeFrame\WardrobeFrame.lua
 # Misc Frames
 Frames\ActiveSkinDropDown.lua
 
+# Outfit Stuff
+Outfits.lua
+Frames\OutfitFrame\OutfitDropDown.lua
+Frames\OutfitFrame\OutfitFrame.lua
+
 BalanceDisplay.lua

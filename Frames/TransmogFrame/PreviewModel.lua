@@ -1,7 +1,5 @@
 local folder, core = ...
 
-local GetInventoryVisualID = core.GetInventoryVisualID
-
 local modelPositions = {
 	["Human"] = {0.1, 0, 0.05},
 	["NightElf"] = {-0.2, 0, 0.15},
@@ -15,7 +13,7 @@ local modelPositions = {
 	["Orc"] = {0, 0, 0.05},
 }
 
-core.TwoHanders = {"Stangenwaffen", "Stäbe", "Angelruten",}
+core.TwoHandExclusive = {[core.ITEM_SUB_CLASSES.POLEARMS] = true, [core.ITEM_SUB_CLASSES.STAVES] = true, [core.ITEM_SUB_CLASSES.FISHING_POLES] = true}
 
 core.CreatePreviewModel = function(parent, width, height)
 	local model = CreateFrame("DressUpModel", folder.."PreviewModel", parent)
@@ -86,12 +84,19 @@ core.CreatePreviewModel = function(parent, width, height)
 	model:SetScript("OnShow", function(self)
 		model:SetPosition(model.posBackup[1], model.posBackup[2], model.posBackup[3])
 		self:SetScript("OnUpdate", onUpdateNormal)
-		model.update()
 		
 		-- kappa
 		local weekday, month, day, year = CalendarGetDate()
-		if month == 4 and day == 1 and math.random() > 0.5 then model:SetModel("CREATURE/Tauren_MountedCanoe/Tauren_MountedCanoe.m2") end
+		if month == 4 and day == 1 and not self.openedBefore then
+			self.openedBefore = true
+			model:SetModel("CREATURE/Tauren_MountedCanoe/Tauren_MountedCanoe.m2")
+		else
+			model:SetUnit("player")
+		end
+		-- shiny bladestorm
 		model:ChangeSequence((math.random() > 0.9999) and 126 or -1)
+		
+		model:update()
 	end)
 
 	model:SetScript("OnHide", function(self)
@@ -188,63 +193,55 @@ core.CreatePreviewModel = function(parent, width, height)
 
     model.cantPreviewMessage = model.textFrame:CreateFontString()
     model.cantPreviewMessage:SetFontObject(GameFontRed)
-    model.cantPreviewMessage:SetPoint("BOTTOM", 0, model:GetHeight() / 6)
+    model.cantPreviewMessage:SetPoint("BOTTOM", 0, model:GetHeight() / 5)
     model.cantPreviewMessage:SetJustifyH("CENTER")
     model.cantPreviewMessage:SetJustifyV("MIDDLE")
-    model.cantPreviewMessage:SetText("Can not preview current melee weapons together.")
+    model.cantPreviewMessage:SetText(core.CAN_NOT_PREVIEW)
     
     model.mhHidesOH = model.textFrame:CreateFontString()
     model.mhHidesOH:SetFontObject(GameFontRed)
     model.mhHidesOH:SetPoint("TOP", model.cantPreviewMessage, "BOTTOM", 0, -4)
     model.mhHidesOH:SetJustifyH("CENTER")
     model.mhHidesOH:SetJustifyV("MIDDLE")
-    model.mhHidesOH:SetText("Off hand will be hidden by current main hand appearance.")
+    model.mhHidesOH:SetText(core.OH_WILL_BE_HIDDEN)
 
     model.ohAppearanceNotShown = model.textFrame:CreateFontString()
     model.ohAppearanceNotShown:SetFontObject(GameFontRed)
     model.ohAppearanceNotShown:SetPoint("TOP", model.mhHidesOH, "BOTTOM", 0, -4)
     model.ohAppearanceNotShown:SetJustifyH("CENTER")
     model.ohAppearanceNotShown:SetJustifyV("MIDDLE")
-    model.ohAppearanceNotShown:SetText("This off hand appearance will not be shown while in this slot.")
-	
-	model.update = function(self)
-		if not model:IsShown() then return end
-		local slot = core.GetSelectedSlot()
-		local skin = core.GetSelectedSkin()
+    model.ohAppearanceNotShown:SetText(core.OH_APPEARANCE_WONT_BE_SHOWN)
 
-		if core.IsWeaponSlot(slot) then
-			model.lastWeaponSlot = slot -- make displayed weapon depend on last selected weapon slot?
-		end
-	
+	model.GetItemsToDisplay = function(self, includeHidden)	
+		local skin = core.GetSelectedSkin()
+		local selectedSlot = core.GetSelectedSlot()
+
 		local itemsToShow = {}
-		for k, v in pairs(core.itemSlots) do
-			-- local id, link
-			-- if v == "MainHandEnchantSlot" then
-			-- 	link = GetInventoryItemLink("player", GetInventorySlotInfo("MainHandSlot"))
-			-- 	if link then
-			-- 		_, id = link:match("item:(%d+):(%d+)")
-			-- 	end
-			-- elseif v == "SecondaryHandEnchantSlot" then
-			-- 	link = GetInventoryItemLink("player", GetInventorySlotInfo("SecondaryHandSlot"))
-			-- 	if link then
-			-- 		_, id = link:match("item:(%d+):(%d+)")
-			-- 	end
-			-- else
-			-- 	id = GetInventoryItemID("player", GetInventorySlotInfo(v))
-			-- end
-			-- id = tonumber(id)          
-            local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(v)
+		for _, slot in pairs(core.itemSlots) do        
+            local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot)
 
 			local show = pendingID or (skin and skinVisualID) or ((not skin or core.showItemsUnderSkin) and (visualID or itemID)) or nil
 
 			if show == 0 then
 				show = (not skin or core.showItemsUnderSkin) and itemID or nil
-			elseif show == 1 then
+			elseif show == 1 and not includeHidden then
 				show = nil
 			end
 
-            itemsToShow[v] = show	
+            itemsToShow[slot] = show	
 		end
+		return itemsToShow
+	end
+	
+	model.update = function(self)
+		if not model:IsShown() then return end
+		local selectedSlot = core.GetSelectedSlot()
+
+		if core.IsWeaponSlot(selectedSlot) then
+			model.lastWeaponSlot = selectedSlot -- make displayed weapon depend on last selected weapon slot?
+		end
+	
+		local itemsToShow = self:GetItemsToDisplay()
 
 		model:Undress()
         model.cantPreviewMessage:Hide()
@@ -255,9 +252,8 @@ core.CreatePreviewModel = function(parent, width, height)
 			end
 		end
 
-		-- TODO: Are we happy with this offhand display behaviour?. maybe remember last offhand slot and also range slot/melee slot and show that one instead of always melee weps on armor?
-		-- TODO: still the problem that we cant display 2h in offhand for dualwielders without titangrip. what do we do here?
-		local selectedSlot = core.GetSelectedSlot()
+		-- TODO: Are we happy with this offhand display behaviour?. maybe remember last offhand slot and also range slot/melee slot and show that one instead of always melee weps?
+		-- TODO: still the problem that we cant display 2h in offhand for dualwielders without titangrip. what do we do here?		
 
 		local mh = itemsToShow["MainHandSlot"]
 		--if mh and itemsToShow["MainHandEnchantSlot"] then mh = "item:"..mh..":"..itemsToShow["MainHandEnchantSlot"] end
@@ -268,10 +264,10 @@ core.CreatePreviewModel = function(parent, width, height)
         local mhWeaponType = mh and select(7, GetItemInfo(mh))
         local ohWeaponType = oh and select(7, GetItemInfo(oh))
         
-        core.SetShown(model.mhHidesOH, mhWeaponType and ohWeaponType and core.Contains(core.TwoHanders, mhWeaponType))
-        core.SetShown(model.ohAppearanceNotShown, ohWeaponType and core.Contains(core.TwoHanders, ohWeaponType))
+        core.SetShown(model.mhHidesOH, mhWeaponType and ohWeaponType and core.TwoHandExclusive[mhWeaponType])
+        core.SetShown(model.ohAppearanceNotShown, ohWeaponType and core.TwoHandExclusive[ohWeaponType])
 
-        if ohWeaponType and core.Contains(core.TwoHanders, ohWeaponType) then
+        if ohWeaponType and core.TwoHandExclusive[ohWeaponType] then
             oh = core.TransmogGetSlotInfo("SecondaryHandSlot")
         end
 		
@@ -289,11 +285,22 @@ core.CreatePreviewModel = function(parent, width, height)
             end
 		end
 	end
-	
+
 	core.RegisterListener("currentChanges", model)
 	core.RegisterListener("selectedSlot", model)
 	core.RegisterListener("inventory", model)
 	core.RegisterListener("selectedSkin", model)
+	
+
+	------------------- Outfit Stuff -------------------
+	model.GetAll = function(self)
+		return self:GetItemsToDisplay(true)
+	end
+	model.SetAll = function(self, set)
+		core.SetCurrentChanges(set)
+	end
+
+	----------------------------------------------------
 	
 	return model
 end

@@ -3,13 +3,24 @@ local folder, core = ...
 -- Could probably be changed to use 1-2 generic popups (maybe 1 with, 1 without editbox)
 -- And set everything depending on a data table in OnShow()
 
+local MAX_LETTERS_POPUP = 20
+local MAX_LETTERS_DROPDOWN = 50
+
 StaticPopupDialogs["BuySkinPopup"] = {
 	text = "",
 	button1 = ACCEPT,
 	button2 = CANCEL,
 	hasEditBox = nil,
 	OnAccept = function(self, data)
-		core.RequestBuySkin()
+		local costs = core.GetSkinCosts()
+		local balance = core.GetBalance()
+		if not costs.copper or not balance.shards then
+			UIErrorsFrame:AddMessage(core.APPLY_ERROR1, 1.0, 0.1, 0.1, 1.0)
+		elseif GetMoney() < costs.copper or balance.shards < costs.points then
+			UIErrorsFrame:AddMessage(core.APPLY_ERROR2, 1.0, 0.1, 0.1, 1.0)
+		else
+			core.RequestBuySkin()
+		end
 	end,
 	OnShow = function(self, data)
 		self.text:SetText(data.text)
@@ -51,6 +62,11 @@ StaticPopupDialogs["RenameSkinPopup"] = {
 	hideOnEscape = 1,
 }
 
+-- core.popupDelayEnabled = true
+-- core.GetPopupDelay = function()
+-- 	return 5
+-- end
+
 StaticPopupDialogs["ResetSkinPopup"] = {
 	text = "",
 	button1 = ACCEPT,
@@ -65,6 +81,7 @@ StaticPopupDialogs["ResetSkinPopup"] = {
 			StaticPopup1Button1:Disable()
 		end
 	end,
+	-- StartDelay = core.popupDelayEnabled and core.GetPopupDelay or nil -- does not show a timer on the button and requires the text to be set in global var. not a fan
 	timeout = 0,
 	exclusive = 1,
 	hideOnEscape = 1,
@@ -75,8 +92,16 @@ StaticPopupDialogs["TransferVisualsToSkinPopup"] = {
 	button1 = ACCEPT,
 	button2 = CANCEL,
 	hasEditBox = nil,
-	OnAccept = function(self, data)
-		core.RequestTransferVisualsToSkin(data.id)
+	OnAccept = function(self, data)		
+		local costs = data.costs
+		local balance = core.GetBalance()
+		if not costs.copper or not balance.shards then
+			UIErrorsFrame:AddMessage(core.APPLY_ERROR1, 1.0, 0.1, 0.1, 1.0)
+		elseif GetMoney() < costs.copper or balance.shards < costs.points then
+			UIErrorsFrame:AddMessage(core.APPLY_ERROR2, 1.0, 0.1, 0.1, 1.0)
+		else
+			core.RequestTransferVisualsToSkin(data.id)
+		end
 	end,
 	OnShow = function(self, data)
 		self.text:SetText(data.text)
@@ -89,12 +114,16 @@ StaticPopupDialogs["TransferVisualsToSkinPopup"] = {
 	hideOnEscape = 1,
 }
 
+core.SkinPopupDisplay = function(id, name)
+	-- " \"" .. id + 1 .. ": " .. core.GetShortenedString(name, MAX_LETTERS_POPUP) .. "\" "
+	return "\"" .. core.GetShortenedString(name, MAX_LETTERS_POPUP) .. "\"" .. " (" .. core.SKIN_SLOT .. " " .. (id  + 1) .. ")"
+end
 
 local ShowBuySkinPopup = function()
 	local costs = core.GetSkinCosts()
 	local balance = core.GetBalance()
 	local data = {}
-	data.disable = not costs.points or not costs.copper or not balance.shards or costs.points > balance.shards or costs.copper > GetMoney()
+	-- data.disable = not costs.points or not costs.copper or not balance.shards or costs.points > balance.shards or costs.copper > GetMoney()
 	data.text = core.BUY_SKIN_TEXT .. "\n\n" .. (costs.points and costs.copper and core.GetPriceString(costs.points, costs.copper)
 														or ("|cffff1111" .. core.NO_SKIN_COSTS_ERROR .. "|r"))
 				
@@ -105,7 +134,15 @@ local ShowRenameSkinPopup = function(id)
 	local data = {}
 	data.id = id
 	data.oldName = core.GetSkins()[id].name
-	data.text = core.RENAME_SKIN_TEXT1 .. data.id .. ": " .. data.oldName .. core.RENAME_SKIN_TEXT2
+	data.text = core.RENAME_SKIN_TEXT1 .. " " .. core.SkinPopupDisplay(data.id, data.oldName) .. " " .. core.RENAME_SKIN_TEXT2
+
+	StaticPopup_Show("RenameSkinPopup", nil, nil, data)
+end
+
+local ShowCreateSkinPopup = function(id)
+	local data = {}
+	data.id = id
+	data.text = core.CREATE_SKIN_TEXT1 .. data.id + 1 .. core.CREATE_SKIN_TEXT2
 
 	StaticPopup_Show("RenameSkinPopup", nil, nil, data)
 end
@@ -113,14 +150,13 @@ end
 local ShowResetSkinPopup = function(id)
 	local data = {}
 	data.id = id
-	data.oldName = core.GetSkins()[id].name
-	data.text = core.RESET_SKIN_TEXT1 .. data.id .. ": " .. data.oldName .. core.RESET_SKIN_TEXT2
+	data.name = core.GetSkins()[id].name
+	data.text = core.RESET_SKIN_TEXT1 .. " " .. core.SkinPopupDisplay(data.id, data.name) .. " " .. core.RESET_SKIN_TEXT2
 
 	StaticPopup_Show("ResetSkinPopup", nil, nil, data)
 end
 
 core.ShowVisualsToSkinPopup = function(id, costs)
-	core.am(costs)
 	local skins = core.GetSkins()
 	local balance = core.GetBalance()
 	assert(skins and skins[id] and balance and costs)
@@ -131,7 +167,7 @@ core.ShowVisualsToSkinPopup = function(id, costs)
 		local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot, id)
 		if visualID and visualID > 0 and (not skinVisualID or skinVisualID == 0) then
 			local link = visualID > 1 and core.LinkToColoredString(select(2, GetItemInfo(visualID))) or core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
-			tinsert(lines, slot)
+			tinsert(lines, core.SLOT_NAMES[slot])
 			tinsert(lines, ": ")
 			tinsert(lines, link or visualID)
 			tinsert(lines, "\n")
@@ -141,8 +177,10 @@ core.ShowVisualsToSkinPopup = function(id, costs)
 	local data = {}
 	data.id = id
 	data.name = skins[id].name
-	data.disable = not costs.points or not costs.copper or not balance.shards or costs.points > balance.shards or costs.copper > GetMoney()
-	data.text = core.VISUALS_TO_SKIN_TEXT1 .. " [" .. id .. ": " .. data.name .. "]" .. ". "
+	data.costs = costs
+	-- data.disable = not costs.points or not costs.copper or not balance.shards or costs.points > balance.shards or costs.copper > GetMoney()
+	data.disable = not costs.points or not costs.copper or not balance.shards
+	data.text = core.VISUALS_TO_SKIN_TEXT1 .. " " .. core.SkinPopupDisplay(data.id, data.name) .. ". "
 					.. core.VISUALS_TO_SKIN_TEXT2 .. "\n\n"
 					.. table.concat(lines) .. "\n"
 					.. (costs.points and costs.copper and core.GetPriceString(costs.points, costs.copper) or "ERROR: Could not request costs from server.")				
@@ -170,9 +208,11 @@ end
 
 local SkinDisplay = function(skins, id)
 	if not id or not skins or not skins[id] then return end
-
-	return (core.Length(skins) > 9 and id < 9 and "  " or "") .. (id + 1) .. ":  " .. skins[id].name
+	local name = skins[id].name
+	return (core.Length(skins) > 9 and id < 9 and "  " or "") .. (id + 1) .. ":  "
+		.. (name and name ~= "" and core.GetShortenedString(name, MAX_LETTERS_DROPDOWN) or core.GetColoredString(core.EMPTY_SKIN_SLOT, core.yellowTextColor.hex))
 end
+
 
 core.CreateSkinDropDown = function(parent)
 	local skinDropDown = CreateFrame("Frame", folder .. "SkinDropDown", parent, "UIDropDownMenuTemplate")
@@ -184,10 +224,23 @@ core.CreateSkinDropDown = function(parent)
 		local skinID, skinName = arg1, arg2
 
 		if not skinName or skinName == "" then
-			ShowRenameSkinPopup(skinID)
+			ShowCreateSkinPopup(skinID)
 		else
 			core.SetSelectedSkin(skinID)
 			core.SetSlotAndCategory(nil, nil)
+		end
+		CloseDropDownMenus()
+	end
+
+	skinDropDown.SetActiveSkin = function(self, arg1, arg2, checked)
+		local skinID, skinName = arg1, arg2
+
+        if core.GetActiveSkin() == skinID then return end
+
+		if skinID and (not skinName or skinName == "") then -- Should not happen, since we deactivate button
+            UIErrorsFrame:AddMessage(core.SKIN_NEEDS_ACTIVATION, 1.0, 0.1, 0.1, 1.0)
+		else
+			core.RequestActivateSkin(skinID)
 		end
 		CloseDropDownMenus()
 	end
@@ -210,15 +263,6 @@ core.CreateSkinDropDown = function(parent)
 		
 		local info
 		if level == 1 then
-			-- Normal Transmog
-			-- info = UIDropDownMenu_CreateInfo()
-			-- info.text = skinDropDown.normalTransmog
-			-- info.func = skinDropDown.SelectSkin
-			-- info.arg1 = nil
-			-- info.arg2 = nil
-			-- info.padding = 20
-			-- UIDropDownMenu_AddButton(info, level)
-
 			-- Skins
 			for _, id in pairs(orderedIDs) do
 				info = UIDropDownMenu_CreateInfo()
@@ -236,7 +280,7 @@ core.CreateSkinDropDown = function(parent)
 
 			-- Create new Set Button
 			info = UIDropDownMenu_CreateInfo()
-			info.text = "|TInterface\\Icons\\Spell_ChargePositive:14:14:0:0|t Buy Skinslot|r"
+			info.text = "|TInterface\\Icons\\Spell_ChargePositive:14:14:0:0|t " .. core.BUY_SKIN_SLOT .. "|r"
 			--info.icon = "Interface\\Icons\\Spell_ChargePositive"
 			info.arg1 = info.text
 			info.notCheckable = true
@@ -252,62 +296,87 @@ core.CreateSkinDropDown = function(parent)
 			UIDropDownMenu_AddButton(info, level)
 			
 		elseif level == 2 then
-			local levelOneKey = UIDROPDOWNMENU_MENU_VALUE["levelOneKey"]	
-			info = UIDropDownMenu_CreateInfo()			
-			----------------------------------------------------------------------------			
-			info.text = "Rename"
-			info.arg1 = levelOneKey
-			info.value = { ["levelOneKey"] = levelOneKey, ["levelTwoKey"] = "Rename"}
-			info.notCheckable = true
-			info.padding = 0
-			info.func = function(self, arg1, arg2, checked)
-				ShowRenameSkinPopup(levelOneKey)
-				CloseDropDownMenus()
+			local id = UIDROPDOWNMENU_MENU_VALUE["levelOneKey"]	
+			local name = skins[id].name
+			if name and name ~= "" then
+				----- Select -----------------------------------------------------------------------
+				info = UIDropDownMenu_CreateInfo()						
+				info.text = core.SELECT
+				info.arg1 = id
+				info.arg2 = name
+				info.value = { ["levelOneKey"] = id, ["levelTwoKey"] = core.SELECT}
+				info.notCheckable = true
+				info.padding = 0
+				info.func = skinDropDown.SelectSkin
+				UIDropDownMenu_AddButton(info, level)	
+				----- Activate -----------------------------------------------------------------------
+				info = UIDropDownMenu_CreateInfo()						
+				info.text = core.ACTIVATE
+				info.arg1 = id
+				info.arg2 = name
+				info.value = { ["levelOneKey"] = id, ["levelTwoKey"] = core.ACTIVATE}
+				info.notCheckable = true
+				info.padding = 0
+				info.func = skinDropDown.SetActiveSkin
+				info.disabled = id == core.GetActiveSkin()
+				UIDropDownMenu_AddButton(info, level)	
+				----- Rename -----------------------------------------------------------------------
+				info = UIDropDownMenu_CreateInfo()						
+				info.text = core.RENAME
+				info.arg1 = levelOneKey
+				info.value = { ["levelOneKey"] = id, ["levelTwoKey"] = core.RENAME}
+				info.notCheckable = true
+				info.padding = 0
+				info.func = function(self, arg1, arg2, checked)
+					ShowRenameSkinPopup(id)
+					CloseDropDownMenus()
+				end
+				UIDropDownMenu_AddButton(info, level)
+				----- Transfer Visuals -----------------------------------------------------------------------
+				info = UIDropDownMenu_CreateInfo()						
+				info.text = core.TRANSFER
+				info.arg1 = id
+				info.value = { ["levelOneKey"] = id, ["levelTwoKey"] = core.TRANSFER}
+				info.notCheckable = true
+				info.padding = 0
+				info.disabled = not HasVisualsToTransfer(id)
+				info.func = function(self, arg1, arg2, checked)
+					core.RequestTransferPriceAndOpenPopup(id)
+					--ShowVisualsToSkinPopup(levelOneKey, {points = 10, copper = 150})
+					CloseDropDownMenus()
+				end
+				info.value = info.text
+				UIDropDownMenu_AddButton(info, level)	
+				----- Reset -----------------------------------------------------------------------
+				info = UIDropDownMenu_CreateInfo()						
+				info.text = core.RESET
+				info.arg1 = id
+				info.value = { ["levelOneKey"] = id, ["levelTwoKey"] = core.RESET}
+				info.notCheckable = true
+				info.padding = 0
+				info.disabled = not skins or not skins[id] or not skins[id].name or skins[id].name == ""
+				info.func = function(self, arg1, arg2, checked)
+					ShowResetSkinPopup(id)
+					CloseDropDownMenus()
+				end
+				info.value = info.text
+				UIDropDownMenu_AddButton(info, level)	
+			else
+				----- Create -----------------------------------------------------------------------
+				info = UIDropDownMenu_CreateInfo()						
+				info.text = core.CREATE
+				info.arg1 = id
+				info.arg2 = name
+				info.value = { ["levelOneKey"] = id, ["levelTwoKey"] = core.CREATE}
+				info.notCheckable = true
+				info.padding = 0
+				info.func = skinDropDown.SelectSkin
+				UIDropDownMenu_AddButton(info, level)
 			end
-			info.value = info.text
-			UIDropDownMenu_AddButton(info, level)	
-			----------------------------------------------------------------------------			
-			info.text = "Transfer Current Transmogs"
-			info.arg1 = levelOneKey
-			info.value = { ["levelOneKey"] = levelOneKey, ["levelTwoKey"] = "Rename"}
-			info.notCheckable = true
-			info.padding = 0
-			info.disabled = not HasVisualsToTransfer(levelOneKey)
-			info.func = function(self, arg1, arg2, checked)
-				core.RequestTransferPriceAndOpenPopup(levelOneKey)
-				--ShowVisualsToSkinPopup(levelOneKey, {points = 10, copper = 150})
-				CloseDropDownMenus()
-			end
-			info.value = info.text
-			UIDropDownMenu_AddButton(info, level)	
-			----------------------------------------------------------------------------			
-			info.text = "Reset"
-			info.arg1 = levelOneKey
-			info.value = { ["levelOneKey"] = levelOneKey, ["levelTwoKey"] = "Rename"}
-			info.notCheckable = true
-			info.padding = 0
-			info.disabled = not skins or not skins[levelOneKey] or not skins[levelOneKey].name or skins[levelOneKey].name == ""
-			info.func = function(self, arg1, arg2, checked)
-				ShowResetSkinPopup(levelOneKey)
-				CloseDropDownMenus()
-			end
-			info.value = info.text
-			UIDropDownMenu_AddButton(info, level)	
 		end
 
-		
-		--UIDropDownMenu_SetWidth(skinDropDown, 100, 0) -- Use in place of dropDown:SetWidth
+		--UIDropDownMenu_SetWidth(skinDropDown, 100, 0) -- Use in place of dropDown:SetWidth. irrelevant for context style menu
 		UIDropDownMenu_SetButtonWidth(skinDropDown, 40)
-
-		-- if skinDropDown.firstInit then
-		-- 	if selectedSkinName then
-		-- 		UIDropDownMenu_SetSelectedName(skinDropDown, selectedSkinName)
-		-- 		UIDropDownMenu_SetText(skinDropDown, selectedSkinName)
-		-- 	else
-		-- 		UIDropDownMenu_SetText(skinDropDown, "Skins")
-		-- 	end
-		-- 	skinDropDown.firstInit = false
-		-- end
 	end
 
 	skinDropDown.update = function()

@@ -95,7 +95,7 @@ local SlotButton_OnEnter = function(self)
 		GameTooltip:ClearLines()
 
 		if selectedSkin then
-			GameTooltip:AddLine(self.itemSlot, 1, 1, 1, 1)
+			GameTooltip:AddLine(core.SLOT_NAMES[self.itemSlot], 1, 1, 1, 1)
 			if skinVisualID then
 				GameTooltip:AddLine(" ")
 				GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_CURRENT_MOG, core.skinTextColor.r, core.skinTextColor.g, core.skinTextColor.b, core.skinTextColor.a)
@@ -462,7 +462,7 @@ core.CreateItemSlotOptionsFrame = function(parent)
 	local left, top, right, bottom = 417/512, 90/512, 443/512,116/512
 	itemSlotOptionsFrame.undressButton = core.CreateMeACustomTexButton(itemSlotOptionsFrame, itemSlotWidth / 2, itemSlotWidth / 2, TRANSMOGRIFY_TEXTURE, left, top, right, bottom)
 	itemSlotOptionsFrame.undressButton:SetPoint("BOTTOMRIGHT", itemSlotOptionsFrame, "RIGHT")
-	core.SetTooltip(itemSlotOptionsFrame.undressButton, "Hide")
+	core.SetTooltip(itemSlotOptionsFrame.undressButton, core.HIDE)
 	
 	itemSlotOptionsFrame.undressButton:SetScript("OnClick", function()
 		core.UndressSlot(itemSlotOptionsFrame.owner.itemSlot)
@@ -471,7 +471,7 @@ core.CreateItemSlotOptionsFrame = function(parent)
 	local left, top, right, bottom = 451/512, 90/512, 481/512,118/512
 	itemSlotOptionsFrame.removeMogButton = core.CreateMeACustomTexButton(itemSlotOptionsFrame, itemSlotWidth / 2, itemSlotWidth / 2, TRANSMOGRIFY_TEXTURE, left, top, right, bottom)
 	itemSlotOptionsFrame.removeMogButton:SetPoint("TOPRIGHT", itemSlotOptionsFrame, "RIGHT")
-	core.SetTooltip(itemSlotOptionsFrame.removeMogButton, "Unmog")
+	core.SetTooltip(itemSlotOptionsFrame.removeMogButton, core.UNMOG)
 
 	itemSlotOptionsFrame.removeMogButton:SetScript("OnClick", function()
 		core.UnmogSlot(itemSlotOptionsFrame.owner.itemSlot)

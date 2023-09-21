@@ -4,7 +4,6 @@ local WIDTH, HEIGHT = 660, 480
 local HEADER_HEIGHT = 60
 
 local WardrobeFrame_OnShow = function(self)
-    self:SetToplevel(true)
     self:SelectItemTab()
 end
 
@@ -13,8 +12,23 @@ local wardrobeFrame = core.wardrobeFrame
 wardrobeFrame:SetSize(WIDTH, HEIGHT)
 wardrobeFrame:SetPoint("CENTER")
 wardrobeFrame:SetBackdrop(BACKDROP_TOAST_12_12)
-wardrobeFrame:EnableMouse()
-tinsert(UISpecialFrames, wardrobeFrame:GetName())
+wardrobeFrame:EnableMouse(true)
+wardrobeFrame:SetMovable(true)
+wardrobeFrame:SetToplevel(true) -- raises frame level to be on top of other frames on mouse click
+tinsert(UISpecialFrames, wardrobeFrame:GetName()) -- close on escape
+
+
+wardrobeFrame:SetScript("OnMouseDown",function(self,button)
+    CloseDropDownMenus()
+    if button == "LeftButton" then
+        self:StartMoving()
+    end
+end)
+wardrobeFrame:SetScript("OnMouseUp",function(self,button)
+    if button == "LeftButton" then
+        self:StopMovingOrSizing()
+    end
+end)
 
 -- itemCollectionFrame:SetAttribute("UIPanelLayout-defined", true)
 -- itemCollectionFrame:SetAttribute("UIPanelLayout-enabled", true)
@@ -39,15 +53,15 @@ core.OpenWardrobe = function()
 	core.wardrobeFrame:Show()
 end
 
-DressUpFrame:HookScript("OnShow", function()
-    wardrobeFrame:ClearAllPoints()
-    wardrobeFrame:SetPoint("TOPLEFT", DressUpFrame, "TOPRIGHT", 0, -12 + HEADER_HEIGHT / 2)
-    core.OpenWardrobe()
-end)
+-- DressUpFrame:HookScript("OnShow", function()
+--     wardrobeFrame:ClearAllPoints()
+--     wardrobeFrame:SetPoint("TOPLEFT", DressUpFrame, "TOPRIGHT", 0, -12 + HEADER_HEIGHT / 2)
+--     core.OpenWardrobe()
+-- end)
 
-DressUpFrame:HookScript("OnHide", function()
-    wardrobeFrame:Hide()
-end)
+-- DressUpFrame:HookScript("OnHide", function()
+--     wardrobeFrame:Hide()
+-- end)
 
 wardrobeFrame.SelectItemTab = function(self)
     -- core.wardrobeCollectionFrame:SetContainer(self)

@@ -1,0 +1,31 @@
+
+-- local itemTypeSpellID = {
+-- 	-- Melee Weapons
+-- 	["Daggers"] = 1180,
+-- 	["FistWeapons"] = 1180,
+-- 	["1HAxes"] = 1180,
+-- 	["1HSwords"] = 1180,
+-- 	["1HMaces"] = 1180,
+-- 	["2HAxes"] = 1180,
+-- 	["2HSwords"] = 1180,
+-- 	["2HMaces"] = 1180,
+-- 	["Polearms"] = 1180,
+-- 	["Staves"] = 1180,
+-- 	["FishingPoles"] = 1180,
+-- 	["MiscWeapons"] = 1180,
+-- 	-- Ranged Weapons
+-- 	["Bows"] = 1180,
+-- 	["Crossbows"] = 1180,
+-- 	["Guns"] = 1180,
+-- 	["Thrown"] = 1180,
+-- 	["Wands"] = 1180,
+-- 	-- Armor
+-- 	["Cloth"] = 1180,
+-- 	["Leather"] = 1180,
+-- 	["Mail"] = 1180,
+-- 	["Plate"] = 1180,
+-- 	["Shields"] = 1180,
+-- 	["MiscArmor"] = 1180,
+-- 	-- Junk
+-- 	["MiscJunk"] = 1180
+-- }

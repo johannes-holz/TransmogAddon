@@ -10,15 +10,14 @@ Addy = core
 -- ("( -.-)          by           =(´o.o`)=")
 -- ("o_(\")(\")      Qhoernchen (\")_(\")")	
 
-
 MyAddonDB = MyAddonDB or {}
 
 local risingAPI = "RisingAPI"
 local rAPI = LibStub(risingAPI, true)
-if not rAPI then error(folder.." missing dependency "..risingAPI.."."); return end
+if not rAPI then error(folder .. " missing dependency " .. risingAPI .. "."); return end
 rAPI:debug(false)
 
-if not rAPI.Transmog then error(folder.." missing RisingAPI transmog module."); return end
+if not rAPI.Transmog then error(folder .. " missing RisingAPI transmog module."); return end
 core.API = rAPI.Transmog
 
 core.TMOG_NPC_ID = 1010969
@@ -26,10 +25,9 @@ core.TMOG_NPC_ID = 1010969
 --"inv_jewelcrafting_nobletopaz_01"
 --"inv_misc_gem_sapphire_03"
 --"inv_enchant_shardgleamingsmall"
-local SHARDS_TEXTURE = "Interface\\Icons\\inv_misc_gem_sapphire_03"
-core.CURRENCY_ICON = SHARDS_TEXTURE
-core.CURRENCY_NAME = "Splitter der Illusion"
+core.CURRENCY_ICON = "Interface\\Icons\\inv_misc_gem_sapphire_03"
 core.CURRENCY_FAKE_ITEMID = -1337
+core.CURRENCY_NAME = "Splitter der Illusion"
 
 core.HIDDEN = "Versteckt"
 core.COSTS = "Kosten"
@@ -37,12 +35,60 @@ core.COLLECTED = "Gesammelt"
 core.APPEARANCES = "Aussehen"
 core.TRANSMOGRIFY = "Transmogrifizieren"
 core.PAGE = "Seite"
-core.ENCHANT_PREVIEW = "Verzauberungsvorschau"
 core.OPTIONS = "Optionen"
+core.ENCHANT_PREVIEW = "Verzauberungsvorschau"
+core.UNLOCKED_FILTER = "Gesammelt"
+core.INVENTORY = "Inventar"
+core.SKIN = "Skin"
+core.SKINS = "Skins"
+core.SKIN_SLOT = "Skinplatz"
+core.LOADING1 = "lädt ..." -- loading ...
+core.LOADING2 = "Gegenstand wird geladen ..." -- loading item info ....
+core.UNDRESS = "Ausziehen"
+core.PRINT = "Drucken"
+
+core.HIDE = "Verstecken"
+core.UNMOG = "Entmogrifizieren"
+core.HIDE_ALL = "Alles verstecken"
+core.UNMOG_ALL = "Alle Transmogrifikationen entfernen"
+core.RESET_ALL = "Alle Änderungen verwerfen"
+
+core.SELECT = "Auswählen"
+core.ACTIVATE = "Aktivieren"
+core.RESET = "Zurücksetzen"
+core.TRANSFER = "Transmogrifikationen transferieren"
+
+core.EQUIP = "Anziehen"
+core.RENAME = "Umbenennen"
+core.OVERWRITE = "Überschreiben"
+core.CREATE = "Erstellen"
+
+core.APPLY_TO_ITEMS = "Übernehmen" -- don't think we can fit "to skin/items" on the button in german
+core.APPLY_TO_SKIN = "Übernehmen"
+
+core.BUY_SKIN_SLOT = "Weiteren Skinplatz kaufen"
+core.EMPTY_SKIN_SLOT = "[Freier Skinplatz]"
+
+core.NEW_OUTFIT = "Neues Outfit erstellen"
+core.NO_OUTFIT = "Kein Outfit"
+core.CREATE_OUTFIT_TEXT1 = "Namen für neues Outfit eingeben:"
+core.RENAME_OUTFIT_TEXT1 = "Neuen Namen für Outfit "
+core.RENAME_OUTFIT_TEXT2 = " eingeben:"
+core.DELETE_OUTFIT_TEXT1 = "Seid ihr sicher, dass ihr Outfit "
+core.DELETE_OUTFIT_TEXT2 = " löschen wollt?"
+core.OVERWRITE_OUTFIT_TEXT1 = "Seid ihr sicher, dass ihr Outfit "
+core.OVERWRITE_OUTFIT_TEXT2 = " überschreiben wollt?"
 
 core.CURRENCY_TOOLTIP_TEXT1 = "Splitter der Illusion werden für besondere Transmogrifizierungen benötigt."
 core.CURRENCY_TOOLTIP_TEXT2 = "Insgesamt habt ihr aktuell:"
 core.CURRENCY_TOOLTIP_TEXT3 = "Diese Woche wurden bereits verdient:"
+core.CURRENCY_TOOLTIP_TEXT4 = "Aktuell kann die Transmoginformation nicht abgefragt werden."
+core.CURRENCY_TOOLTIP_TEXT5 = "Gesamt:"
+core.CURRENCY_TOOLTIP_TEXT6 = "Schlachtzüge:"
+core.CURRENCY_TOOLTIP_TEXT7 = "Dungeonbrowser:"
+core.CURRENCY_TOOLTIP_TEXT8 = "Arena:"
+core.CURRENCY_TOOLTIP_TEXT9 = "Schlachtfelder:"
+
 core.TRANSMOG_NAME = "Transmogrifikation"
 core.APPEARANCE_NOT_COLLECTED_TEXT_A = "Ihr habt dieses Aussehen noch nicht gesammelt." -- "You haven't collected this appearance"
 core.APPEARANCE_NOT_COLLECTED_TEXT_B = "Ihr habt dieses Aussehen gesammelt, aber nicht von diesem Gegenstand." --"You've collected this appearance, but not from this item"
@@ -62,6 +108,10 @@ core.TRANSMOG_TOOLTIP_CURRENT_SKIN = "Aktuell ausgewählt:"
 core.TRANSMOG_TOOLTIP_REMOVE_SKIN = "Leerer Slot"
 core.TRANSMOG_TOOLTIP_COSTS = core.COSTS .. ":"
 
+core.CAN_NOT_PREVIEW = "Aktuelle Waffen sind in Vorschau nicht anzeigbar" -- "Can not preview current melee weapons together."
+core.OH_WILL_BE_HIDDEN = "OH wird von aktueller MH versteckt werden" -- "Off hand will be hidden by current main hand appearance."
+core.OH_APPEARANCE_WONT_BE_SHOWN = "Nebenhandaussehen wird nicht angezeigt" -- "This off hand appearance will not be shown while in this slot."
+
 core.MINIMAP_TOOLTIP_TEXT1 = "Linksklick: Sammlung öffnen" -- "Left-click: Open Wardrobe"
 core.MINIMAP_TOOLTIP_TEXT2 = "Umschalt + Linksklick: Transmogfenster öffnen" -- "Shift + Left-click: Open Transmog Interface"
 core.MINIMAP_TOOLTIP_TEXT3 = "Rechtsklick: Transmogsichtbarkeit umschalten" -- "Right-click: Toggle through visibility options"
@@ -71,26 +121,65 @@ core.TRANSMOG_STATUS_UNKNOWN = "Transmog Sichtbarkeit konnte nicht abgefragt wer
 
 core.SHOW_ITEMS_UNDER_SKIN_TOOLTIP_TEXT = "Aktivieren, um anzuzeigen, wie der Skin in Verbindung mit der aktuellen Ausrüstung aussehen wird."
 
-core.BUY_SKIN_TEXT = "Seid Ihr sicher, dass Ihr einen weiteren Skin kaufen möchtet?"
+core.BUY_SKIN_TEXT = "Seid Ihr sicher, dass Ihr einen weiteren Skinplatz kaufen möchtet?"
 core.NO_SKIN_COSTS_ERROR = "Skin Preis konnte nicht abgefragt werden"
 
-core.RENAME_SKIN_TEXT1 = "Neuen Skinnamen für ["
-core.RENAME_SKIN_TEXT2 = "] eingeben:"
+core.RENAME_SKIN_TEXT1 = "Neuen Namen für Skin"
+core.RENAME_SKIN_TEXT2 = "eingeben:"
 
-core.RESET_SKIN_TEXT1 = "Seid ihr euch sicher, dass ihr  ["
-core.RESET_SKIN_TEXT2 = "] zurücksetzen wollt?"
+core.CREATE_SKIN_TEXT1 = "Name für neuen Skin in Skinplatz "
+core.CREATE_SKIN_TEXT2 = " eingeben:"
+
+core.RESET_SKIN_TEXT1 = "Seid ihr euch sicher, dass ihr Skin"
+core.RESET_SKIN_TEXT2 = "zurücksetzen wollt?\nDadurch werden alle Transmogrifikationen auf dem Skin unwiderruflich gelöscht."
 
 --"Die Transmogrifizierung aller ausgerüsteten Gegenstände wird von den Gegenständen entfernt und auf den Skin übertragen. Bereits gezahlte Kosten werden verrechnet. Existiert bereits eine Transmogrifikation auf einem Ausrüstungsplatz des Skins, so wird diese nicht überschrieben. Fortfahren?"
 core.VISUALS_TO_SKIN_TEXT1 = "Diese Aktion entfernt folgende Transmogrifikationen von eurer Ausrüstung und überträgt sie auf den Skin"
 core.VISUALS_TO_SKIN_TEXT2 = "Die bereits gezahlten Kosten sind im Preis verrechnet. Fortfahren?"
+
+core.APPLY_TO_INVENTORY_TEXT1 = "Auf eure ausgerüsteten Gegenstände"
+core.APPLY_TO_INVENTORY_TEXT2 = "werden folgende Transmogrifikationen angewandt. Fortfahren?"
+core.APPLY_TO_SKIN_TEXT1 = "Auf den Skin"
 
 core.SKIN_NEEDS_ACTIVATION = "Skin muss benannt werden, bevor er benutzt werden kann."
 
 core.SKIN_NAME_TOO_SHORT = "Skinnamen müssen mindestens ein Zeichen lang sein."
 core.SKIN_NAME_INVALID_CHARACTERS = "Skinname enthält ungültige Zeichen."
 
+core.OUTFIT_NAME_TOO_SHORT = "Outfitnamen müssen mindestens ein Zeichen lang sein."
+core.OUTFIT_NAME_INVALID_CHARACTERS = "Outfitname enthält ungültige Zeichen."
+core.OUTFIT_NAME_ALREADY_IN_USE = "Es gibt bereits ein Outfit mit diesem Namen."
+
 core.UNLOCKED_BAR_TOOLTIP_TEXT1 = "Anzahl gesammelter Aussehen, die den gewählten Filtern entsprechen." -- "Unlocked Appearances for current selection. The upper bound includes items that might not be collectable for this character."
 core.SEARCHBOX_TOOLTIP_TEXT1 = "Filtert Auswahl nach Gegenstandsname oder ID." -- "Filter items by name or item ID.\nSearch by name only works for cached items."
+
+core.SELECT_SKIN = "Skin auswählen"
+
+core.APPLY_ERROR1 = "Transmogkosten oder Splitterguthaben konnten nicht abgefragt werden."
+core.APPLY_ERROR2 = "Ihr habt nicht genug Geld oder Splitter der Illusion."
+
+core.NO_SLOT_SELECTED_TEXT = "Gegenstandsplatz auswählen, um verfügbare Transmogrifikationen anzuzeigen."
+
+core.SLOT_NAMES = {
+	HeadSlot = "Kopf",
+	ShoulderSlot = "Schultern",
+	BackSlot = "Rücken",
+	ChestSlot = "Brust",
+	ShirtSlot = "Hemd",
+	TabardSlot = "Wappenrock",
+	WristSlot = "Handgelenke",
+	HandsSlot = "Hände",
+	WaistSlot = "Taille",
+	LegsSlot = "Beine",
+	FeetSlot = "Füße",
+	MainHandSlot = "Waffenhand",
+	ShieldHandWeaponSlot = "Schildhandwaffe",
+	OffHandSlot = "Nebenhand",
+	--SecondaryHandSlot = "Schildhand",
+	--MainHandEnchantSlot = "Verzauberung Waffenhand",
+	--SecondaryHandEnchantSlot = "Verzauberung Schildhand",
+	RangedSlot = "Distanz",
+}
 
 core.CONFIG_NAMES = {
 	[1] = "An",
@@ -98,12 +187,166 @@ core.CONFIG_NAMES = {
 	[3] = "Aus",
 }
 
+-- The following tables do not need to be localized manually! We autopopulate those with GetAuctionItemClasses() and GetAuctionItemSubClasses()
+core.ITEM_CLASSES = {
+	ARMOR = "Rüstung",
+	WEAPON = "Waffe",
+	MISC = "Verschiedenes",
+	TRADE_GOODS = "Handwerkswaren",
+	CONSUMABLE = "Verbrauchbar",
+	QUEST = "Quest",
+}
+
+core.ITEM_SUB_CLASSES = {
+	CLOTH = "Stoff",
+	LEATHER = "Leder",
+	MAIL = "Schwere Rüstung",
+	PLATE = "Platte",
+	MISC = "Verschiedenes",
+	-- WEAPON_MISC = "Verschiedenes",
+	SHIELDS = "Schilde",
+	DAGGERS = "Dolche",
+	FIST_WEAPONS = "Faustwaffen",
+	["1H_AXES"] = "Einhandäxte",
+	["1H_MACES"] = "Einhandstreitkolben",
+	["1H_SWORDS"] = "Einhandschwerter",
+	POLEARMS = "Stangenwaffen",
+	STAVES = "Stäbe",
+	["2H_AXES"] = "Zweihandäxte",
+	["2H_MACES"] = "Zweihandstreitkolben",
+	["2H_SWORDS"] = "Zweihandschwerter",
+	FISHING_POLES = "Angelruten",
+	BOWS = "Bogen",
+	CROSSBOWS = "Armbrüste",
+	GUNS = "Schusswaffen",
+	THROWN = "Wurfwaffen",
+	WANDS = "Zauberstäbe",
+	JUNK = "Plunder",
+	MEAT = "Fleisch",
+	CONSUMABLE = "Verbrauchbar",
+	QUEST = "Quest",
+}
+
+core.CATEGORIES = {
+	ARMOR_CLOTH = "Rüstung Stoff",
+	ARMOR_LEATHER = "Rüstung Leder",
+	ARMOR_MAIL = "Rüstung Schwere Rüstung",
+	ARMOR_PLATE = "Rüstung Platte",
+	ARMOR_MISC = "Rüstung Verschiedenes",
+	ARMOR_SHIELDS = "Rüstung Schilde",
+	WEAPON_DAGGERS = "Waffe Dolche",
+	WEAPON_FIST_WEAPONS = "Waffe Faustwaffen",
+	WEAPON_1H_AXES = "Waffe Einhandäxte",
+	WEAPON_1H_MACES = "Waffe Einhandstreitkolben",
+	WEAPON_1H_SWORDS = "Waffe Einhandschwerter",
+	WEAPON_POLEARMS = "Waffe Stangenwaffen",
+	WEAPON_STAVES = "Waffe Stäbe",
+	WEAPON_2H_AXES = "Waffe Zweihandäxte",
+	WEAPON_2H_MACES = "Waffe Zweihandstreitkolben",
+	WEAPON_2H_SWORDS = "Waffe Zweihandschwerter",
+	WEAPON_FISHING_POLES = "Waffe Angelruten",
+	WEAPON_MISC = "Waffe Verschiedenes",
+	WEAPON_BOWS = "Waffe Bogen",
+	WEAPON_CROSSBOWS = "Waffe Armbrüste",
+	WEAPON_GUNS = "Waffe Schusswaffen",
+	WEAPON_THROWN = "Waffe Wurfwaffen",
+	WEAPON_WANDS = "Waffe Zauberstäbe",
+	MISC_JUNK = "Verschiedenes Plunder",
+	-- Troll Types
+	TRADE_GOODS_MEAT = "Handwerkswaren Fleisch",
+	CONSUMABLE_CONSUMABLE = "Verbrauchbar Verbrauchbar",
+	QUEST_QUEST = "Quest Quest",
+}
+
+do
+	local classes = { GetAuctionItemClasses() }
+	core.ITEM_CLASSES = {
+		ARMOR = classes[2],
+		WEAPON = classes[1],
+		MISC = classes[11],
+		TRADE_GOODS = classes[6],
+		CONSUMABLE = classes[4],
+		QUEST = classes[12],
+	}
+
+	local weaponSubClasses, armorSubClasses, miscSubClasses = { GetAuctionItemSubClasses(1) }, { GetAuctionItemSubClasses(2) }, { GetAuctionItemSubClasses(11) }
+	local tradeGoodsSubClasses = { GetAuctionItemSubClasses(6) }
+	core.ITEM_SUB_CLASSES = {
+		CLOTH = armorSubClasses[2],
+		LEATHER = armorSubClasses[3],
+		MAIL = armorSubClasses[4],
+		PLATE = armorSubClasses[5],
+		MISC = armorSubClasses[1], -- there exists armor and weapon misc subtype in english and german, hopefully it's the same in every language ._.
+		-- WEAPON_MISC = weaponSubClasses[12],
+		SHIELDS = armorSubClasses[6],
+		DAGGERS = weaponSubClasses[13],
+		FIST_WEAPONS = weaponSubClasses[11],
+		["1H_AXES"] = weaponSubClasses[1],
+		["1H_MACES"] = weaponSubClasses[5],
+		["1H_SWORDS"] = weaponSubClasses[8],
+		POLEARMS = weaponSubClasses[7],
+		STAVES = weaponSubClasses[10],
+		["2H_AXES"] = weaponSubClasses[2],
+		["2H_MACES"] = weaponSubClasses[6],
+		["2H_SWORDS"] = weaponSubClasses[9],
+		FISHING_POLES = weaponSubClasses[17],
+		BOWS = weaponSubClasses[3],
+		CROSSBOWS = weaponSubClasses[15],
+		GUNS = weaponSubClasses[4],
+		THROWN = weaponSubClasses[14],
+		WANDS = weaponSubClasses[16],
+		JUNK = miscSubClasses[1],
+		-- Troll Types
+		MEAT = tradeGoodsSubClasses[5],
+		CONSUMABLE = classes[4], -- weird case. subclass is also consummable (the same as class), but that subclass does not get listed in AuctionSubClasses
+		QUEST = classes[12], -- same as above
+	}
+
+	core.CATEGORIES = {
+		ARMOR_CLOTH = core.ITEM_CLASSES.ARMOR .. " " .. core.ITEM_SUB_CLASSES.CLOTH,
+		ARMOR_LEATHER = core.ITEM_CLASSES.ARMOR .. " " .. core.ITEM_SUB_CLASSES.LEATHER,
+		ARMOR_MAIL = core.ITEM_CLASSES.ARMOR .. " " .. core.ITEM_SUB_CLASSES.MAIL,
+		ARMOR_PLATE = core.ITEM_CLASSES.ARMOR .. " " .. core.ITEM_SUB_CLASSES.PLATE,
+		ARMOR_MISC = core.ITEM_CLASSES.ARMOR .. " " .. core.ITEM_SUB_CLASSES.MISC,
+		ARMOR_SHIELDS = core.ITEM_CLASSES.ARMOR .. " " .. core.ITEM_SUB_CLASSES.SHIELDS,
+		WEAPON_DAGGERS = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES.DAGGERS,
+		WEAPON_FIST_WEAPONS = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES.FIST_WEAPONS,
+		WEAPON_1H_AXES = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES["1H_AXES"],
+		WEAPON_1H_MACES = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES["1H_MACES"],
+		WEAPON_1H_SWORDS = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES["1H_SWORDS"],
+		WEAPON_POLEARMS = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES.POLEARMS,
+		WEAPON_STAVES = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES.STAVES,
+		WEAPON_2H_AXES = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES["2H_AXES"],
+		WEAPON_2H_MACES = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES["2H_MACES"],
+		WEAPON_2H_SWORDS = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES["2H_SWORDS"],
+		WEAPON_FISHING_POLES = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES.FISHING_POLES,
+		WEAPON_MISC = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES.MISC,
+		WEAPON_BOWS = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES.BOWS,
+		WEAPON_CROSSBOWS = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES.CROSSBOWS,
+		WEAPON_GUNS = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES.GUNS,
+		WEAPON_THROWN = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES.THROWN,
+		WEAPON_WANDS = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES.WANDS,
+		MISC_JUNK = core.ITEM_CLASSES.MISC .. " " .. core.ITEM_SUB_CLASSES.JUNK,
+		-- Troll Types
+		TRADE_GOODS_MEAT = core.ITEM_CLASSES.TRADE_GOODS .. " " .. core.ITEM_SUB_CLASSES.MEAT,
+		CONSUMABLE_CONSUMABLE = core.ITEM_CLASSES.CONSUMABLE .. " " .. core.ITEM_SUB_CLASSES.CONSUMABLE,
+		QUEST_QUEST = core.ITEM_CLASSES.QUEST .. " " .. core.ITEM_SUB_CLASSES.QUEST,
+	}
+
+	core.CATEGORY_DISPLAY_NAME = {
+		[core.CATEGORIES.TRADE_GOODS_MEAT] = core.ITEM_SUB_CLASSES.MEAT,
+	}
+end
+
+-- hex colors are encoded as "AARRGGBB" for string formatting
 core.mogTooltipTextColor = { ["r"] = 0xff / 255, ["g"] = 0x9c / 255, ["b"] = 0xe6 / 255, ["a"] = 1, hex = "FFFF9CE6"}
 core.skinTextColor = { ["r"] = 0x9c / 255, ["g"] = 0xe6 / 255, ["b"] = 0xff / 255, ["a"] = 1, hex = "FF9CE6FF" }
 core.setItemTooltipTextColor = { ["r"] = 1, ["g"] = 1, ["b"] = 0.6, ["a"] = 1 }
 core.setItemMissingTooltipTextColor = { ["r"] = 0.5, ["g"] = 0.5, ["b"] = 0.5, ["a"] = 1 }
 core.bonusTooltipTextColor = { ["r"] = 0, ["g"] = 1, ["b"] = 0, ["a"] = 1 }
-core.appearanceNotCollectedTooltipColor = { r = 0.30, g = 0.52, b = 0.90, a = 1, hex = "4D85E6FF" } 	--Royal Blue 
+core.appearanceNotCollectedTooltipColor = { r = 0.30, g = 0.52, b = 0.90, a = 1, hex = "FF4D85E6" } 	--Royal Blue 
+core.greyTextColor = { r = 0.53, g = 0.62, b = 0.62, a = 1, hex = "FF889D9D"}
+core.yellowTextColor = { r = 1, g = 242 / 255, b = 15 / 255, a = 1, hex = "FFfff30f"}
 
 local listeners = {}
 local RegisterListener, UpdateListeneres
@@ -115,6 +358,7 @@ local SetCosts, SetSlotCostsAndReason, SetSkinCosts, SetCurrentChanges, SetCurre
 
 ------------------- Data we modify through Setters, that cause Listening Frames to update -----------------------------------
 
+-- MyAddonDB.currentChanges = MyAddonDB.currentChanges or {} -- Get reset on Login and all the time atm., so no point in saving it in DB. Would have to save per character anyways
 local balance = {}
 local costs = {} -- copper = 0, points = 0, 
 local skinCosts = {}
@@ -128,10 +372,7 @@ local config = nil
 
 local atTransmogrifier -- used in e.g. ItemTab to get different behaviour depending wether we are using it in TransmogFrame or WardrobeFrame
 
-MyAddonDB.sets = MyAddonDB.sets or {}
-MyAddonDB.currentChanges = MyAddonDB.currentChanges or {} -- Get reset on Login and all the time atm., so no point in saving it in DB. Would have to save per character anyways
-
-------------------- Updoots (for speed or simply for better readability) ------------------------
+------------------- Updoots (for speed or for better readability) ------------------------
 local GetCoinTextureStringFull = core.GetCoinTextureStringFull
 local API = core.API
 local Length = core.Length
@@ -150,26 +391,26 @@ local GetInventoryItemID = core.GetInventoryItemID
 local GetInventoryVisualID = core.GetInventoryVisualID
 local GetContainerVisualID = core.GetContainerVisualID
 
-
+------------------------------------------------------------------------------------------
 
 -- Even tho we save the collection status of every item, we still need to ask the server what items are available for a specific slot
 core.availableMogs = {
-		["HeadSlot"] = {},
-		["ShoulderSlot"] = {},
-		["BackSlot"] = {},
-		["ChestSlot"] = {},
-		["ShirtSlot"] = {},
-		["TabardSlot"] = {},
-		["WristSlot"] = {},
-		["HandsSlot"] = {},
-		["WaistSlot"] = {},
-		["LegsSlot"] = {},
-		["FeetSlot"] = {},
-		["MainHandSlot"] = {},
-		["MainHandEnchantSlot"] = {},
-		["SecondaryHandSlot"] = {},
-		["SecondaryHandEnchantSlot"] = {},
-		["RangedSlot"] = {},
+	["HeadSlot"] = {},
+	["ShoulderSlot"] = {},
+	["BackSlot"] = {},
+	["ChestSlot"] = {},
+	["ShirtSlot"] = {},
+	["TabardSlot"] = {},
+	["WristSlot"] = {},
+	["HandsSlot"] = {},
+	["WaistSlot"] = {},
+	["LegsSlot"] = {},
+	["FeetSlot"] = {},
+	["MainHandSlot"] = {},
+	["MainHandEnchantSlot"] = {},
+	["SecondaryHandSlot"] = {},
+	["SecondaryHandEnchantSlot"] = {},
+	["RangedSlot"] = {},
 }
 
 core.availableMogsUpdateNeeded = {}
@@ -240,7 +481,7 @@ local slotToID = {
 	["SecondaryHandEnchantSlot"] = -17,
 	["RangedSlot"] = 18,
 }
-
+core.slotToID = slotToID
 
 local idToSlot = {
 	[1] = "HeadSlot",
@@ -262,88 +503,43 @@ local idToSlot = {
 }
 core.idToSlot = idToSlot
 
---These IDs are referring to the inventoryType in the itemdata , not to be confused with itemSlotIDs(inventory)
-slotToIDs = {
-	["HeadSlot"] = {1},
-	["ShoulderSlot"] = {3},
-	["BackSlot"] = {16},
-	["ChestSlot"] = {5, 20}, --chest, robe
-	["ShirtSlot"] = {4},
-	["TabardSlot"] = {19},
-	["WristSlot"] = {9},
-	["HandsSlot"] = {10},
-	["WaistSlot"] = {6},
-	["LegsSlot"] = {7},
-	["FeetSlot"] = {8},
-	["MainHandSlot"] = {13, 21, 17}, --1h, mh, 2h
-	["SecondaryHandSlot"] = {13, 22, 17, 14, 23}, --1h, oh, 2h, shields, holdable/tomes --core.Contains twohand for warris?
-	["ShieldHandWeaponSlot"] = {13, 22, 17}, -- 1H, OH, 2H
-	["OffHandSlot"] = {14, 23}, -- shields, holdables
-	["RangedSlot"] = {15, 25, 26}, --bow, thrown, ranged right(gun, wands, crossbow)
-}
-
--- geplant als weg die lokalisierten armor/waffen kategorieren zu bekommen, aber dies funktioniert nicht für alle
--- Stattdessen manuelle lokalisation oder dummy items, für die wir itemquries durchführen und dann die entsprechenden felder setzen?
-
--- TODO: We could get our localized item types from GetAuctionItemClasses(), GetAuctionItemSubClasses(classID)
--- local itemTypeSpellID = {
--- 	-- Melee Weapons
--- 	["Daggers"] = 1180,
--- 	["FistWeapons"] = 1180,
--- 	["1HAxes"] = 1180,
--- 	["1HSwords"] = 1180,
--- 	["1HMaces"] = 1180,
--- 	["2HAxes"] = 1180,
--- 	["2HSwords"] = 1180,
--- 	["2HMaces"] = 1180,
--- 	["Polearms"] = 1180,
--- 	["Staves"] = 1180,
--- 	["FishingPoles"] = 1180,
--- 	["MiscWeapons"] = 1180,
--- 	-- Ranged Weapons
--- 	["Bows"] = 1180,
--- 	["Crossbows"] = 1180,
--- 	["Guns"] = 1180,
--- 	["Thrown"] = 1180,
--- 	["Wands"] = 1180,
--- 	-- Armor
--- 	["Cloth"] = 1180,
--- 	["Leather"] = 1180,
--- 	["Mail"] = 1180,
--- 	["Plate"] = 1180,
--- 	["Shields"] = 1180,
--- 	["MiscArmor"] = 1180,
--- 	-- Junk
--- 	["MiscJunk"] = 1180
--- }
-
-
 core.slotCategories = {
-	["HeadSlot"] = {"Rüstung Stoff", "Rüstung Leder", "Rüstung Schwere Rüstung", "Rüstung Platte", "Rüstung Verschiedenes"},
-	["ShoulderSlot"] = {"Rüstung Stoff", "Rüstung Leder", "Rüstung Schwere Rüstung", "Rüstung Platte", "Rüstung Verschiedenes"},
-	["BackSlot"] = {"Rüstung Stoff"},
-	["ChestSlot"] = {"Rüstung Stoff", "Rüstung Leder", "Rüstung Schwere Rüstung", "Rüstung Platte", "Rüstung Verschiedenes"},
-	["ShirtSlot"] = {"Rüstung Verschiedenes"},
-	["TabardSlot"] = {"Rüstung Verschiedenes"},
-	["WristSlot"] = {"Rüstung Stoff", "Rüstung Leder", "Rüstung Schwere Rüstung", "Rüstung Platte", "Rüstung Verschiedenes"},
-	["HandsSlot"] = {"Rüstung Stoff", "Rüstung Leder", "Rüstung Schwere Rüstung", "Rüstung Platte", "Rüstung Verschiedenes"},
-	["WaistSlot"] = {"Rüstung Stoff", "Rüstung Leder", "Rüstung Schwere Rüstung", "Rüstung Platte", "Rüstung Verschiedenes"},
-	["LegsSlot"] = {"Rüstung Stoff", "Rüstung Leder", "Rüstung Schwere Rüstung", "Rüstung Platte", "Rüstung Verschiedenes"},
-	["FeetSlot"] = {"Rüstung Stoff", "Rüstung Leder", "Rüstung Schwere Rüstung", "Rüstung Platte", "Rüstung Verschiedenes"},
-	["MainHandSlot"] = {"Waffe Dolche", "Waffe Faustwaffen", "Waffe Einhandäxte", "Waffe Einhandstreitkolben", "Waffe Einhandschwerter",
-		"Waffe Stangenwaffen", "Waffe Stäbe", "Waffe Zweihandäxte", "Waffe Zweihandstreitkolben", "Waffe Zweihandschwerter", "Waffe Angelruten", "Waffe Verschiedenes"},
-	["SecondaryHandSlot"] = {"Rüstung Schilde", "Rüstung Verschiedenes", "Waffe Dolche", "Waffe Faustwaffen", "Waffe Einhandäxte", "Waffe Einhandstreitkolben", "Waffe Einhandschwerter",
-		"Waffe Zweihandäxte", "Waffe Zweihandstreitkolben", "Waffe Zweihandschwerter", "Waffe Verschiedenes", "Verschiedenes Plunder"},
+	["HeadSlot"] = {core.CATEGORIES.ARMOR_CLOTH, core.CATEGORIES.ARMOR_LEATHER, core.CATEGORIES.ARMOR_MAIL, core.CATEGORIES.ARMOR_PLATE, core.CATEGORIES.ARMOR_MISC},
+	["ShoulderSlot"] = {core.CATEGORIES.ARMOR_CLOTH, core.CATEGORIES.ARMOR_LEATHER, core.CATEGORIES.ARMOR_MAIL, core.CATEGORIES.ARMOR_PLATE, core.CATEGORIES.ARMOR_MISC},
+	["BackSlot"] = {core.CATEGORIES.ARMOR_CLOTH},
+	["ChestSlot"] = {core.CATEGORIES.ARMOR_CLOTH, core.CATEGORIES.ARMOR_LEATHER, core.CATEGORIES.ARMOR_MAIL, core.CATEGORIES.ARMOR_PLATE, core.CATEGORIES.ARMOR_MISC, core.CATEGORIES.MISC_JUNK},
+	["ShirtSlot"] = {core.CATEGORIES.ARMOR_MISC},
+	["TabardSlot"] = {core.CATEGORIES.ARMOR_MISC},
+	["WristSlot"] = {core.CATEGORIES.ARMOR_CLOTH, core.CATEGORIES.ARMOR_LEATHER, core.CATEGORIES.ARMOR_MAIL, core.CATEGORIES.ARMOR_PLATE, core.CATEGORIES.ARMOR_MISC},
+	["HandsSlot"] = {core.CATEGORIES.ARMOR_CLOTH, core.CATEGORIES.ARMOR_LEATHER, core.CATEGORIES.ARMOR_MAIL, core.CATEGORIES.ARMOR_PLATE, core.CATEGORIES.ARMOR_MISC},
+	["WaistSlot"] = {core.CATEGORIES.ARMOR_CLOTH, core.CATEGORIES.ARMOR_LEATHER, core.CATEGORIES.ARMOR_MAIL, core.CATEGORIES.ARMOR_PLATE, core.CATEGORIES.ARMOR_MISC, core.CATEGORIES.CONSUMABLE_CONSUMABLE},
+	["LegsSlot"] = {core.CATEGORIES.ARMOR_CLOTH, core.CATEGORIES.ARMOR_LEATHER, core.CATEGORIES.ARMOR_MAIL, core.CATEGORIES.ARMOR_PLATE, core.CATEGORIES.ARMOR_MISC},
+	["FeetSlot"] = {core.CATEGORIES.ARMOR_CLOTH, core.CATEGORIES.ARMOR_LEATHER, core.CATEGORIES.ARMOR_MAIL, core.CATEGORIES.ARMOR_PLATE, core.CATEGORIES.ARMOR_MISC},
+	["MainHandSlot"] = {core.CATEGORIES.WEAPON_DAGGERS, core.CATEGORIES.WEAPON_FIST_WEAPONS, core.CATEGORIES.WEAPON_1H_AXES, core.CATEGORIES.WEAPON_1H_MACES, core.CATEGORIES.WEAPON_1H_SWORDS, core.CATEGORIES.WEAPON_POLEARMS,
+						core.CATEGORIES.WEAPON_STAVES, core.CATEGORIES.WEAPON_2H_AXES, core.CATEGORIES.WEAPON_2H_MACES, core.CATEGORIES.WEAPON_2H_SWORDS, core.CATEGORIES.WEAPON_FISHING_POLES, core.CATEGORIES.WEAPON_MISC},
 
-	["ShieldHandWeaponSlot"] = {"Waffe Dolche", "Waffe Faustwaffen", "Waffe Einhandäxte", "Waffe Einhandstreitkolben", "Waffe Einhandschwerter",
-		"Waffe Zweihandäxte", "Waffe Zweihandstreitkolben", "Waffe Zweihandschwerter", "Waffe Verschiedenes", "Verschiedenes Plunder"},
-	["OffHandSlot"] = {"Rüstung Schilde", "Rüstung Verschiedenes"},
+	["SecondaryHandSlot"] = {core.CATEGORIES.ARMOR_SHIELDS, core.CATEGORIES.ARMOR_MISC, core.CATEGORIES.WEAPON_DAGGERS, core.CATEGORIES.WEAPON_FIST_WEAPONS, core.CATEGORIES.WEAPON_1H_AXES, core.CATEGORIES.WEAPON_1H_MACES,
+							core.CATEGORIES.WEAPON_1H_SWORDS, core.CATEGORIES.WEAPON_2H_AXES, core.CATEGORIES.WEAPON_2H_MACES, core.CATEGORIES.WEAPON_2H_SWORDS, core.CATEGORIES.WEAPON_MISC, core.CATEGORIES.MISC_JUNK,
+							core.CATEGORIES.TRADE_GOODS_MEAT},
 
-	["RangedSlot"] = {"Waffe Bogen", "Waffe Armbrüste",	"Waffe Schusswaffen", "Waffe Wurfwaffen", "Waffe Zauberstäbe"},
+	["ShieldHandWeaponSlot"] = {core.CATEGORIES.WEAPON_DAGGERS, core.CATEGORIES.WEAPON_FIST_WEAPONS, core.CATEGORIES.WEAPON_1H_AXES, core.CATEGORIES.WEAPON_1H_MACES, core.CATEGORIES.WEAPON_1H_SWORDS,
+		core.CATEGORIES.WEAPON_2H_AXES, core.CATEGORIES.WEAPON_2H_MACES, core.CATEGORIES.WEAPON_2H_SWORDS, core.CATEGORIES.WEAPON_MISC},
+	["OffHandSlot"] = {core.CATEGORIES.ARMOR_SHIELDS, core.CATEGORIES.ARMOR_MISC, core.CATEGORIES.MISC_JUNK, core.CATEGORIES.TRADE_GOODS_MEAT},
+
+	["RangedSlot"] = {core.CATEGORIES.WEAPON_BOWS, core.CATEGORIES.WEAPON_CROSSBOWS, core.CATEGORIES.WEAPON_GUNS, core.CATEGORIES.WEAPON_THROWN, core.CATEGORIES.WEAPON_WANDS},
 	["MainHandEnchantSlot"] = {},
 	["SecondaryHandEnchantSlot"] = {},
 }
 
+if true then -- TODO: Option to enable these?
+	tinsert(core.slotCategories.HeadSlot, core.CATEGORIES.QUEST_QUEST)
+	tinsert(core.slotCategories.BackSlot, core.CATEGORIES.QUEST_QUEST)
+	tinsert(core.slotCategories.ChestSlot, core.CATEGORIES.QUEST_QUEST)
+	tinsert(core.slotCategories.MainHandSlot, core.CATEGORIES.QUEST_QUEST)
+	tinsert(core.slotCategories.SecondaryHandSlot, core.CATEGORIES.QUEST_QUEST)
+	tinsert(core.slotCategories.OffHandSlot, core.CATEGORIES.QUEST_QUEST)
+	tinsert(core.slotCategories.RangedSlot, core.CATEGORIES.QUEST_QUEST)
+end
 
 core.GetTransmogLocationInfo = function(self, locationName)
 	if not core.API.Slots[locationName] then return end
@@ -411,7 +607,6 @@ ToTransmogLocation = function(itemSlot) --, special)
 	end
 end
 
-
 core.GetSkinSlotVisualID = function(skinID, slotID)
 	if not skinID then return end
 
@@ -419,7 +614,6 @@ core.GetSkinSlotVisualID = function(skinID, slotID)
 
 	return skins[skinID].slots[slotID]
 end
-
 
 core.GetInventorySkinID = function(inventorySlotID)
 	local locationID = ToTransmogLocation(inventorySlotID)
@@ -454,6 +648,52 @@ core.TransmogGetSlotInfo = function(itemSlot, skinID)
 	end
 
 	return itemID, visualID, skinVisualID, pendingID, pendingCostsShards, pendingCostsCopper, canTransmogrify, cannotTransmogrifyReason
+end
+
+core.GetDefaultCategory = function(itemSlot)
+	local _, class = UnitClass("player")
+	local level = UnitLevel("player")
+	local itemID = core.TransmogGetSlotInfo(itemSlot)
+	local itemCategory
+	if itemID then
+		local _, _, _, _, _, class, subclass = GetItemInfo(itemID) -- it is possible to force a situation, where equipped items are not cached for a short while
+		itemCategory = class and (class .. " " .. subclass) or nil
+	end
+
+	-- TODO: Shouldnt some of these rely on player class? clothies with wands, people who cant wear daggers ...
+	if itemSlot == "MainHandSlot" then
+		return itemCategory or core.CATEGORIES.WEAPON_DAGGERS
+	elseif itemSlot == "SecondaryHandSlot" then
+		return itemCategory or core.CATEGORIES.ARMOR_SHIELDS
+	elseif itemSlot == "ShieldHandWeaponSlot" then
+		return itemCategory or core.CATEGORIES.WEAPON_DAGGERS
+	elseif itemSlot == "OffHandSlot" then
+		return itemCategory or core.CATEGORIES.ARMOR_SHIELDS
+	elseif itemSlot == "RangedSlot" then
+		return itemCategory or core.CATEGORIES.WEAPON_BOWS
+	elseif itemSlot == "BackSlot" then
+		return core.CATEGORIES.ARMOR_CLOTH
+	elseif itemSlot == "ShirtSlot" or itemSlot == "TabardSlot" then
+		return core.CATEGORIES.ARMOR_MISC
+	else
+		if class == "PALADIN" or class == "WARRIOR" or class == "DEATHKNIGHT" then
+			if level < 40 then
+				return core.CATEGORIES.ARMOR_MAIL
+			else
+				return core.CATEGORIES.ARMOR_PLATE
+			end
+		elseif class == "SHAMAN" or class == "HUNTER" then
+			if level < 40 then
+				return core.CATEGORIES.ARMOR_LEATHER
+			else
+				return core.CATEGORIES.ARMOR_MAIL
+			end
+		elseif class == "DRUID" or class == "ROGUE" then
+			return core.CATEGORIES.ARMOR_LEATHER
+		else
+			return core.CATEGORIES.ARMOR_CLOTH
+		end
+	end
 end
 
 core.HasRangeSlot = function()
@@ -504,7 +744,7 @@ SetBalance = function(bal)
 	assert(type(bal) == "table")
 	
 	balance = core.DeepCopy(bal)
-	UpdateListeners("balance") --balanceFrame
+	UpdateListeners("balance") -- balanceFrame
 end
 
 core.GetBalance = function()
@@ -706,8 +946,8 @@ SetAvailableMogs = function(slot, items)
 	core.availableMogs[slot] = core.availableMogs[slot] or {}
 	wipe(core.availableMogs[slot])
 
-	for k, v in pairs(items) do
-		core.availableMogs[slot][v] = true
+	for _, itemID in pairs(items) do
+		core.availableMogs[slot][itemID] = true
 	end
 
 	if core.transmogFrame:IsShown() then
@@ -786,7 +1026,9 @@ core.SetSkin = function(skin, silent)
 		skins[id].slots[slotID] = itemID
 	end
 
-	if not silent then 
+	if skin.id == core.GetSelectedSkin() and not skin.name or skin.name == "" then -- If we reset our currently selected skin, flip back to inventory
+		core.SetSelectedSkin()
+	elseif not silent then 
 		UpdateListeners("selectedSkin")
 	end
 end
@@ -798,8 +1040,6 @@ SetSkinData = function(skinData)
 	-- for k, skin in pairs(skinData) do
 	-- 	core.am("setdata:", skin)
 	-- end
-
-	skins = {}
 	for _, skin in pairs(skinData) do
 		--assert blabla
 
@@ -808,9 +1048,14 @@ SetSkinData = function(skinData)
 		-- core.am("setdata:", skin)
 		-- core.am("copied data:", skins[id])
 	end
-	
-	--core.SetSelectedSkin(core.GetSelectedSkin()) -- TODO: this needs fixing
-	UpdateListeners("selectedSkin") -- TODO: is this fine?
+
+	local selectedName = core.GetSelectedSkinName()
+	if not selectedName or selectedName == "" then -- If we reset our currently selected skin, flip back to inventory
+		core.SetSelectedSkin()
+	else	
+		--core.SetSelectedSkin(core.GetSelectedSkin()) -- TODO: this needs fixing
+		UpdateListeners("selectedSkin") -- TODO: is this fine?
+	end
 end
 
 core.GetSkins = function()
@@ -933,7 +1178,7 @@ end
 local requestCounterS = 0
 core.RequestSkins = function(id)
 	API.GetSkins():next(function(skinData)
-		core.am("received skinData:", skinData)
+		-- core.am("received skinData:", skinData)
 		SetSkinData(skinData)
 		-- if id then
 		-- 	SelectSet(id)
@@ -1021,8 +1266,9 @@ core.RequestUnlocksSlot = function(slot)
 	local requestID = requestCounterUS[transmogLocation]
 	f(unpack(p)):next(function(items)
 		if requestID == requestCounterUS[transmogLocation] then
-			if itemID then
-				table.insert(items, itemID) -- We still want equipped item in our list of transmogs ...
+			-- Imo we still want our equipped item in our list of item transmogs to "deselect"? Items with the same displayID as the equipped item also get hidden :/
+			if itemID and not skin then
+				table.insert(items, itemID)
 			end
 			SetAvailableMogs(slot, items)
 		else
@@ -1065,11 +1311,11 @@ core.RequestApplyCurrentChanges = function()
 		if requestID == requestCounterACC then
 			PlaySound(6555) -- 888
 			core.PlayApplyAnimations()
-			SetCurrentChanges(core.GetCurrentChanges()) -- or {}, since should be applied
+			SetCurrentChanges(core.GetCurrentChanges()) -- or just {}, since apply should have been successfull?
 		end
 	end):catch(function(err)
 		print("RequestApplyCurrentChanges: An error occured:", err.message)		
-		SetCurrentChanges(core.GetCurrentChanges()) -- unknown number of slots might have succefully applied. clears pendings where changes went through
+		SetCurrentChanges(core.GetCurrentChanges()) -- unknown number of slots might have successfully applied. clears pendings where changes went through
 		UIErrorsFrame:AddMessage(err.message, 1.0, 0.1, 0.1, 1.0)
 	end)
 end	
@@ -1185,67 +1431,27 @@ local function canReceiveTransmog(mogTarget, mogSource, slot)
 end
 core.CanReceiveTransmog = canReceiveTransmog
 
-core.GetDefaultCategory = function(itemSlot)
-	local _, class = UnitClass("player")
-	local level = UnitLevel("player")
-	local itemID = core.TransmogGetSlotInfo(itemSlot)
-	local itemCategory
-	if itemID then
-		local class, subclass = select(6, GetItemInfo(itemID))
-		itemCategory = class.." "..subclass
-	end
-
-	if itemSlot == "MainHandSlot" then
-		return itemCategory or "Waffe Dolche"
-	elseif itemSlot == "SecondaryHandSlot" then
-		return itemCategory or "Rüstung Schilde"
-	elseif itemSlot == "ShieldHandWeaponSlot" then
-		return itemCategory or "Waffe Dolche"
-	elseif itemSlot == "OffHandSlot" then
-		return itemCategory or "Rüstung Schilde"
-	elseif itemSlot == "RangedSlot" then
-		return itemCategory or "Waffe Bogen"
-	elseif itemSlot == "BackSlot" then
-		return "Rüstung Stoff"
-	elseif itemSlot == "ShirtSlot" or itemSlot == "TabardSlot" then
-		return "Rüstung Verschiedenes"
-	else
-		if class == "PALADIN" or class == "WARRIOR" or class == "DEATHKNIGHT" then
-			if level < 40 then
-				return "Rüstung Schwere Rüstung"
-			else
-				return "Rüstung Platte"
-			end
-		elseif class == "SHAMAN" or class == "HUNTER" then
-			if level < 40 then
-				return "Rüstung Leder"
-			else
-				return "Rüstung Schwere Rüstung"
-			end
-		elseif class == "DRUID" or class == "ROGUE" then
-			return "Rüstung Leder"
-		else
-			return "Rüstung Stoff"
-		end
-	end
-end
-
 local function canBeEnchanted(itemSlot)
 	local itemID = MyAddonDB.currentChanges[itemSlot]
 	--local itemID = GetInventoryItemID("player", GetInventorySlotInfo(itemSlot))
 	if not itemID then return false end
 	local itemSubType = select(7, GetItemInfo(itemID))
 	--core.am(itemSubType)
-	return core.Contains({"Dolche", "Faustwaffen", "Einhandäxte", "Einhandstreitkolben", "Einhandschwerter",
-		"Stangenwaffen", "Stäbe", "Zweihandäxte", "Zweihandstreitkolben", "Zweihandschwerter"}, itemSubType)	
+	return core.Contains({core.ITEM_SUB_CLASSES.DAGGERS, core.ITEM_SUB_CLASSES.FIST_WEAPONS, core.ITEM_SUB_CLASSES["1H_AXES"], core.ITEM_SUB_CLASSES["1H_MACES"], core.ITEM_SUB_CLASSES["1H_SWORDS"],
+						core.ITEM_SUB_CLASSES.POLEARMS, core.ITEM_SUB_CLASSES.STAVES, core.ITEM_SUB_CLASSES["2H_AXES"], core.ITEM_SUB_CLASSES["2H_MACES"], core.ITEM_SUB_CLASSES["2H_SWORDS"]}, itemSubType)	
 end
 
+core.HasTitanGrip = function()
+	return select(2, UnitClass("player")) == "WARRIOR" and select(5, GetTalentInfo(2, 27)) == 1
+end
 
+core.CanDualWield = function()
+	return IsSpellKnown(674)
+end
 
-local canBeTitanGripped = {["Zweihandäxte"] = true, ["Zweihandstreitkolben"] = true, ["Zweihandschwerter"] = true}
-local twoHandNoTitanGrip = {"Stangenwaffen", "Stäbe", "Angelruten"}
+local canBeTitanGripped = {[core.ITEM_SUB_CLASSES["2H_AXES"]] = true, [core.ITEM_SUB_CLASSES["2H_MACES"]] = true, [core.ITEM_SUB_CLASSES["2H_SWORDS"]] = true}
 local DUMMY_POLEARM = 20083
-local DUMMY_INVISIBLE_ONEHANDER = 45630 -- 45630 "Invisible Axe" but its the buggy cube instead, 25194 smallest knuckle duster
+local DUMMY_INVISIBLE_ONEHANDER = 45630 -- 45630 should be "Invisible Axe", but it's a debug cube model instead, 25194 is smallest knuckle duster
 
 core.EquipOffhandNext = function(model)
 	if not core.DUMMY_MODEL then
@@ -1277,7 +1483,7 @@ local function ShowMeleeWeapons(mod, mainHand, offHand)
 	
 	local mhSubType, mhInvType, ohSubType, ohInvType
 	if mainHand then
-		mhSubType, _, mhInvType = select(7, GetItemInfo(mainHand)) -- TODO: this would spout error if we dont have item cached, so this is pointless. should instead make sure iteminfo is always secured before this gets called (which we do apparently?)
+		mhSubType, _, mhInvType = select(7, GetItemInfo(mainHand)) -- TODO: this would spout an error if we dont have item cached, so this is pointless. should instead make sure iteminfo is always secured before this gets called (which we do apparently?) At least I haven't see this give an error so far
 		if not mhSubType then
 			FunctionOnItemInfo(mainHand, ShowMeleeWeapons, mod, mainHand, offHand)
 			return
@@ -1291,8 +1497,8 @@ local function ShowMeleeWeapons(mod, mainHand, offHand)
 		end
 	end
 	
-	local hasTitanGrip = select(2, UnitClass("player")) == "WARRIOR" and select(5, GetTalentInfo(2, 27)) == 1
-	local canDualWield = IsSpellKnown(674)
+	local hasTitanGrip = core.HasTitanGrip()
+	local canDualWield = core.CanDualWield()
 
 	if mainHand then
 		mod:TryOn(DUMMY_POLEARM)
@@ -1326,6 +1532,61 @@ local function ShowMeleeWeapons(mod, mainHand, offHand)
 	end
 end
 core.ShowMeleeWeapons = ShowMeleeWeapons
+
+core.ShowMeleeWeapons = function(mod, mainHand, offHand)
+	if not (mainHand or offHand) or not mod then return end
+	
+	local mhSubType, mhInvType, ohSubType, ohInvType
+	if mainHand then
+		mhSubType, _, mhInvType = select(7, GetItemInfo(mainHand)) -- TODO: this would spout an error if we dont have item cached, so this is pointless. should instead make sure iteminfo is always secured before this gets called (which we do apparently?) At least I haven't see this give an error so far
+		if not mhSubType then
+			FunctionOnItemInfo(mainHand, ShowMeleeWeapons, mod, mainHand, offHand)
+			return
+		end
+	end
+	if offHand then
+		ohSubType, _, ohInvType = select(7, GetItemInfo(offHand))
+		if not ohSubType then
+			FunctionOnItemInfo(offHand, ShowMeleeWeapons, mod, mainHand, offHand)
+			return
+		end
+	end
+	
+	local TryOn = mod.TryOnOld or mod.TryOn
+	local hasTitanGrip = core.HasTitanGrip()
+	local canDualWield = core.CanDualWield()
+
+	if mainHand then
+		TryOn(mod, DUMMY_POLEARM)
+		TryOn(mod, mainHand)
+		if offHand then
+			if ohInvType == "INVTYPE_SHIELD" or ohInvType == "INVTYPE_HOLDABLE" or ohInvType == "INVTYPE_WEAPONOFFHAND"
+				or canDualWield and (ohInvType ~= "INVTYPE_2HWEAPON" or hasTitanGrip and canBeTitanGripped[ohSubType]) then
+				core.EquipOffhandNext(mod)
+				TryOn(mod, offHand)
+			else
+				--am("MyAdddon: Cannot preview "..select(1, GetItemInfo(offHand)).." in offhand with "..select(1, GetItemInfo(mainHand)).." in mainhand.")
+				return 1
+			end
+		end
+	else
+		if (ohInvType == "INVTYPE_SHIELD" or ohInvType == "INVTYPE_HOLDABLE" or ohInvType == "INVTYPE_WEAPONOFFHAND") then
+			TryOn(mod, offHand)
+		elseif canDualWield and (ohInvType == "INVTYPE_WEAPON" or (hasTitanGrip and canBeTitanGripped[ohSubType])) then
+			if ohInvType == "INVTYPE_WEAPON" then -- trick of toggling hand on other model does not work with 1H, when nothing is equipped in mh .. 
+				TryOn(mod, DUMMY_POLEARM)
+				TryOn(mod, DUMMY_INVISIBLE_ONEHANDER)
+			else
+				core.EquipOffhandNext(mod)
+			end
+			--core.EquipOffhandNext(mod)
+			TryOn(mod, offHand)
+		else
+			--core.am("MyAdddon: Cannot preview "..select(1, GetItemInfo(offHand)).." in offhand.")
+			return 1
+		end
+	end
+end
 
 
 local CheckForInvalidSetname = function(name)
@@ -1429,7 +1690,19 @@ core.HideGossipFrame = function()
 	GossipFrameCloseButton:Hide()
 	GossipFrame:SetAlpha(0)
 	core.gossipBlocker:Show()
+	-- core.defaultGossipFrameWidth = core.defaultGossipFrameWidth or GossipFrame:GetWidth()
+	-- UIPanelWindows["GossipFrame"].width = 2000
+	-- core.gossipFramedefaultWidth = core.gossipFramedefaultWidth or UIPanelWindows.GossipFrame.width or GossipFrame:GetWidth()
+	-- GossipFrame:SetWidth(1020)
+	-- GossipFrame:SetAttribute("UIPanelLayout-" .. "width", 1020)
+	-- GossipFrame:SetAttribute("UIPanelLayout-" .. "pushable", 0)
+	-- GossipFrame:SetAttribute("UIPanelLayout-" .. "area", "center")
+	-- UIPanelWindows["GossipFrame"].width = 1020
+	-- UIPanelWindows["GossipFrame"].pushable = 0
+	-- UIPanelWindows["GossipFrame"].area = "center"
+	-- UpdateUIPanelPositions(GossipFrame)
 end
+
 
 core.gossipOpenTransmogButton = core.CreateMeATextButton(GossipFrame, 112, 24, "Transmogrify")
 core.gossipOpenTransmogButton:SetScript("OnClick", function()	
@@ -1453,8 +1726,8 @@ a:SetScript("OnEvent", function(self, event, ...)
 	if event == "PLAYER_ENTERING_WORLD" then
 		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 
-		core.InitializeFrame() -- TODO: change to work like the other frames
-		core.CreateActiveSkinDropDown(PaperDollFrame)
+		-- core.InitializeFrame() -- TODO: change to work like the other frames
+		-- core.CreateActiveSkinDropDown(PaperDollFrame)
 		
 		core.InitLDB()
 		core.RequestSkins()
@@ -1506,6 +1779,9 @@ a:SetScript("OnEvent", function(self, event, ...)
 		GossipFrame:SetAlpha(1)
 		core.gossipBlocker:Hide()
 		core.transmogFrame:Hide()
+		-- GossipFrame:SetAttribute("UIPanelLayout-" .. "area", "left")
+		-- UpdateUIPanelPositions(GossipFrame)
+		-- UIPanelWindows["GossipFrame"].width = core.defaultGossipFrameWidth
 
 	elseif event == "PLAYER_MONEY" then
 		UpdateListeners("money")

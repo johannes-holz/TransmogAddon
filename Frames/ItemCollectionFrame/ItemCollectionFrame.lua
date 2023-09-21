@@ -28,6 +28,7 @@ local itemCollectionFrame = core.itemCollectionFrame
 -- })
 
 itemCollectionFrame:EnableMouse()
+itemCollectionFrame:Hide()
 
 itemCollectionFrame.Resize = function(self)
 	self:SetHeight(self.displayFrame:GetHeight() + HEADER_HEIGHT + BOTTOM_HEIGHT)
@@ -43,6 +44,8 @@ itemCollectionFrame:SetScript("OnShow", function(self)
 
 	self:Resize()
 
+	self:SetScale(atTransmogrifier and core.transmogFrame.scale / 1.2 or 1)
+
 	self:SetBackdrop(not atTransmogrifier and BACKDROP_TOAST_12_12 or {})
 
 	core.SetShown(self.optionsDDM, not atTransmogrifier)
@@ -50,7 +53,7 @@ itemCollectionFrame:SetScript("OnShow", function(self)
 	self.searchBox:ClearAllPoints()
 	self.unlockedStatusBar:ClearAllPoints()
 
-	if not core.IsAtTransmogrifier() then
+	if not atTransmogrifier then
 		PlaySound("igCharacterInfoOpen")
 		self.slotButtons["Head"]:Click()
 		self.unlockedStatusBar:SetPoint("BOTTOM", self, "TOP", 0, 10)
@@ -62,18 +65,23 @@ itemCollectionFrame:SetScript("OnShow", function(self)
 		self.unlockedStatusBar:Hide()
 	end
 end)
-itemCollectionFrame:Hide()
-
-
 
 itemCollectionFrame:SetScript("OnHide", function(self)	
 	if not core.IsAtTransmogrifier() then
 		PlaySound("igCharacterInfoClose")
 	end
+
+	-- when slot is nil, update list does not iterate over items, so using setters here, does not cause a reapeted item iteration
+	-- probably still better to give setters "silent" option, so they don't trigger updates
 	self:SetSlotAndCategory(nil, nil)
+	-- self.enchant = nil
+	-- self.filter = {}
 	-- self:ClearData()
 	-- self.selectedSlot = nil
 	-- self.selectedCategory = nil
+	self:SetPreviewEnchant(nil)
+	self:SetUnlockedFilter(nil)
+	self.searchBox:SetText("")
 end)
 
 itemCollectionFrame.SetSlotAndCategory = function(self, slot, category, update)
@@ -89,10 +97,12 @@ itemCollectionFrame.SetSlotAndCategory = function(self, slot, category, update)
 			core.SetShown(button.selectedTexture, button.itemSlot == slot)
 		end
 	end
+
+	core.SetShown(itemCollectionFrame.noSlotSelectedText, not slot)
 	
-	UIDropDownMenu_SetText(itemCollectionFrame.itemTypeDDM, core.RemoveFirstWordInString(category or ""))
+	UIDropDownMenu_SetText(itemCollectionFrame.itemTypeDDM, core.CATEGORY_DISPLAY_NAME[category] or core.RemoveFirstWordInString(category or ""))
 	if UIDropDownMenu_GetCurrentDropDown() == itemCollectionFrame.itemTypeDDM then CloseDropDownMenus() end
-	core.UIDropDownMenu_SetEnabled(itemCollectionFrame.itemTypeDDM, slot and core.SlotCategoryCount(slot) > 1)
+	core.UIDropDownMenu_SetEnabled(itemCollectionFrame.itemTypeDDM, slot and core.slotCategories[slot] and core.Length(core.slotCategories[slot]) > 1)
 
 	itemCollectionFrame:UpdateDisplayList()
 end
@@ -113,7 +123,7 @@ for i, name in pairs(order) do
 	if name == "Head" then
 		itemCollectionFrame.slotButtons[name]:SetPoint("TOPLEFT", SIDE_PADDING, -10)
 	elseif name == "MainHand" then
-		itemCollectionFrame.slotButtons[name]:SetPoint("TOPLEFT", itemCollectionFrame.slotButtons[order[i - 1]], "TOPRIGHT", BUTTON_SPACING_WIDE, 0) -- TODO: wtf is this not working
+		itemCollectionFrame.slotButtons[name]:SetPoint("TOPLEFT", itemCollectionFrame.slotButtons[order[i - 1]], "TOPRIGHT", BUTTON_SPACING_WIDE, 0)
 	else	
 		itemCollectionFrame.slotButtons[name]:SetPoint("TOPLEFT", itemCollectionFrame.slotButtons[order[i - 1]], "TOPRIGHT", BUTTON_SPACING, 0)
 	end
@@ -219,6 +229,15 @@ itemCollectionFrame.pageText:SetJustifyV("MIDDLE")
 
 ------------------------------------------------------
 
+itemCollectionFrame.noSlotSelectedText = itemCollectionFrame:CreateFontString()
+itemCollectionFrame.noSlotSelectedText:SetFontObject(GameFontNormal)
+itemCollectionFrame.noSlotSelectedText:SetPoint("CENTER", itemCollectionFrame.displayFrame, "CENTER", 0, 0)
+itemCollectionFrame.noSlotSelectedText:SetJustifyH("CENTER")
+itemCollectionFrame.noSlotSelectedText:SetJustifyV("MIDDLE")
+itemCollectionFrame.noSlotSelectedText:SetText(core.NO_SLOT_SELECTED_TEXT)
+
+------------------------------------------------------
+
 itemCollectionFrame.model = core:CreateWardrobeModelFrame(itemCollectionFrame)
 itemCollectionFrame.model:Hide()
 ------------------------------------------------------
@@ -249,19 +268,19 @@ itemCollectionFrame.UpdateMannequins = function(self)
 			mannequin:SetPosition(0, 0, 0)
 			mannequin:Hide()
 		else
-			local _, _, _, class, subClass = core.GetItemData(itemID)
 			mannequin:Show()
 			mannequin:SetDisplayMode(self.visualUnlocked[itemID] == 1)
 
 			mannequin:SetPosition(pos[1], pos[2], pos[3])
 			mannequin:SetFacing(pos[4])
+			local _, _, _, class, subClass = core.GetItemData(itemID)
 			if class == 2 and subClass == 2 then mannequin:SetFacing(-pos[4]) end -- Bows
 
 			mannequin:Undress()			
-			mannequin:TryOn(itemID) --"item:"..itemID..":"..enchantID -- MannequinFrame displays chosen enchant itself
+			mannequin:TryOn(itemID, slot) --"item:"..itemID..":"..enchantID -- MannequinFrame displays chosen enchant itself
 		end
 
-		if slot == "MainHandSlot" then DEB(mannequin) end
+		-- if slot == "MainHandSlot" then DEB(mannequin) end -- Was used for tests showing weapons with greyed out model
 	end
 end
 
@@ -307,7 +326,7 @@ local Mannequin_OnMouseDown = function(self, button)
 			--core.EquipOffhandNext(DressUpModel)
 			--if not DressUpFrame:IsShown() then DressUpFrame:Show() end
 			--DressUpModel:TryOn(itemID)
-			DressUpItemLink(itemID)
+			DressUpItemLink(itemCollectionFrame.enchant and ("item:" .. itemID .. ":" .. itemCollectionFrame.enchant) or itemID)
 			--DressUpModel:TryOn("item:"..itemID..":3789")
 			if itemCollectionFrame.model then
 				itemCollectionFrame.model:Undress()
@@ -340,7 +359,7 @@ local TooltipAddItemLineHelper = function(mannequin, itemID)
 	local itemName, itemLink = GetItemInfo(itemID)
 	-- local tmpItemType, _, invType = select(7, GetItemInfo(itemID))
 	if not itemLink then core.FunctionOnItemInfoUnique(itemID, mannequin:GetScript("OnEnter"), mannequin) end
-	local leftText = (itemCount == selected and "> " or "- ") .. core.GetTextureString(GetItemIcon(itemID)) .. " " .. (core.LinkToColoredString(itemLink) --[[and (itemLink .. " (" .. tmpItemType .. ", " .. invType .. ")")]] or "Loading ItemInfo ...")
+	local leftText = (itemCount == selected and "> " or "- ") .. core.GetTextureString(GetItemIcon(itemID)) .. " " .. (core.LinkToColoredString(itemLink) --[[and (itemLink .. " (" .. tmpItemType .. ", " .. invType .. ")")]] or core.LOADING2)
 
 	if unlocked == 1 and itemLink then
 		GameTooltip:AddDoubleLine(leftText, core.COLLECTED, nil, nil, nil, 0.1, 1, 0.1)
@@ -435,8 +454,8 @@ itemCollectionFrame.SetPage = function(self, num)
 	end
 
 	itemCollectionFrame.pageText:SetText(core.PAGE .. " " .. self.page .. " / " .. highestPage)
-	core:SetEnabled(self.pageDownButton, self.page > lowestPage)
-	core:SetEnabled(self.pageUpButton, self.page < highestPage)
+	core.SetEnabled(self.pageDownButton, self.page > lowestPage)
+	core.SetEnabled(self.pageUpButton, self.page < highestPage)
 	
 	self:UpdateMannequins()
 end
@@ -481,10 +500,17 @@ itemCollectionFrame.GoToItem = function(self, itemID)
 	self:SetPage(page)
 end
 
+
+-- Either clear enchant, filters, etc. OnHide or we have to change them to save in or per parent frame
 itemCollectionFrame.SetPreviewEnchant = function(self, enchantID)
-	self.enchant = enchantID
-	
+	self.enchant = enchantID	
 	self:UpdateMannequins()
+end
+
+itemCollectionFrame.filter = {}
+itemCollectionFrame.SetUnlockedFilter = function(self, filterStatus)
+	self.filter.unlocked = filterStatus
+	self:UpdateDisplayList()
 end
 
 
@@ -528,35 +554,90 @@ local slotItemTypes = {
 }
 
 local typeToClassSubclass = {
-	["Rüstung Stoff"] = {4, 1},
-	["Rüstung Leder"] = {4, 2},
-	["Rüstung Schwere Rüstung"] = {4, 3},
-	["Rüstung Platte"] = {4, 4},
-	["Rüstung Verschiedenes"] = {4, 0},
-	["Waffe Dolche"] = {2, 15},
-	["Waffe Faustwaffen"] = {2, 13},
-	["Waffe Einhandäxte"] = {2, 0},
-	["Waffe Einhandstreitkolben"] = {2, 4},
-	["Waffe Einhandschwerter"] = {2, 7},
-	["Waffe Stangenwaffen"] = {2, 6},
-	["Waffe Stäbe"] = {2, 10},
-	["Waffe Zweihandäxte"] = {2, 1},
-	["Waffe Zweihandstreitkolben"] = {2, 5},
-	["Waffe Zweihandschwerter"] = {2, 8},
-	["Waffe Angelruten"] = {2, 20},
-	["Waffe Verschiedenes"] = {2, 14},
-	["Rüstung Schilde"] = {4, 6},
-	["Verschiedenes Plunder"] = {15, 0},
-	["Waffe Bogen"] = {2, 2},
-	["Waffe Armbrüste"] = {2, 18},
-	["Waffe Schusswaffen"] = {2, 3},
-	["Waffe Wurfwaffen"] = {2, 16},
-	["Waffe Zauberstäbe"] = {2, 19},
+	[core.CATEGORIES.ARMOR_CLOTH] = {4, 1},
+	[core.CATEGORIES.ARMOR_LEATHER] = {4, 2},
+	[core.CATEGORIES.ARMOR_MAIL] = {4, 3},
+	[core.CATEGORIES.ARMOR_PLATE] = {4, 4},
+	[core.CATEGORIES.ARMOR_MISC] = {4, 0},
+	[core.CATEGORIES.ARMOR_SHIELDS] = {4, 6},
+	[core.CATEGORIES.WEAPON_DAGGERS] = {2, 15},
+	[core.CATEGORIES.WEAPON_FIST_WEAPONS] = {2, 13},
+	[core.CATEGORIES.WEAPON_1H_AXES] = {2, 0},
+	[core.CATEGORIES.WEAPON_1H_MACES] = {2, 4},
+	[core.CATEGORIES.WEAPON_1H_SWORDS] = {2, 7},
+	[core.CATEGORIES.WEAPON_POLEARMS] = {2, 6},
+	[core.CATEGORIES.WEAPON_STAVES] = {2, 10},
+	[core.CATEGORIES.WEAPON_2H_AXES] = {2, 1},
+	[core.CATEGORIES.WEAPON_2H_MACES] = {2, 5},
+	[core.CATEGORIES.WEAPON_2H_SWORDS] = {2, 8},
+	[core.CATEGORIES.WEAPON_FISHING_POLES] = {2, 20},
+	[core.CATEGORIES.WEAPON_MISC] = {2, 14},
+	[core.CATEGORIES.MISC_JUNK] = {15, 0},
+	[core.CATEGORIES.WEAPON_BOWS] = {2, 2},
+	[core.CATEGORIES.WEAPON_CROSSBOWS] = {2, 18},
+	[core.CATEGORIES.WEAPON_GUNS] = {2, 3},
+	[core.CATEGORIES.WEAPON_THROWN] = {2, 16},
+	[core.CATEGORIES.WEAPON_WANDS] = {2, 19},
+	[core.CATEGORIES.TRADE_GOODS_MEAT] = {7, 8},
+	[core.CATEGORIES.CONSUMABLE_CONSUMABLE] = {0, 0},
+	[core.CATEGORIES.QUEST_QUEST] = {12, 0},
 	--["Rüstung Buchbände"] = {4, 7},
 	--["Rüstung Götzen"] = {4, 8},
 	--["Rüstung Totems"] = {4, 9},
 	--["Rüstung Siegel"] = {4, 10},
 }
+
+local classSubclassToType = {
+	[4] = { -- Armor
+		[0] = core.CATEGORIES.ARMOR_MISC,
+		[1] = core.CATEGORIES.ARMOR_CLOTH,
+		[2] = core.CATEGORIES.ARMOR_LEATHER,
+		[3] = core.CATEGORIES.ARMOR_MAIL,
+		[4] = core.CATEGORIES.ARMOR_PLATE,
+		[6] = core.CATEGORIES.ARMOR_SHIELDS,
+	},
+	[2] = { -- Weapon
+		[15] = core.CATEGORIES.WEAPON_DAGGERS,
+		[13] = core.CATEGORIES.WEAPON_FIST_WEAPONS,
+		[0] = core.CATEGORIES.WEAPON_1H_AXES,
+		[4] = core.CATEGORIES.WEAPON_1H_MACES,
+		[7] = core.CATEGORIES.WEAPON_1H_SWORDS,
+		[6] = core.CATEGORIES.WEAPON_POLEARMS,
+		[10] = core.CATEGORIES.WEAPON_STAVES,
+		[1] = core.CATEGORIES.WEAPON_2H_AXES,
+		[5] = core.CATEGORIES.WEAPON_2H_MACES,
+		[8] = core.CATEGORIES.WEAPON_2H_SWORDS,
+		[20] = core.CATEGORIES.WEAPON_FISHING_POLES,
+		[14] = core.CATEGORIES.WEAPON_MISC,
+		[2] = core.CATEGORIES.WEAPON_BOWS,
+		[18] = core.CATEGORIES.WEAPON_CROSSBOWS,
+		[3] = core.CATEGORIES.WEAPON_GUNS,
+		[16] = core.CATEGORIES.WEAPON_THROWN,
+		[19] = core.CATEGORIES.WEAPON_WANDS,
+		[11] = "UNUSED", -- 1H_EXOTICA. There is exactly one item in our itemData of this type (32407 - "Creature - Maiev's Glaive"). Unlockable, but not obtainable through normal means
+	},
+	[15] = { -- Miscellaneous
+		[0] = core.CATEGORIES.MISC_JUNK, -- Mostly offhand fish. 2 test chests (34025, 37126)
+	},
+	[12] = { -- Questitem
+		[0] = core.CATEGORIES.QUEST_QUEST, -- Equipable quest items, can be a lot of different slots. Not unlockable anyway tho?
+	},
+	[0] = { -- Consumable
+		[0] = core.CATEGORIES.CONSUMABLE_CONSUMABLE, -- A single item has this type, unlockable and obtainable (22743 - "Bloosail Sash")
+	},
+	[7] = { -- Trade goods
+		[8] = core.CATEGORIES.TRADE_GOODS_MEAT, -- Two equippable offhand fish, unlockable and obtainable (27515, 27516)
+	},
+}
+
+local slotHasCategory = {}
+for _, slot in pairs(core.itemSlots) do
+	slotHasCategory[slot] = {}
+	for _, category in pairs(core.slotCategories[slot]) do
+		slotHasCategory[slot][category] = true
+	end
+end
+AM(slotHasCategory)
 
 
 -- how to find correct items? if we filter by transmogLocation we need to know what kind of items can be used in those? would have to hard code the rules for that atm? 
@@ -608,17 +689,24 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 	end
 	
 	local unlockedCount = 0 -- TODO: Attempt at Unlocked StatusBar
-	local itemCount = 0 --tmp
+	local itemCount = 0 -- tmp for testing/debugging
+
+	local slotTypes = slotItemTypes[slot]
+	local slotCats = slotHasCategory[slot]
 
 	local memCount = collectgarbage("count")
-	if slot then
+	if slot and slotTypes and slotCats then
 		for itemID in core.itemIterator() do
 			itemCount = itemCount + 1
 			local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
+			local itemCategory = classSubclassToType[class][subClass]
 			
-			if slotItemTypes[slot] and slotItemTypes[slot][inventoryType]
-					and (not classFilter or (class == classFilter and subClass == subClassFilter))
-					and (not atTransmogrifier or core.IsAvailableSourceItem(itemID, slot)) then
+			if slotTypes[inventoryType] and slotCats[itemCategory] -- core.Contains(core.slotCategories[slot], itemCategory)
+					-- and (not classFilter or (class == classFilter and subClass == subClassFilter))
+					and (not category or category == itemCategory)
+					-- and (not atTransmogrifier or core.IsAvailableSourceItem(itemID, slot)) then
+					and ((atTransmogrifier and core.IsAvailableSourceItem(itemID, slot)) or
+							(not atTransmogrifier and (not self.filter.unlocked or unlocked == self.filter.unlocked))) then
 					
 				local name = (searchTerm and not searchByID and GetItemInfo(itemID) or core.names[itemID]) or nil
 				if not searchTerm or itemID == searchTerm or (name and strfind(name, searchTerm)) then --strfind(strlower(name), strlower(searchTerm))) then --[[strfind(name, searchTerm)) then]] --strfind(name, searchTerm)) then
@@ -661,6 +749,9 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 				unlockedCount = unlockedCount + 1 -- and here count the unlocked visuals with display group
 			end
 		end
+		
+		-- table.insert(self.displayList, 1) -- hidden item at start of list
+		-- self.visualUnlocked[1] = 1
 
 		local t2 = GetTime()
 
@@ -669,6 +760,9 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 			local unlockedA = self.visualUnlocked[a] --core.GetItemData(a) --
 			local unlockedB = self.visualUnlocked[b] --core.GetItemData(b) --
 
+			-- if a == 1 or b == 1 then
+			-- 	return a == 1
+			-- else
 			if unlockedA == unlockedB then
 				return a > b
 			else

@@ -4,7 +4,7 @@ local folder, core = ...
 
 local SlotButton_OnEnter = function(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-	GameTooltip:SetText(self.location)
+	GameTooltip:SetText(core.SLOT_NAMES[self.itemSlot])
 	GameTooltip:Show()
 end
 

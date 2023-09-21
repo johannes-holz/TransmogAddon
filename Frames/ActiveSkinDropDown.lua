@@ -56,7 +56,7 @@ core.CreateActiveSkinDropDown = function(parent)
 
 	skinDropDown.update = function()
 		local skinName = core.GetActiveSkinName()
-		local text = skinName or NONE
+		local text = skinName or core.SELECT_SKIN
 		UIDropDownMenu_SetText(skinDropDown, text)
 	end
 	skinDropDown.update()	
@@ -81,3 +81,9 @@ core.CreateActiveSkinDropDown = function(parent)
 	return skinDropDown
 end
 
+core.activeSkinDropDown = core.CreateActiveSkinDropDown(PaperDollFrame)
+
+PaperDollFrame:HookScript("OnShow", function(self)
+	local skins = core.GetSkins()
+	core.SetShown(core.activeSkinDropDown, skins and core.Length(skins) > 0) -- TODO: +  dropdown enabled option
+end)

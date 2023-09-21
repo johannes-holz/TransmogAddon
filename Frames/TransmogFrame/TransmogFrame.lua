@@ -1,11 +1,11 @@
 local folder, core = ...
 
 local SCALE = 1.2
-local WIDTH, HEIGHT = 832, 446 -- 144, 314   886,700  742, 386
+local WIDTH, HEIGHT = 832, 446
 local model, skinDropDown, applyButton, costsFrame, itemSlotOptionsFrame
 local itemSlotFrames = {}
-local MODEL_WIDTH, MODEL_HEIGHT = 270, 333 -- 309, 558 to 536, 258, 296, 618
-local modelHeight = 400 --350
+local MODEL_WIDTH, MODEL_HEIGHT = 270, 333
+local modelHeight = 400
 local itemSlotWidth = 24 --modelHeight / 8 - 2
 local doAllButtonWidth = 16
 local doAllButtonDistance = 1
@@ -14,6 +14,65 @@ local onlyMogableFilter = true
 local nameFilter = true
 local gossipFrameWidthBackup = 0
 
+StaticPopupDialogs["ApplyTransmogPopup"] = {
+	text = "",
+	button1 = ACCEPT,
+	button2 = CANCEL,
+	hasEditBox = nil,
+	OnAccept = function(self, data)		
+		local costs = core.GetCosts()
+		local balance = core.GetBalance()
+		if not costs.copper or not balance.shards then
+			UIErrorsFrame:AddMessage(core.APPLY_ERROR1, 1.0, 0.1, 0.1, 1.0)
+		elseif GetMoney() < costs.copper or balance.shards < costs.points then
+			UIErrorsFrame:AddMessage(core.APPLY_ERROR2, 1.0, 0.1, 0.1, 1.0)
+		else
+			core.RequestApplyCurrentChanges()
+		end
+	end,
+	OnShow = function(self, data)
+		self.text:SetText(data.text)
+		if data.disable then
+			StaticPopup1Button1:Disable()
+		end
+	end,
+	timeout = 0,
+	exclusive = 1,
+	hideOnEscape = 1,
+}
+
+local ShowApplyTransmogPopup = function()
+	-- Or ask server for correct price again before showing final confirmation popup?
+	local costs = core.GetCosts()
+	local balance = core.GetBalance()
+	local skins = core.GetSkins()
+	local id = core.GetSelectedSkin()
+	costs.points = costs.points or costs.shards
+
+	local lines = {}
+	for slot, pending in pairs(core.GetCurrentChanges()) do
+		local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot, id)
+		local _, link, _, _, _, _, _, _, _, tex = GetItemInfo(pendingID)
+		if pendingID then
+			local itemText = pendingID > 1 and (link and (core.GetTextureString(tex, 16) .. " " .. core.LinkToColoredString(link)) or pendingID) or core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
+			tinsert(lines, core.SLOT_NAMES[slot])
+			tinsert(lines, ": ")
+			tinsert(lines, itemText)
+			tinsert(lines, "\n")
+		end
+	end			
+
+	local data = {}
+	data.id = id
+	data.name = id and skins[id].name or nil
+	-- data.disable = not costs.points or not costs.copper or not balance.shards or costs.points > balance.shards or costs.copper > GetMoney()
+	data.disable = not costs.points or not costs.copper or not balance.shards
+	data.text = (id and (core.APPLY_TO_SKIN_TEXT1 .. " " .. core.SkinPopupDisplay(data.id, data.name)) or core.APPLY_TO_INVENTORY_TEXT1)
+					.. " " .. core.APPLY_TO_INVENTORY_TEXT2 .. "\n\n"
+					.. table.concat(lines) .. "\n"
+					.. (costs.points and costs.copper and core.GetPriceString(costs.points, costs.copper) or "ERROR: Could not request costs from server.")				
+	local popup = StaticPopup_Show("ApplyTransmogPopup", nil, nil, data)
+end
 
 -- not in use yet
 local TransmogFrame_OnShow = function(self)
@@ -23,8 +82,8 @@ local TransmogFrame_OnShow = function(self)
     PlaySound("igCharacterInfoOpen")
 
     -- TODO: check out all of this:
-    model:Hide() --needed?
-    model:Show()
+    -- model:Hide() --needed?
+    -- model:Show()
     -- for slot, updateNeeded in pairs(core.availableMogsUpdateNeeded) do --TODO all the stuff about how and when to update unlocks for slot / item
     --     local itemID = core.TransmogGetSlotInfo(slot)
     --     if updateNeeded and itemID then
@@ -77,8 +136,12 @@ end
 core.InitializeFrame = function()	
 	core.transmogFrame = CreateFrame("Frame", "MyAddonFrame", UIParent)
 	local f = core.transmogFrame
+	f.scale = SCALE
 
-	tinsert(UISpecialFrames, f:GetName())
+	f:SetClampedToScreen(true) 
+	f:SetFrameStrata("MEDIUM")
+	f:SetToplevel(true) -- raises frame level to be on top of other frames on mouse click
+	tinsert(UISpecialFrames, f:GetName()) -- close on escape
 	f:SetSize(WIDTH * SCALE, HEIGHT * SCALE) --TODO: make independent of /run print(UIParent:GetScale()) ?
 	f:SetPoint("CENTER")
 	LoadPosition()
@@ -98,8 +161,8 @@ core.InitializeFrame = function()
 		-- at end of set container do self:SetTab(self.GetParent().selectedTab)
 		f:SelectItemTab()
 
-		model:Hide() -- still needed?
-		model:Show()
+		--model:Hide() -- still needed?
+		--model:Show()
 
 		-- Request unlocks for all slots or only for currently selected slot?
 		-- for slot, updateNeeded in pairs(core.availableMogsUpdateNeeded) do --TODO all the stuff about how and when to update unlocks for slot / item
@@ -115,6 +178,7 @@ core.InitializeFrame = function()
 		-- core.RequestPriceTotal() -- TODO: No point in using this anymore? If we want to request prices again, should probably make a function to recheck all pendings instead of using this
 		
 		SetPortraitTexture(f.portraitTexture, "target")
+		f:update()
 	end)
 
 	f:SetScript("OnHide", function()	
@@ -163,8 +227,6 @@ core.InitializeFrame = function()
 	f.BGBottomRight:SetSize(256 * SCALE, 256 * SCALE)
 	f.BGBottomRight:SetPoint("TOPLEFT", f.BGBottom, "TOPRIGHT")
 	
-	f:SetClampedToScreen(true) 
-	f:SetFrameStrata("DIALOG")
 	f:SetScript("OnMouseDown",function(self,button)
 		CloseDropDownMenus()
 		if button == "LeftButton" then
@@ -179,6 +241,7 @@ core.InitializeFrame = function()
 	end)
 	
 	model = core.CreatePreviewModel(f, MODEL_WIDTH * SCALE, MODEL_HEIGHT * SCALE)
+	core.previewModel = model
 	model:SetPoint("TOPLEFT", 20 * SCALE, -74 * SCALE)
 
 	local exitButton = core.CreateMeAButton(f, 22 * SCALE, 22 * SCALE, nil,
@@ -201,7 +264,7 @@ core.InitializeFrame = function()
 	--local cancelButton = core.CreateMeACustomTexButton(model, 24, 24, "Interface\\AddOns\\".. folder .."\\images\\Transmogrify", left, top, right, bottom)
 	local cancelButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\Buttons\\UI-Panel-MinimizeButton-Up", 0, 0, 1, 1)
 	cancelButton:SetPoint("TOPRIGHT", model, "TOPRIGHT", -4 * SCALE, -4 * SCALE)
-	core.SetTooltip(cancelButton, "Reset Changes")
+	core.SetTooltip(cancelButton, core.RESET_ALL)
 	cancelButton:SetScript("OnClick", function()
 		core.SetCurrentChanges({})
 	end)
@@ -211,7 +274,7 @@ core.InitializeFrame = function()
 	local undressButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\AddOns\\".. folder .."\\images\\Transmogrify", left, top, right, bottom) --CreateMeATextButton(bar, 70, 24, "Undress")
 	--undressButton.ctex:SetAlpha(0.8)
 	undressButton:SetPoint("TOPRIGHT", cancelButton, "TOPLEFT", -doAllButtonDistance * SCALE, 0)
-	core.SetTooltip(undressButton, "Hide all")
+	core.SetTooltip(undressButton, core.HIDE_ALL)
 	
 	undressButton:SetScript("OnClick", function()
 		local tar = {}
@@ -266,7 +329,7 @@ core.InitializeFrame = function()
 	local left, top, right, bottom = 451/512, 90/512, 481/512,118/512
 	local removeAllMogButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\AddOns\\".. folder .."\\images\\Transmogrify", left, top, right, bottom) --CreateMeATextButton(bar, 70, 24, "Undress")
 	removeAllMogButton:SetPoint("RIGHT", undressButton, "LEFT", -doAllButtonDistance * SCALE, 0)
-	core.SetTooltip(removeAllMogButton, "Unmog all")
+	core.SetTooltip(removeAllMogButton, core.UNMOG_ALL)
 	
 	removeAllMogButton:SetScript("OnClick", function()
 		local tar = {}
@@ -319,16 +382,27 @@ core.InitializeFrame = function()
 	applyButton = core.CreateMeATextButton(f, 112 *  SCALE, 20 * SCALE, "Apply")
 	applyButton:SetPoint("BOTTOMLEFT", 180 * SCALE, 15 * SCALE)
 	applyButton:Show()
-	applyButton.applySetText = "Apply to Set"
-	applyButton.applyText = "Apply"
-	applyButton.applyToSkin = "Apply to Skin"
-	applyButton.applyToItems = "Apply to Items"
 	
 	applyButton:SetScript("OnClick", function()
-		core.RequestApplyCurrentChanges()
+		local costs = core.GetCosts()
+		local balance = core.GetBalance()
+		
+		local showConfirmPopup = true
+
+		if showConfirmPopup then
+			ShowApplyTransmogPopup()
+		else
+			if not costs.copper or not balance.shards then
+				UIErrorsFrame:AddMessage(core.APPLY_ERROR1, 1.0, 0.1, 0.1, 1.0)
+			elseif GetMoney() < costs.copper or balance.shards < costs.points then
+				UIErrorsFrame:AddMessage(core.APPLY_ERROR2, 1.0, 0.1, 0.1, 1.0)
+			else
+				core.RequestApplyCurrentChanges()
+			end
+		end
 	end)
 	applyButton.update = function()	
-		applyButton:SetText(core.GetSelectedSkin() and applyButton.applyToSkin or applyButton.applyToItems)
+		applyButton:SetText(core.GetSelectedSkin() and core.APPLY_TO_SKIN or core.APPLY_TO_ITEMS)
 
 		local costs = core.GetCosts()
 		local balance = core.GetBalance()
@@ -354,7 +428,8 @@ core.InitializeFrame = function()
 		-- 	end
 		-- end
 
-		if not costs.copper or not balance.shards or GetMoney() < costs.copper or balance.shards < costs.points then
+		-- if not costs.copper or not balance.shards or GetMoney() < costs.copper or balance.shards < costs.points then
+		if not costs.copper or not balance.shards then -- When not enough funds: Allow clicking button and show error message on click instead of disabling?
 			enable = false
 		end
 		
@@ -468,7 +543,7 @@ core.InitializeFrame = function()
 
 
 	------- Inventory/Skins Tabs/Buttons -------------------
-	f.TAB_NAMES = {"Inventory", "Skins"}
+	f.TAB_NAMES = {core.INVENTORY, core.SKINS}
 	f.tabs = {}
 	f.buttons = {}
 
@@ -499,14 +574,14 @@ core.InitializeFrame = function()
 	-- https://github.com/tomrus88/BlizzardInterfaceCode/blob/master/Interface/SharedXML/SharedUIPanelTemplates.xml
 	-- https://github.com/wowgaming/3.3.5-interface-files/blob/main/Blizzard_AchievementUI/Blizzard_AchievementUI.xml
 	for i = 1, #f.TAB_NAMES do
-		f.buttons["tab"..i] = CreateFrame("Button", "$parentTab"..i, f, "OptionsFrameTabButtonTemplate")
-		local btn = f.buttons["tab"..i]
+		f.buttons["tab" .. i] = CreateFrame("Button", "$parentTab" .. i, f, "OptionsFrameTabButtonTemplate")
+		local btn = f.buttons["tab" .. i]
 		btn:SetText(f.TAB_NAMES[i])
 		btn:SetID(i)
 		if i == 1 then
 			btn:SetPoint("BOTTOMRIGHT", model, "TOP", -5 * SCALE, 2 * SCALE)
 		else
-			btn:SetPoint("BOTTOMLEFT", f.buttons["tab"..(i - 1)], "BOTTOMRIGHT")
+			btn:SetPoint("BOTTOMLEFT", f.buttons["tab" .. (i - 1)], "BOTTOMRIGHT")
 		end
 		btn:SetScript("OnClick", tab_OnClick)
 		btn:SetScale(SCALE == 1 and 1 or 1.1)
@@ -543,7 +618,7 @@ core.InitializeFrame = function()
 		end
 		
 		PanelTemplates_SetTab(f, selectedSkin and 2 or 1)
-		f.buttons["tab2"]:SetText(selectedSkin and "Skin: " .. core.GetShortenedString(selectedSkinName, 14) or f.TAB_NAMES[2])
+		f.buttons["tab2"]:SetText(selectedSkin and core.SKIN .. ": " .. core.GetShortenedString(selectedSkinName, 14) or f.TAB_NAMES[2])
 		f.buttons["tab2"]:Hide()
 		f.buttons["tab2"]:Show()
 		f.buttons["tab2"]:Enable()
@@ -555,3 +630,5 @@ core.InitializeFrame = function()
 	
 	f:Hide()
 end
+
+core.InitializeFrame()

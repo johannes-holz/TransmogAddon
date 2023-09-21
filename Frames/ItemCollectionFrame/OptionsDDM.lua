@@ -19,18 +19,24 @@ end
 core.CreateOptionsDDM = function(parent)
 	local optionsDDM = CreateFrame("Frame", folder .. "ItemOptionsDropDown", parent, "UIDropDownMenuTemplate")
 
-    local SetEnchant = function(self, arg1, arg2, checked)
+    optionsDDM.SetEnchant = function(self, arg1, arg2, checked)
         optionsDDM:GetParent():SetPreviewEnchant(arg1)
         CloseDropDownMenus()
     end
 
+    optionsDDM.SetUnlockedFilter = function(self, arg1, arg2, checked)
+        optionsDDM:GetParent():SetUnlockedFilter(arg1)
+        CloseDropDownMenus()
+    end
+
 	optionsDDM.Initialize = function(self, level)
-        local enchant = parent.enchant
-        local keys = {"ENCHANT"}
+        local keys = {ENCHANT = 1, UNLOCKED_FILTER = 2} -- Filter nach Klasse, Fraktion?
+        local enchant = self:GetParent().enchant
+        local unlocked = self:GetParent().filter.unlocked
 
 		local info
 		if level == 1 then
-			-- preview enchant
+			-- enchant preview
 			info = UIDropDownMenu_CreateInfo()
 			info.text = core.ENCHANT_PREVIEW
 			info.arg1 = nil
@@ -41,28 +47,52 @@ core.CreateOptionsDDM = function(parent)
             info.value = { levelOneKey = keys.ENCHANT}
 			UIDropDownMenu_AddButton(info, level)
 
+            -- unlocked filter
+			info = UIDropDownMenu_CreateInfo()
+			info.text = core.UNLOCKED_FILTER
+			info.arg1 = nil
+			info.arg2 = nil
+			info.padding = 0
+            info.notCheckable = true
+            info.hasArrow = true
+            info.value = { levelOneKey = keys.UNLOCKED_FILTER}
+			UIDropDownMenu_AddButton(info, level)
 
 		elseif level == 2 then            
 			local levelOneKey = UIDROPDOWNMENU_MENU_VALUE["levelOneKey"]
             
-            if levelOnKey == keys.ENCHANT then
+            if levelOneKey == keys.ENCHANT then
                 info = UIDropDownMenu_CreateInfo()
                 info.text = NONE
                 info.arg1 = nil
                 info.arg2 = nil
-                info.func = SetEnchant
+                info.func = optionsDDM.SetEnchant
                 info.checked = optionsDDM:GetParent().enchant == info.arg1
                 info.padding = 0
                 UIDropDownMenu_AddButton(info, level)
 
                 for _, enchantInfo in pairs(core.enchants) do
                     local id = enchantInfo.enchantIDs[1]
+                    local name, _, tex = core.GetEnchantInfo(id)
                     info = UIDropDownMenu_CreateInfo()
-                    info.text = enchantInfo.names and enchantInfo.names[enchantInfo.enchantIDs[1]] or enchantInfo.enchantIDs[1]
+                    info.text = name and (core.GetTextureString(tex, 12) .. " " .. name) or id
                     info.arg1 = id
                     info.arg2 = nil
-                    info.func = SetEnchant
-                    info.checked = optionsDDM:GetParent().enchant == info.arg1
+                    info.func = optionsDDM.SetEnchant
+                    info.checked = enchant == info.arg1
+                    info.padding = 0
+                    info.disabled = nil -- TODO: strange bug, that sometimes lowest ~5 enchant buttons are disabled
+                    UIDropDownMenu_AddButton(info, level)
+                end
+
+            elseif levelOneKey == keys.UNLOCKED_FILTER then
+                local buttons = { {text = ALL, arg1 = nil}, {text = YES, arg1 = 1}, {text = NO, arg1 = 0} }
+                for _, button in pairs(buttons) do
+                    info = UIDropDownMenu_CreateInfo()
+                    info.text = button.text
+                    info.arg1 = button.arg1
+                    info.func = optionsDDM.SetUnlockedFilter
+                    info.checked = unlocked == info.arg1
                     info.padding = 0
                     UIDropDownMenu_AddButton(info, level)
                 end

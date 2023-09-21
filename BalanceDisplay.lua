@@ -81,7 +81,6 @@ end
 
 GameTooltip.SetBackpackTokenOld = GameTooltip.SetBackpackToken
 GameTooltip.SetBackpackToken = function(self, id)
-    print("SetBackpackToken", id)
     self:SetBackpackTokenOld(id)
     if not self:IsShown() then
         core.Tooltip_SetTransmogToken(self)
@@ -95,17 +94,17 @@ core.Tooltip_SetTransmogToken = function(tooltip)
     tooltip:AddLine(core.CURRENCY_TOOLTIP_TEXT1, nil, nil, nil, 1)
     tooltip:AddLine(" ")
     if not balance.shards then
-        tooltip:AddLine("Aktuell kann die Transmoginformation nicht abgefragt werden.", 0.9, 0.1, 0.1, 1)
+        tooltip:AddLine(core.CURRENCY_TOOLTIP_TEXT4, 0.9, 0.1, 0.1, 1)
     else
         tooltip:AddLine(core.CURRENCY_TOOLTIP_TEXT2, nil, nil, nil, 1)
         tooltip:AddLine(balance.shards .. "/" .. balance.shardsLimit)
         tooltip:AddLine(" ")
         tooltip:AddLine(core.CURRENCY_TOOLTIP_TEXT3, nil, nil, nil, 1)
-        tooltip:AddLine("Total: " .. balance.weekly.total .. "/" .. balance.weekly.totalLimit)
-        tooltip:AddLine("Raids: " .. balance.weekly.raid .. "/" .. balance.weekly.raidLimit)
-        tooltip:AddLine("Dungeonfinder: " .. balance.weekly.lfg .. "/" .. balance.weekly.lfgLimit)
-        tooltip:AddLine("Arena: " .. balance.weekly.arena .. "/" .. balance.weekly.arenaLimit)
-        tooltip:AddLine("Battlegrounds: " .. balance.weekly.bg .. "/" .. balance.weekly.bgLimit)
+        tooltip:AddLine(core.CURRENCY_TOOLTIP_TEXT5 .. " " .. balance.weekly.total .. "/" .. balance.weekly.totalLimit)
+        tooltip:AddLine(core.CURRENCY_TOOLTIP_TEXT6 .. " " .. balance.weekly.raid .. "/" .. balance.weekly.raidLimit)
+        tooltip:AddLine(core.CURRENCY_TOOLTIP_TEXT7 .. " " .. balance.weekly.lfg .. "/" .. balance.weekly.lfgLimit)
+        tooltip:AddLine(core.CURRENCY_TOOLTIP_TEXT8 .. " " .. balance.weekly.arena .. "/" .. balance.weekly.arenaLimit)
+        tooltip:AddLine(core.CURRENCY_TOOLTIP_TEXT9 .. " " .. balance.weekly.bg .. "/" .. balance.weekly.bgLimit)
     end
     tooltip:Show()
 end
