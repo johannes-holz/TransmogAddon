@@ -1,6 +1,6 @@
 ## Interface: 30300
 ## Title: AAAMoggies
-## Notes: Does Transmog Stuff
+## Notes: Transmog, Outfits and Wardrobe Features for WotLK
 ## Author: Qhoernchen
 ## SavedVariables: MyAddonDB
 
@@ -16,19 +16,19 @@ libs\RisingAPI\index.xml
 
 #libs\AceDB-3.0\AceDB-3.0.xml
 
-API_Extensions.lua
-utilities.lua
+Localization.lua
+Utilities.lua
 LDB.lua
+API_Extensions.lua
 
 # FrameTemplates
 Frames\FrameTemplates.lua
 
-filters.lua
 ItemQuery.lua
 _myaddon.lua
-tooltipHooks.lua
+TooltipHooks.lua
 
-# Enchant and item data, loaded after necessary methods are declared
+# Enchant and item data
 data\DataUtils.lua
 data\enchants.lua
 data\items.lua

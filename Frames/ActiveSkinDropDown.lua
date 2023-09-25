@@ -66,17 +66,11 @@ core.CreateActiveSkinDropDown = function(parent)
 	
 	UIDropDownMenu_JustifyText(skinDropDown, "LEFT") 
 	UIDropDownMenu_Initialize(skinDropDown, skinDropDown.Initialize)
-    UIDropDownMenu_SetButtonWidth(skinDropDown, 40) -- Buttons get extended to fit biggest info.text
+    UIDropDownMenu_SetButtonWidth(skinDropDown, 40)
 
 	UIDropDownMenu_SetWidth(skinDropDown, 100, 0)
     skinDropDown:SetScale(0.9)
-
-    UIDropDownMenu_SetWidth(PlayerTitleFrame, 90)
-    PlayerTitleFrame:ClearAllPoints()
-    PlayerTitleFrame:SetPoint("TOPRIGHT", CharacterLevelText, "BOTTOM", 0, -9)
-    skinDropDown:SetPoint("LEFT", PlayerTitleFrameButton, "RIGHT", 0, -2)
-    skinDropDown:SetFrameLevel(skinDropDown:GetParent():GetFrameLevel() + 2 )
-    skinDropDown:Show()
+    skinDropDown:Hide()
 	
 	return skinDropDown
 end
@@ -85,5 +79,19 @@ core.activeSkinDropDown = core.CreateActiveSkinDropDown(PaperDollFrame)
 
 PaperDollFrame:HookScript("OnShow", function(self)
 	local skins = core.GetSkins()
-	core.SetShown(core.activeSkinDropDown, skins and core.Length(skins) > 0) -- TODO: +  dropdown enabled option
+	-- local usableSkinCount = 0
+	-- for _, skin in pairs(skins) do
+	-- 	if skin.name and skin.name ~= "" then
+	-- 		usableSkinCount = usableSkinCount + 1
+	-- 	end
+	-- end
+	-- show when we have bought a skin or when we have usable skins?
+	if skins and core.Length(skins) > 0 and not core.activeSkinDropDown:IsShown() then  -- TODO: dropdown / button / nothing? option
+		UIDropDownMenu_SetWidth(PlayerTitleFrame, 90)
+		PlayerTitleFrame:ClearAllPoints()
+		PlayerTitleFrame:SetPoint("TOPRIGHT", CharacterLevelText, "BOTTOM", 0, -9)
+		core.activeSkinDropDown:SetPoint("LEFT", PlayerTitleFrameButton, "RIGHT", -12, -2)
+		core.activeSkinDropDown:SetFrameLevel(core.activeSkinDropDown:GetParent():GetFrameLevel() + 2)
+		core.activeSkinDropDown:Show()
+	end
 end)

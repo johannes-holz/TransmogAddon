@@ -15,6 +15,16 @@ waitFrame.queries = {} -- [itemId] = {{timer1, f1, p1, p2, ...}, {timer2, f2, p1
 waitFrame.elapsed = 0.0
 
 
+-- For some reason the SetHyperlink call does nothing, when called during the loading process
+local waitFrame_RequeryAll = function(self)
+	for itemID, _ in pairs(self.queries) do
+		tooltip:SetHyperlink("item:" .. itemID)
+	end
+	self:UnregisterEvent("PLAYER_ENTERING_WORLD")
+end
+waitFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+waitFrame:SetScript("OnEvent", waitFrame_RequeryAll)
+
 local waitFrame_OnUpdate = function(self, elapsed)
     self.elapsed = self.elapsed + elapsed
 	
@@ -62,6 +72,7 @@ local waitFrame_OnUpdate = function(self, elapsed)
     end
 end
 
+
 local DummyFunction = function() end
 
 core.FunctionOnItemInfo = function(itemID, func, ...)	
@@ -75,11 +86,11 @@ core.FunctionOnItemInfo = function(itemID, func, ...)
 		func(...)
 	else
 		if not waitFrame.queries[itemID] then
-			tooltip:SetHyperlink("item:"..itemID..":0:0:0:0:0:0:0")
+			tooltip:SetHyperlink("item:" .. itemID .. ":0:0:0:0:0:0:0")
 			waitFrame.queries[itemID] = {}
 		end
 		if func ~= DummyFunction or core.Length(waitFrame.queries[itemID]) == 0 then
-			tinsert(waitFrame.queries[itemID], {GetTime(), func, {...}})
+			tinsert(waitFrame.queries[itemID], { GetTime(), func, {...} })
 			if waitFrame:GetScript("OnUpdate") == nil then
 				waitFrame:SetScript("OnUpdate", waitFrame_OnUpdate)
 			end

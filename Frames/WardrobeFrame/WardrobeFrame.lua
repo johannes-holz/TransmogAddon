@@ -51,6 +51,7 @@ core.OpenWardrobe = function()
     core.transmogFrame:Hide()
 	core.SetIsAtTransmogrifier(false)
 	core.wardrobeFrame:Show()
+    core.wardrobeFrame:Raise()
 end
 
 -- DressUpFrame:HookScript("OnShow", function()
@@ -84,3 +85,10 @@ local titleFrame = wardrobeFrame:CreateFontString()
 titleFrame:SetFontObject("GameFontNormal")
 titleFrame:SetText(core.APPEARANCES)
 titleFrame:SetPoint("TOP", 0, -7)
+
+
+core.ShowItemInWardrobe = function(itemID, slot)
+    core.OpenWardrobe()
+    core.itemCollectionFrame:SetSlotAndCategory(slot, nil)
+    core.itemCollectionFrame:GoToItem(itemID)
+end

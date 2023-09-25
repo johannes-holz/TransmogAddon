@@ -16,7 +16,7 @@ local modelPositions = {
 core.TwoHandExclusive = {[core.ITEM_SUB_CLASSES.POLEARMS] = true, [core.ITEM_SUB_CLASSES.STAVES] = true, [core.ITEM_SUB_CLASSES.FISHING_POLES] = true}
 
 core.CreatePreviewModel = function(parent, width, height)
-	local model = CreateFrame("DressUpModel", folder.."PreviewModel", parent)
+	local model = CreateFrame("DressUpModel", folder .. "PreviewModel", parent)
 	model:SetSize(width, height)
 	model:EnableMouse()
 	model:EnableMouseWheel()
@@ -193,24 +193,28 @@ core.CreatePreviewModel = function(parent, width, height)
 
     model.cantPreviewMessage = model.textFrame:CreateFontString()
     model.cantPreviewMessage:SetFontObject(GameFontRed)
+	model.cantPreviewMessage:SetWidth(200)
     model.cantPreviewMessage:SetPoint("BOTTOM", 0, model:GetHeight() / 5)
     model.cantPreviewMessage:SetJustifyH("CENTER")
     model.cantPreviewMessage:SetJustifyV("MIDDLE")
     model.cantPreviewMessage:SetText(core.CAN_NOT_PREVIEW)
+
+    model.ohAppearanceNotShown = model.textFrame:CreateFontString()
+    model.ohAppearanceNotShown:SetFontObject(GameFontRed)
+	model.ohAppearanceNotShown:SetWidth(200)
+    model.ohAppearanceNotShown:SetPoint("BOTTOM", model.cantPreviewMessage, "BOTTOM", 0, 0) -- I think cantPreview and ohAppearanceNotShown are mutually exclusive?
+    model.ohAppearanceNotShown:SetJustifyH("CENTER")
+    model.ohAppearanceNotShown:SetJustifyV("MIDDLE")
+    model.ohAppearanceNotShown:SetText(core.OH_APPEARANCE_WONT_BE_SHOWN)
     
     model.mhHidesOH = model.textFrame:CreateFontString()
     model.mhHidesOH:SetFontObject(GameFontRed)
-    model.mhHidesOH:SetPoint("TOP", model.cantPreviewMessage, "BOTTOM", 0, -4)
+	model.mhHidesOH:SetWidth(200)
+    model.mhHidesOH:SetPoint("TOP", model.cantPreviewMessage, "BOTTOM", 0, -6)
     model.mhHidesOH:SetJustifyH("CENTER")
     model.mhHidesOH:SetJustifyV("MIDDLE")
     model.mhHidesOH:SetText(core.OH_WILL_BE_HIDDEN)
 
-    model.ohAppearanceNotShown = model.textFrame:CreateFontString()
-    model.ohAppearanceNotShown:SetFontObject(GameFontRed)
-    model.ohAppearanceNotShown:SetPoint("TOP", model.mhHidesOH, "BOTTOM", 0, -4)
-    model.ohAppearanceNotShown:SetJustifyH("CENTER")
-    model.ohAppearanceNotShown:SetJustifyV("MIDDLE")
-    model.ohAppearanceNotShown:SetText(core.OH_APPEARANCE_WONT_BE_SHOWN)
 
 	model.GetItemsToDisplay = function(self, includeHidden)	
 		local skin = core.GetSelectedSkin()
@@ -221,6 +225,7 @@ core.CreatePreviewModel = function(parent, width, height)
             local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot)
 
 			local show = pendingID or (skin and skinVisualID) or ((not skin or core.showItemsUnderSkin) and (visualID or itemID)) or nil
+			if core.showItemsUnderSkin and not itemID then show = nil end
 
 			if show == 0 then
 				show = (not skin or core.showItemsUnderSkin) and itemID or nil
@@ -284,6 +289,7 @@ core.CreatePreviewModel = function(parent, width, height)
                 end
             end
 		end
+		core.UpdateListeners("previewModel")
 	end
 
 	core.RegisterListener("currentChanges", model)
@@ -294,10 +300,38 @@ core.CreatePreviewModel = function(parent, width, height)
 
 	------------------- Outfit Stuff -------------------
 	model.GetAll = function(self)
-		return self:GetItemsToDisplay(true)
+		local items = self:GetItemsToDisplay(true)		
+		local selectedSlot = core.GetSelectedSlot()
+
+
+        -- Only allow Offhand or ShieldHandWeapon?
+        if selectedSlot == "OffHandSlot" then
+            items["ShieldHandWeaponSlot"] = nil
+        elseif selectedSlot == "ShieldHandWeaponSlot" then
+            items["OffHandSlot"] = nil
+        end
+        -- Only allow melee or ranged Weapons?        
+        if selectedSlot == "RangedSlot" then
+            items["MainHandSlot"] = nil
+            items["ShieldHandWeaponSlot"] = nil
+            items["OffHandSlot"] = nil
+        elseif selectedSlot == "MainHandSlot" or selectedSlot == "ShieldHandWeaponSlot" or selectedSlot == "OffHandSlot"then
+            items["RangedSlot"] = nil
+        end
+        -- Only allow things we can display?
+		local ohWeapon = items["ShieldHandWeaponSlot"]
+        if ohWeapon then
+            local itemSubType, _, itemEquipLoc = select(7, GetItemInfo(ohWeapon))
+            if not core.CanDualWield() or (itemEquipLoc == "INVTYPE_2HWEAPON" and not (core.HasTitanGrip() and core.CanBeTitanGripped(itemSubType))) then
+                items["ShieldHandWeaponSlot"] = nil
+            end
+        end
+
+		return items
 	end
 	model.SetAll = function(self, set)
 		core.SetCurrentChanges(set)
+		core.SetSlotAndCategory(nil, nil)
 	end
 
 	----------------------------------------------------

@@ -8,7 +8,7 @@ local mod = bit.mod
 local strbyte = strbyte
 
 
--- Becomes neccessary when we need more than 32 bits per item!!!
+-- Becomes neccessary when we need more than 32 bits per item!!! (obsolete, since we encode in byte string now)
 -- local rShiftOld = bit.rshift
 -- local pot = {}
 -- for i = 0, 63 do
@@ -118,7 +118,7 @@ core.AddItem = function(displayID,itemID,class,subClass,inventoryType,quality,re
 end
 
 
--- LUA 5.1 stores all numbers as doubles and are only precise up to 2^53!!!
+-- LUA 5.1 stores all numbers as doubles and is only precise up to 2^53?
 -- Also the default rshift does not work for numbers >= 2^32
 
 -- Start/Attempt at building more compressed item Data, see "TODO BuildList Thoughts.txt". Maybe give option to use uncompressed data, if people with bad pcs struggle with the increased workload on item iteration

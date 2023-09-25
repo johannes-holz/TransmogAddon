@@ -157,9 +157,12 @@ local function TooltipAddMogLine(tooltip)
 	-- tooltip.mogText:SetWidth(math.max(tooltip:GetWidth() - 15, 200))
 	-- if we don't want a line break in mog names and instead want the tooltip to horizontally increase in size:
 	textLeft1:SetWidth(math.max(tooltip.mogText:GetStringWidth(), tooltip:GetWidth()))
-
 	textLeft1:SetHeight(textLeft1:GetStringHeight() + tooltip.mogText:GetHeight())
-	tooltip:Show() -- for vertical resize
+	tooltip:Show() -- for resize
+
+	if tooltip == GameTooltip and visualID and visualID > 1 then
+		core.SetExtraItemTooltip(visualID, "ANCHOR_TOP") -- TODO: Options
+	end
 end
 
 local tooltips = {GameTooltip, ItemRefTooltip, ItemRefShoppingTooltip1, ItemRefShoppingTooltip2, ItemRefShoppingTooltip3, ShoppingTooltip1, ShoppingTooltip2, ShoppingTooltip3}

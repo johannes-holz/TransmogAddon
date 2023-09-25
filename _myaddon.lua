@@ -27,165 +27,6 @@ core.TMOG_NPC_ID = 1010969
 --"inv_enchant_shardgleamingsmall"
 core.CURRENCY_ICON = "Interface\\Icons\\inv_misc_gem_sapphire_03"
 core.CURRENCY_FAKE_ITEMID = -1337
-core.CURRENCY_NAME = "Splitter der Illusion"
-
-core.HIDDEN = "Versteckt"
-core.COSTS = "Kosten"
-core.COLLECTED = "Gesammelt"
-core.APPEARANCES = "Aussehen"
-core.TRANSMOGRIFY = "Transmogrifizieren"
-core.PAGE = "Seite"
-core.OPTIONS = "Optionen"
-core.ENCHANT_PREVIEW = "Verzauberungsvorschau"
-core.UNLOCKED_FILTER = "Gesammelt"
-core.INVENTORY = "Inventar"
-core.SKIN = "Skin"
-core.SKINS = "Skins"
-core.SKIN_SLOT = "Skinplatz"
-core.LOADING1 = "lädt ..." -- loading ...
-core.LOADING2 = "Gegenstand wird geladen ..." -- loading item info ....
-core.UNDRESS = "Ausziehen"
-core.PRINT = "Drucken"
-
-core.HIDE = "Verstecken"
-core.UNMOG = "Entmogrifizieren"
-core.HIDE_ALL = "Alles verstecken"
-core.UNMOG_ALL = "Alle Transmogrifikationen entfernen"
-core.RESET_ALL = "Alle Änderungen verwerfen"
-
-core.SELECT = "Auswählen"
-core.ACTIVATE = "Aktivieren"
-core.RESET = "Zurücksetzen"
-core.TRANSFER = "Transmogrifikationen transferieren"
-
-core.EQUIP = "Anziehen"
-core.RENAME = "Umbenennen"
-core.OVERWRITE = "Überschreiben"
-core.CREATE = "Erstellen"
-
-core.APPLY_TO_ITEMS = "Übernehmen" -- don't think we can fit "to skin/items" on the button in german
-core.APPLY_TO_SKIN = "Übernehmen"
-
-core.BUY_SKIN_SLOT = "Weiteren Skinplatz kaufen"
-core.EMPTY_SKIN_SLOT = "[Freier Skinplatz]"
-
-core.NEW_OUTFIT = "Neues Outfit erstellen"
-core.NO_OUTFIT = "Kein Outfit"
-core.CREATE_OUTFIT_TEXT1 = "Namen für neues Outfit eingeben:"
-core.RENAME_OUTFIT_TEXT1 = "Neuen Namen für Outfit "
-core.RENAME_OUTFIT_TEXT2 = " eingeben:"
-core.DELETE_OUTFIT_TEXT1 = "Seid ihr sicher, dass ihr Outfit "
-core.DELETE_OUTFIT_TEXT2 = " löschen wollt?"
-core.OVERWRITE_OUTFIT_TEXT1 = "Seid ihr sicher, dass ihr Outfit "
-core.OVERWRITE_OUTFIT_TEXT2 = " überschreiben wollt?"
-
-core.CURRENCY_TOOLTIP_TEXT1 = "Splitter der Illusion werden für besondere Transmogrifizierungen benötigt."
-core.CURRENCY_TOOLTIP_TEXT2 = "Insgesamt habt ihr aktuell:"
-core.CURRENCY_TOOLTIP_TEXT3 = "Diese Woche wurden bereits verdient:"
-core.CURRENCY_TOOLTIP_TEXT4 = "Aktuell kann die Transmoginformation nicht abgefragt werden."
-core.CURRENCY_TOOLTIP_TEXT5 = "Gesamt:"
-core.CURRENCY_TOOLTIP_TEXT6 = "Schlachtzüge:"
-core.CURRENCY_TOOLTIP_TEXT7 = "Dungeonbrowser:"
-core.CURRENCY_TOOLTIP_TEXT8 = "Arena:"
-core.CURRENCY_TOOLTIP_TEXT9 = "Schlachtfelder:"
-
-core.TRANSMOG_NAME = "Transmogrifikation"
-core.APPEARANCE_NOT_COLLECTED_TEXT_A = "Ihr habt dieses Aussehen noch nicht gesammelt." -- "You haven't collected this appearance"
-core.APPEARANCE_NOT_COLLECTED_TEXT_B = "Ihr habt dieses Aussehen gesammelt, aber nicht von diesem Gegenstand." --"You've collected this appearance, but not from this item"
-
-core.APPEARANCE_TOOLTIP_TEXT1A = "Gegenstände mit diesem Aussehen:"
-core.APPEARANCE_TOOLTIP_TEXT1B = "Verfügbare Gegenstände mit diesem Aussehen:"
-core.APPEARANCE_TOOLTIP_TEXT2 = "Drücke Tab oder Rechtsklick, um einen anderen Gegenstand auszuwählen."
-
-core.ITEM_TOOLTIP_TRANSMOGRIFIED_TO = "Transmogrifiziert zu:"
-core.ITEM_TOOLTIP_ACTIVE_SKIN = "Aktive Haut:"
-core.ITEM_TOOLTIP_FETCHING_NAME = "Frage Iteminformation ab für "
-
-core.TRANSMOG_TOOLTIP_PENDING_CHANGE = "Wird geändert zu:"
-core.TRANSMOG_TOOLTIP_CURRENT_MOG = "Aktuelle Transmogrifikation:"
-core.TRANSMOG_TOOLTIP_REMOVE_MOG = "Entferne Transmogrifikation"
-core.TRANSMOG_TOOLTIP_CURRENT_SKIN = "Aktuell ausgewählt:"
-core.TRANSMOG_TOOLTIP_REMOVE_SKIN = "Leerer Slot"
-core.TRANSMOG_TOOLTIP_COSTS = core.COSTS .. ":"
-
-core.CAN_NOT_PREVIEW = "Aktuelle Waffen sind in Vorschau nicht anzeigbar" -- "Can not preview current melee weapons together."
-core.OH_WILL_BE_HIDDEN = "OH wird von aktueller MH versteckt werden" -- "Off hand will be hidden by current main hand appearance."
-core.OH_APPEARANCE_WONT_BE_SHOWN = "Nebenhandaussehen wird nicht angezeigt" -- "This off hand appearance will not be shown while in this slot."
-
-core.MINIMAP_TOOLTIP_TEXT1 = "Linksklick: Sammlung öffnen" -- "Left-click: Open Wardrobe"
-core.MINIMAP_TOOLTIP_TEXT2 = "Umschalt + Linksklick: Transmogfenster öffnen" -- "Shift + Left-click: Open Transmog Interface"
-core.MINIMAP_TOOLTIP_TEXT3 = "Rechtsklick: Transmogsichtbarkeit umschalten" -- "Right-click: Toggle through visibility options"
-
-core.TRANSMOG_STATUS = "Transmog Sichtbarkeit: "
-core.TRANSMOG_STATUS_UNKNOWN = "Transmog Sichtbarkeit konnte nicht abgefragt werden."
-
-core.SHOW_ITEMS_UNDER_SKIN_TOOLTIP_TEXT = "Aktivieren, um anzuzeigen, wie der Skin in Verbindung mit der aktuellen Ausrüstung aussehen wird."
-
-core.BUY_SKIN_TEXT = "Seid Ihr sicher, dass Ihr einen weiteren Skinplatz kaufen möchtet?"
-core.NO_SKIN_COSTS_ERROR = "Skin Preis konnte nicht abgefragt werden"
-
-core.RENAME_SKIN_TEXT1 = "Neuen Namen für Skin"
-core.RENAME_SKIN_TEXT2 = "eingeben:"
-
-core.CREATE_SKIN_TEXT1 = "Name für neuen Skin in Skinplatz "
-core.CREATE_SKIN_TEXT2 = " eingeben:"
-
-core.RESET_SKIN_TEXT1 = "Seid ihr euch sicher, dass ihr Skin"
-core.RESET_SKIN_TEXT2 = "zurücksetzen wollt?\nDadurch werden alle Transmogrifikationen auf dem Skin unwiderruflich gelöscht."
-
---"Die Transmogrifizierung aller ausgerüsteten Gegenstände wird von den Gegenständen entfernt und auf den Skin übertragen. Bereits gezahlte Kosten werden verrechnet. Existiert bereits eine Transmogrifikation auf einem Ausrüstungsplatz des Skins, so wird diese nicht überschrieben. Fortfahren?"
-core.VISUALS_TO_SKIN_TEXT1 = "Diese Aktion entfernt folgende Transmogrifikationen von eurer Ausrüstung und überträgt sie auf den Skin"
-core.VISUALS_TO_SKIN_TEXT2 = "Die bereits gezahlten Kosten sind im Preis verrechnet. Fortfahren?"
-
-core.APPLY_TO_INVENTORY_TEXT1 = "Auf eure ausgerüsteten Gegenstände"
-core.APPLY_TO_INVENTORY_TEXT2 = "werden folgende Transmogrifikationen angewandt. Fortfahren?"
-core.APPLY_TO_SKIN_TEXT1 = "Auf den Skin"
-
-core.SKIN_NEEDS_ACTIVATION = "Skin muss benannt werden, bevor er benutzt werden kann."
-
-core.SKIN_NAME_TOO_SHORT = "Skinnamen müssen mindestens ein Zeichen lang sein."
-core.SKIN_NAME_INVALID_CHARACTERS = "Skinname enthält ungültige Zeichen."
-
-core.OUTFIT_NAME_TOO_SHORT = "Outfitnamen müssen mindestens ein Zeichen lang sein."
-core.OUTFIT_NAME_INVALID_CHARACTERS = "Outfitname enthält ungültige Zeichen."
-core.OUTFIT_NAME_ALREADY_IN_USE = "Es gibt bereits ein Outfit mit diesem Namen."
-
-core.UNLOCKED_BAR_TOOLTIP_TEXT1 = "Anzahl gesammelter Aussehen, die den gewählten Filtern entsprechen." -- "Unlocked Appearances for current selection. The upper bound includes items that might not be collectable for this character."
-core.SEARCHBOX_TOOLTIP_TEXT1 = "Filtert Auswahl nach Gegenstandsname oder ID." -- "Filter items by name or item ID.\nSearch by name only works for cached items."
-
-core.SELECT_SKIN = "Skin auswählen"
-
-core.APPLY_ERROR1 = "Transmogkosten oder Splitterguthaben konnten nicht abgefragt werden."
-core.APPLY_ERROR2 = "Ihr habt nicht genug Geld oder Splitter der Illusion."
-
-core.NO_SLOT_SELECTED_TEXT = "Gegenstandsplatz auswählen, um verfügbare Transmogrifikationen anzuzeigen."
-
-core.SLOT_NAMES = {
-	HeadSlot = "Kopf",
-	ShoulderSlot = "Schultern",
-	BackSlot = "Rücken",
-	ChestSlot = "Brust",
-	ShirtSlot = "Hemd",
-	TabardSlot = "Wappenrock",
-	WristSlot = "Handgelenke",
-	HandsSlot = "Hände",
-	WaistSlot = "Taille",
-	LegsSlot = "Beine",
-	FeetSlot = "Füße",
-	MainHandSlot = "Waffenhand",
-	ShieldHandWeaponSlot = "Schildhandwaffe",
-	OffHandSlot = "Nebenhand",
-	--SecondaryHandSlot = "Schildhand",
-	--MainHandEnchantSlot = "Verzauberung Waffenhand",
-	--SecondaryHandEnchantSlot = "Verzauberung Schildhand",
-	RangedSlot = "Distanz",
-}
-
-core.CONFIG_NAMES = {
-	[1] = "An",
-	[2] = "Im PvP aus",
-	[3] = "Aus",
-}
 
 -- The following tables do not need to be localized manually! We autopopulate those with GetAuctionItemClasses() and GetAuctionItemSubClasses()
 core.ITEM_CLASSES = {
@@ -225,6 +66,7 @@ core.ITEM_SUB_CLASSES = {
 	MEAT = "Fleisch",
 	CONSUMABLE = "Verbrauchbar",
 	QUEST = "Quest",
+	["1H_EXOTICA"] = "Einhandexotika",
 }
 
 core.CATEGORIES = {
@@ -256,6 +98,7 @@ core.CATEGORIES = {
 	TRADE_GOODS_MEAT = "Handwerkswaren Fleisch",
 	CONSUMABLE_CONSUMABLE = "Verbrauchbar Verbrauchbar",
 	QUEST_QUEST = "Quest Quest",
+	WEAPON_1H_EXOTICA = "Waffe Einhandexotika",
 }
 
 do
@@ -271,6 +114,8 @@ do
 
 	local weaponSubClasses, armorSubClasses, miscSubClasses = { GetAuctionItemSubClasses(1) }, { GetAuctionItemSubClasses(2) }, { GetAuctionItemSubClasses(11) }
 	local tradeGoodsSubClasses = { GetAuctionItemSubClasses(6) }
+	local _, _, _, _, _, _, exoticaSubClass = GetItemInfo(32407)
+	local loc = GetLocale()
 	core.ITEM_SUB_CLASSES = {
 		CLOTH = armorSubClasses[2],
 		LEATHER = armorSubClasses[3],
@@ -300,6 +145,7 @@ do
 		MEAT = tradeGoodsSubClasses[5],
 		CONSUMABLE = classes[4], -- weird case. subclass is also consummable (the same as class), but that subclass does not get listed in AuctionSubClasses
 		QUEST = classes[12], -- same as above
+		["1H_EXOTICA"] = exoticaSubClass or (loc == "deDE" and "Einhandexotika") or "One-Handed Exotics",
 	}
 
 	core.CATEGORIES = {
@@ -331,6 +177,7 @@ do
 		TRADE_GOODS_MEAT = core.ITEM_CLASSES.TRADE_GOODS .. " " .. core.ITEM_SUB_CLASSES.MEAT,
 		CONSUMABLE_CONSUMABLE = core.ITEM_CLASSES.CONSUMABLE .. " " .. core.ITEM_SUB_CLASSES.CONSUMABLE,
 		QUEST_QUEST = core.ITEM_CLASSES.QUEST .. " " .. core.ITEM_SUB_CLASSES.QUEST,
+		WEAPON_1H_EXOTICA = core.ITEM_CLASSES.WEAPON .. " " .. core.ITEM_SUB_CLASSES["1H_EXOTICA"]
 	}
 
 	core.CATEGORY_DISPLAY_NAME = {
@@ -530,6 +377,9 @@ core.slotCategories = {
 	["MainHandEnchantSlot"] = {},
 	["SecondaryHandEnchantSlot"] = {},
 }
+if true then -- TODO: Option
+	tinsert(core.slotCategories.MainHandSlot, core.CATEGORIES.WEAPON_1H_EXOTICA)
+end
 
 if true then -- TODO: Option to enable these?
 	tinsert(core.slotCategories.HeadSlot, core.CATEGORIES.QUEST_QUEST)
@@ -1449,9 +1299,16 @@ core.CanDualWield = function()
 	return IsSpellKnown(674)
 end
 
-local canBeTitanGripped = {[core.ITEM_SUB_CLASSES["2H_AXES"]] = true, [core.ITEM_SUB_CLASSES["2H_MACES"]] = true, [core.ITEM_SUB_CLASSES["2H_SWORDS"]] = true}
+local canBeTitanGripped = {[core.ITEM_SUB_CLASSES["2H_AXES"]] = true, [core.ITEM_SUB_CLASSES["2H_MACES"]] = true, [core.ITEM_SUB_CLASSES["2H_SWORDS"]] = true,
+						   [core.CATEGORIES.WEAPON_2H_AXES] = true, [core.CATEGORIES.WEAPON_2H_MACES] = true, [core.CATEGORIES.WEAPON_2H_SWORDS] = true,}
+core.CanBeTitanGripped = function(itemSubClass)
+	return canBeTitanGripped[itemSubClass]
+end
+
 local DUMMY_POLEARM = 20083
-local DUMMY_INVISIBLE_ONEHANDER = 45630 -- 45630 should be "Invisible Axe", but it's a debug cube model instead, 25194 is smallest knuckle duster
+local DUMMY_INVISIBLE_ONEHANDER = 25194 -- 45630 -- 45630 should be "Invisible Axe", but it's a debug cube model instead, 25194 is smallest knuckle duster
+core.QueryItem(DUMMY_POLEARM)
+core.QueryItem(DUMMY_INVISIBLE_ONEHANDER)
 
 core.EquipOffhandNext = function(model)
 	if not core.DUMMY_MODEL then
@@ -1505,7 +1362,7 @@ local function ShowMeleeWeapons(mod, mainHand, offHand)
 		mod:TryOn(mainHand)
 		if offHand then
 			if ohInvType == "INVTYPE_SHIELD" or ohInvType == "INVTYPE_HOLDABLE" or ohInvType == "INVTYPE_WEAPONOFFHAND"
-				or canDualWield and (ohInvType ~= "INVTYPE_2HWEAPON" or hasTitanGrip and canBeTitanGripped[ohSubType]) then
+				or canDualWield and (ohInvType ~= "INVTYPE_2HWEAPON" or hasTitanGrip and core.CanBeTitanGripped(ohSubType)) then
 				core.EquipOffhandNext(mod)
 				mod:TryOn(offHand)
 			else
@@ -1516,7 +1373,7 @@ local function ShowMeleeWeapons(mod, mainHand, offHand)
 	else
 		if (ohInvType == "INVTYPE_SHIELD" or ohInvType == "INVTYPE_HOLDABLE" or ohInvType == "INVTYPE_WEAPONOFFHAND") then
 			mod:TryOn(offHand)
-		elseif canDualWield and (ohInvType == "INVTYPE_WEAPON" or (hasTitanGrip and canBeTitanGripped[ohSubType])) then
+		elseif canDualWield and (ohInvType == "INVTYPE_WEAPON" or (hasTitanGrip and core.CanBeTitanGripped(ohSubType))) then
 			if ohInvType == "INVTYPE_WEAPON" then -- trick of toggling hand on other model does not work with 1H, when nothing is equipped in mh .. 
 				mod:TryOn(DUMMY_POLEARM)
 				mod:TryOn(DUMMY_INVISIBLE_ONEHANDER)

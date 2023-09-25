@@ -219,6 +219,36 @@ core.UIDropDownMenu_SetEnabled = function(dropDown, enabled)
 	end
 end
 
+-- Fix for Tooltip Bug, see: https://wowwiki-archive.fandom.com/wiki/UIOBJECT_GameTooltip#Blizzard's_GameTooltip
+-- For some reason, GameTooltipTextLeft9 and GameTooltipTextRight9 are called GameTooltipTextLeft1 and GameTooltipTextRight1
+-- Most of the time, that causes no problems, but when an item has exactly 9 lines, SetTooltipMoney fails and throws an error for example
+core.FixTooltip = function(tooltip)
+	local initItem = 32479 -- item with enough lines to trigger tooltip to generate the problematic line 9
+	if not GetItemInfo(initItem) then
+		core.FunctionOnItemInfo(initItem, core.FixTooltip, tooltip)
+		return
+	end
+
+	tooltip:SetHyperlink("item:" .. initItem) 
+	local regions = { tooltip:GetRegions() }
+	local buggoLeft, buggoRight -- are u making fun of my nose?
+	for i, region in pairs(regions) do
+		if region and region:GetObjectType() == "FontString" then
+			local _, anchor = region:GetPoint(1)
+			if region:GetName() == region:GetParent():GetName() .. "TextLeft1" and anchor ~= region:GetParent() then
+				buggoLeft = region
+			elseif anchor == buggoLeft then
+				buggoRight = region
+			end
+		end
+	end
+
+	if buggoLeft then
+		_G[tooltip:GetName()  .. "TextLeft9"] = buggoLeft
+		_G[tooltip:GetName()  .. "TextRight9"] = buggoRight
+	end
+end
+
 core.SetTooltip = function(frame, text, r, g, b, a, wrap)
 	if not frame or not text then return end
 	frame:HookScript("OnEnter", function(self)		

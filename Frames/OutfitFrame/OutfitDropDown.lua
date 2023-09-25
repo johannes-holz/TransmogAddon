@@ -4,7 +4,6 @@ local OUTFIT_NAME_MAX_LENGTH = 20
 local DROPDOWN_DISPLAY_LENGTH = 20
 local POPUP_DISPLAY_LENGTH = 20
 
-
 local popups = { CreateOutfitPopup = true, RenameOutfitPopup = true, DeleteOutfitPopup = true, OverwriteOutfitPopup = true }
 core.IsOutfitPopupActive = function()
 	for index = 1, STATICPOPUP_NUMDIALOGS do
@@ -157,30 +156,6 @@ local ShowDeleteOutfitPopup = function(name)
 	StaticPopup_Show("DeleteOutfitPopup", nil, nil, data)
 end
 
--- local ShowDeleteOutfitPopup = function(id)
--- 	local outfits = core.GetOutfits()
--- 	assert(outfits and outfits[id])
-
--- 	local data = {}
--- 	data.id = id
--- 	data.name = outfits[id].name
--- 	data.text = core.DELETE_OUTFIT_TEXT1 .. core.GetShortenedString(data.name, 10) .. core.DELETE_OUTFIT_TEXT2
-
--- 	StaticPopup_Show("DeleteOutfitPopup", nil, nil, data)
--- end
-
-local HasChanges = function(model, outfitName)
-	local slots = model:GetAll()
-	local targetOutfit = core.GetOutfits()[outfitName]
-
-	for _, slot in pairs(core.itemSlots) do
-		if slots[slot] ~= targetOutfit[slot] then
-			return true
-		end
-	end
-	return false
-end
-
 local counter = 1
 core.CreateOutfitDDM = function(parent)
 	local outfitDropDown = CreateFrame("Frame", folder .. "OutfitDropDown" .. counter, parent, "UIDropDownMenuTemplate")
@@ -268,7 +243,7 @@ core.CreateOutfitDDM = function(parent)
 			info.value = { ["levelOneKey"] = levelOneKey, ["levelTwoKey"] = core.OVERWRITE}
 			info.notCheckable = true
 			info.padding = 0
-			info.disabled = not HasChanges(outfitDropDown:GetParent():GetParent(), levelOneKey)
+			info.disabled = not outfitDropDown:GetParent():ModelDiffersFromOutfit(levelOneKey)
 			info.func = function(self, arg1, arg2, checked)				
 				ShowOverwriteOutfitPopup(levelOneKey, outfitDropDown:GetParent():GetParent())
 				CloseDropDownMenus()

@@ -23,6 +23,20 @@ core.CreateOutfitFrame = function(parent)
         return self.selectedOutfit
     end
 
+    outfitFrame.ModelDiffersFromOutfit = function(self, outfit)
+        if not outfit then return false end
+        local model = self:GetParent()
+        local modelSlots = model:GetAll()
+        local outfitSlots = core.GetOutfits()[outfit]
+    
+        for _, slot in pairs(core.itemSlots) do
+            if modelSlots[slot] ~= outfitSlots[slot] then
+                return true
+            end
+        end
+        return false
+    end
+
     -- outfitFrame.GetSelectedOutfitName = function(self)
     --     local outfits = core.GetOutfits()
     --     return outfits and self.selectedOutfit and outfits[self.selectedOutfit] and outfits[self.selectedOutfit].name
@@ -51,25 +65,12 @@ core.CreateOutfitFrame = function(parent)
         core.SaveOutfit(selectedOutfit, slots)
     end)
     outfitFrame.saveButton.update = function(self)
-        self:Disable()
-
-        if not self:GetParent().selectedOutfit then
-            return
-        end
-
-        local modelState = self:GetParent():GetParent():GetAll()
-        local outfit = core.GetOutfits()[self:GetParent().selectedOutfit]
-        if not outfit then return end
-
-        for _, slot in pairs(core.itemSlots) do
-            if modelState[slot] ~= outfit[slot] then
-                self:Enable()
-                return
-            end
-        end
+        local outfit = self:GetParent().selectedOutfit
+        core.SetEnabled(self, outfit and self:GetParent():ModelDiffersFromOutfit(outfit))
     end
     core.RegisterListener("outfits", outfitFrame.saveButton)
     core.RegisterListener("dressUpModel", outfitFrame.saveButton)
+    core.RegisterListener("previewModel", outfitFrame.saveButton)
     outfitFrame.saveButton:SetScript("OnShow", outfitFrame.saveButton.update)        
 
     outfitFrame.outfitDDM = core.CreateOutfitDDM(outfitFrame)

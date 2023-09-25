@@ -316,23 +316,26 @@ local Mannequin_OnMouseDown = function(self, button)
 			if ChatEdit_InsertLink(itemLink) then
 				return true
 			end
-			print(itemID, GetItemInfo(itemID)) -- TODO: Debug, remove at some point
+			-- print(itemID, GetItemInfo(itemID)) -- TODO: Debug, remove at some point. We secure ItemInfo for Mannequin items anyway already
 			return
 		end
 		
 		if core.IsAtTransmogrifier() then
 			core.SetPending(core.GetSelectedSlot(), itemID)
 		else
-			--core.EquipOffhandNext(DressUpModel)
-			--if not DressUpFrame:IsShown() then DressUpFrame:Show() end
-			--DressUpModel:TryOn(itemID)
-			DressUpItemLink(itemCollectionFrame.enchant and ("item:" .. itemID .. ":" .. itemCollectionFrame.enchant) or itemID)
-			--DressUpModel:TryOn("item:"..itemID..":3789")
-			if itemCollectionFrame.model then
-				itemCollectionFrame.model:Undress()
-				itemCollectionFrame.model:Preview(itemID)
-				itemCollectionFrame.model:TryOn("item:"..itemID..":3789")
+			-- DressUpItemLink(itemCollectionFrame.enchant and ("item:" .. itemID .. ":" .. itemCollectionFrame.enchant) or itemID)
+			link = itemCollectionFrame.enchant and ("item:" .. itemID .. ":" .. itemCollectionFrame.enchant) or itemID
+			if not DressUpFrame:IsShown() then
+				ShowUIPanel(DressUpFrame)
+				DressUpModel:SetUnit("player")
 			end
+			print("Call DressUpModel TryOn with", link, itemCollectionFrame.selectedSlot)
+			DressUpModel:TryOn(link, itemCollectionFrame.selectedSlot)
+			-- if itemCollectionFrame.model then
+			-- 	itemCollectionFrame.model:Undress()
+			-- 	itemCollectionFrame.model:Preview(itemID)
+			-- 	itemCollectionFrame.model:TryOn("item:"..itemID..":3789")
+			-- end
 		end
 	end
 end
@@ -405,6 +408,7 @@ local Mannequin_OnEnter = function(self)
 			TooltipAddItemLineHelper(self, itemID)
 		end
 		GameTooltip:Show()
+		core.SetExtraItemTooltip(displayGroup and itemCollectionFrame.displayGroups[displayGroup] and itemCollectionFrame.displayGroups[displayGroup][selected] or itemID, "RIGHT")
 	end
 end
 
@@ -501,7 +505,7 @@ itemCollectionFrame.GoToItem = function(self, itemID)
 end
 
 
--- Either clear enchant, filters, etc. OnHide or we have to change them to save in or per parent frame
+-- Either clear enchant, filters, etc. OnHide or we have save them per/in parent frame (wardrobe, transmog)
 itemCollectionFrame.SetPreviewEnchant = function(self, enchantID)
 	self.enchant = enchantID	
 	self:UpdateMannequins()
@@ -532,6 +536,16 @@ end
 -- 	OffHand = {14, 23}, -- shields, holdable/tomes
 -- 	Ranged = {15, 25, 26}, -- bow, thrown, ranged right(gun, wands, crossbow)
 -- }
+
+-- Mappings to match slots/categories with our item data. Probably should change item data at some point, to hide/optimize some of this
+-- e.g. there is no reason we have to use 3 bytes in our itemData for equipLoc (MH, 2H, ROBE etc), class (ARMOR, WEAPON) and subclass (CLOTH, DAGGER)
+-- At the least class+subclass could easily me replaced by a single ID
+-- (Could also change our category identifiers to the same ID's on that occasion and only use localized names for display and when we have to find out the equipped weapon cat)
+-- (Could get that items category from itemdata anyway tho, if we assume that our item data is complete)
+-- There are 96 combinations of type, class and subclass in our data, so all 3 would fit into one byte (with one bit to spare, but bit operations are probably more expensive then they are worth)
+-- When we can map these to slot + cat, before list iteration we could generate dict that says our current slot + cat selection allows certain ids
+-- In iteration we only need one table lookup to know if an item fits selection
+-- TODO: if we touch/rework our item data to include more data (class, faction, color?), implement these changes?
 
 -- These are IDs for itemTypes (2H, 1H, MH, OH, etc) in the item data. Not to be confused with inventorySlotIDs
 local slotItemTypes = {
@@ -581,13 +595,14 @@ local typeToClassSubclass = {
 	[core.CATEGORIES.TRADE_GOODS_MEAT] = {7, 8},
 	[core.CATEGORIES.CONSUMABLE_CONSUMABLE] = {0, 0},
 	[core.CATEGORIES.QUEST_QUEST] = {12, 0},
+	[core.CATEGORIES.WEAPON_1H_EXOTICA] = {2, 11},
 	--["Rüstung Buchbände"] = {4, 7},
 	--["Rüstung Götzen"] = {4, 8},
 	--["Rüstung Totems"] = {4, 9},
 	--["Rüstung Siegel"] = {4, 10},
 }
 
-local classSubclassToType = {
+core.classSubclassToType = {
 	[4] = { -- Armor
 		[0] = core.CATEGORIES.ARMOR_MISC,
 		[1] = core.CATEGORIES.ARMOR_CLOTH,
@@ -614,7 +629,7 @@ local classSubclassToType = {
 		[3] = core.CATEGORIES.WEAPON_GUNS,
 		[16] = core.CATEGORIES.WEAPON_THROWN,
 		[19] = core.CATEGORIES.WEAPON_WANDS,
-		[11] = "UNUSED", -- 1H_EXOTICA. There is exactly one item in our itemData of this type (32407 - "Creature - Maiev's Glaive"). Unlockable, but not obtainable through normal means
+		[11] = core.CATEGORIES.WEAPON_1H_EXOTICA, -- 1H_EXOTICA. There is exactly one item in our itemData of this type (32407 - "Creature - Maiev's Glaive"). Unlockable, but not obtainable through normal means
 	},
 	[15] = { -- Miscellaneous
 		[0] = core.CATEGORIES.MISC_JUNK, -- Mostly offhand fish. 2 test chests (34025, 37126)
@@ -630,6 +645,7 @@ local classSubclassToType = {
 	},
 }
 
+-- basically the same as core.slotCategories, but as dict for faster lookup
 local slotHasCategory = {}
 for _, slot in pairs(core.itemSlots) do
 	slotHasCategory[slot] = {}
@@ -637,12 +653,6 @@ for _, slot in pairs(core.itemSlots) do
 		slotHasCategory[slot][category] = true
 	end
 end
-AM(slotHasCategory)
-
-
--- how to find correct items? if we filter by transmogLocation we need to know what kind of items can be used in those? would have to hard code the rules for that atm? 
--- we could track categories in unlocks and only show those, but then we can't display locked items / rely that all categories have unlocks, which is also not good
--- Maybe just do normal inventoryslots in this frame?
 
 itemCollectionFrame.ClearData = function(self)
 	if self.displayList then
@@ -699,9 +709,9 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 		for itemID in core.itemIterator() do
 			itemCount = itemCount + 1
 			local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
-			local itemCategory = classSubclassToType[class][subClass]
+			local itemCategory = core.classSubclassToType[class][subClass]
 			
-			if slotTypes[inventoryType] and slotCats[itemCategory] -- core.Contains(core.slotCategories[slot], itemCategory)
+			if slotTypes[inventoryType] and slotCats[itemCategory]
 					-- and (not classFilter or (class == classFilter and subClass == subClassFilter))
 					and (not category or category == itemCategory)
 					-- and (not atTransmogrifier or core.IsAvailableSourceItem(itemID, slot)) then
@@ -732,6 +742,8 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 				end
 			end
 		end
+
+		print("TYPE COUNT", DEBUG_TYPE_COUNT)
 
 		print("itemCount:", itemCount, "compare:", core.count)
 
@@ -847,3 +859,77 @@ itemCollectionFrame.searchBox:Show()
 itemCollectionFrame.optionsDDM = core.CreateOptionsDDM(itemCollectionFrame)
 itemCollectionFrame.optionsDDM:SetPoint("LEFT", itemCollectionFrame.searchBox, "RIGHT", -10, -3)
 itemCollectionFrame.optionsDDM:Show()
+
+
+
+
+-------------- Extra Tooltip -------------------------
+-- Probably deserves own file?
+
+core.extraItemTooltip = CreateFrame("GameTooltip", "ExtraItemTooltip", GameTooltip, "GameTooltipTemplate")
+core.extraItemTooltip:AddFontStrings(core.extraItemTooltip:CreateFontString( "$parentTextLeft1", nil, "GameTooltipText" ),
+									 core.extraItemTooltip:CreateFontString( "$parentTextRight1", nil, "GameTooltipText" ))
+core.FixTooltip(core.extraItemTooltip)
+
+core.extraItemTooltip:RegisterEvent("MODIFIER_STATE_CHANGED")
+core.extraItemTooltip:SetScript("OnEvent", function(self, event, modifier, pressed, ...)
+	if event == "MODIFIER_STATE_CHANGED" and (modifier == "LSHIFT" or modifier == "RSHIFT") then
+		-- print(event, modifier, pressed, GameTooltip:GetOwner() and GameTooltip:GetOwner():GetName())
+		self.pressed = pressed == 1
+		if pressed == 1 then
+			core.ShowExtraItemTooltip()
+		else
+			core.extraItemTooltip:Hide()
+		end
+	end
+end)
+GameTooltip:HookScript("OnHide", function(self)
+	core.extraItemTooltip.item, core.extraItemTooltip.anchor = nil, nil
+end)
+
+core.SetExtraItemTooltip = function(itemID, anchor)
+	core.extraItemTooltip.item = itemID
+	core.extraItemTooltip.anchor = anchor
+
+	-- print("wtf is this bug?", core.extraItemTooltip:IsShown(), IsShiftKeyDown()) both of these are the opposite  as expected, when tabbing through mannequin items
+
+	if core.extraItemTooltip.pressed or core.extraItemTooltip:IsShown() or IsShiftKeyDown()then
+		core.ShowExtraItemTooltip()
+	end
+end
+
+core.ShowExtraItemTooltip = function()
+	local tooltip = core.extraItemTooltip
+	if not tooltip.item then return end
+
+	local item, anchor = tooltip.item, tooltip.anchor
+	tooltip:SetOwner(GameTooltip, "ANCHOR_NONE")		
+	tooltip:SetHyperlink("item:" .. item)
+	tooltip:Show()
+
+	if anchor == "RIGHT" then
+		local rightPos = GameTooltip:GetRight()
+		local totalWidth = tooltip:GetWidth()
+		tooltip:SetOwner(GameTooltip, "ANCHOR_NONE")		
+		tooltip:ClearAllPoints()
+		if rightPos + totalWidth > GetScreenWidth() then
+			tooltip:SetPoint("TOPRIGHT", GameTooltip, "TOPLEFT", 0, 0)
+		else
+			tooltip:SetPoint("TOPLEFT", GameTooltip, "TOPRIGHT", 0, 0)
+		end
+	else -- if anchor == "BOTTOM" then		
+		local bottomPos = GameTooltip:GetRight()
+		local totalHeight = tooltip:GetHeight()
+		tooltip:SetOwner(GameTooltip, "ANCHOR_NONE")		
+		tooltip:ClearAllPoints()
+		if bottomPos - totalHeight < 0 then
+			tooltip:SetPoint("BOTTOMLEFT", GameTooltip, "TOPLEFT", 0, 0)
+		else
+			tooltip:SetPoint("TOPLEFT", GameTooltip, "BOTTOMLEFT", 0, 0)
+		end
+	end
+	tooltip:SetHyperlink("item:" .. tooltip.item)
+	tooltip:Show()
+end
+
+core.extraItemTooltip:HookScript("OnTooltipSetItem", core.TooltipDisplayTransmog)

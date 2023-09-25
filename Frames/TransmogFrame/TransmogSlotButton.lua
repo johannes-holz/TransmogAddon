@@ -109,7 +109,7 @@ local SlotButton_OnEnter = function(self)
 				GameTooltip:AddLine(" ")
 				GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_PENDING_CHANGE, core.skinTextColor.r, core.skinTextColor.g, core.skinTextColor.b, core.skinTextColor.a)
 				if pendingID == 0 then
-					GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_REMOVE_SKIN, core.skinTextColor.r, core.skinTextColor.g, core.skinTextColor.b, core.skinTextColor.a)
+					GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_REMOVE_SKIN, core.yellowTextColor.r, core.yellowTextColor.g, core.yellowTextColor.b, core.yellowTextColor.a)
 				elseif pendingID > 1 then
 					GameTooltip:AddLine(itemNames[pendingID], itemNameColors[pendingID][1], itemNameColors[pendingID][2], itemNameColors[pendingID][3])
 				elseif pendingID == 1 then
@@ -133,7 +133,7 @@ local SlotButton_OnEnter = function(self)
 				GameTooltip:AddLine(" ")
 				GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_PENDING_CHANGE, core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)
 				if pendingID == 0 then
-					GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_REMOVE_MOG, core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)
+					GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_REMOVE_MOG, core.yellowTextColor.r, core.yellowTextColor.g, core.yellowTextColor.b, core.yellowTextColor.a)
 				elseif pendingID > 1 then
 					GameTooltip:AddLine(--[["|T"..itemIcons[i]..":0|t "..]]itemNames[pendingID], itemNameColors[pendingID][1], itemNameColors[pendingID][2], itemNameColors[pendingID][3])
 				elseif pendingID == 1 then
@@ -146,7 +146,7 @@ local SlotButton_OnEnter = function(self)
 			local color = selectedSkin and core.skinTextColor or core.mogTooltipTextColor
 
 			GameTooltip:AddLine(" ")
-			GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_COSTS, color.r, color.g, color.b, color.a)
+			GameTooltip:AddLine(core.COSTS .. ":", color.r, color.g, color.b, color.a)
 			GameTooltip:AddLine(core.GetPriceString(costsShards, costsCopper, true))
 		end
 

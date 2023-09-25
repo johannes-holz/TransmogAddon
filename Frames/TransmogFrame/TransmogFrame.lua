@@ -54,7 +54,9 @@ local ShowApplyTransmogPopup = function()
 		local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot, id)
 		local _, link, _, _, _, _, _, _, _, tex = GetItemInfo(pendingID)
 		if pendingID then
-			local itemText = pendingID > 1 and (link and (core.GetTextureString(tex, 16) .. " " .. core.LinkToColoredString(link)) or pendingID) or core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
+			local itemText = pendingID > 1 and (link and (core.GetTextureString(tex, 16) .. " " .. core.LinkToColoredString(link)) or pendingID) or
+							 pending == 1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex) or 
+							 core.GetColoredString(core.TRANSMOG_TOOLTIP_REMOVE_MOG, core.yellowTextColor.hex)
 			tinsert(lines, core.SLOT_NAMES[slot])
 			tinsert(lines, ": ")
 			tinsert(lines, itemText)
