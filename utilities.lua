@@ -325,63 +325,6 @@ core.MyWaitFunction = function(delay, func, ...)
 end
 
 
-
-
-
---------------- Globals for easier debugging ------------------------
-
-AM = core.am
-
-
--- Just for Debugging
-core.MS = function(self, tab)
-	local old = collectgarbage("count")
-	local tmp = self.DeepCopy(tab)
-	local new = collectgarbage("count")
-	collectgarbage("collect")
-	return new - old
-end
-
-core.WipeRec = function(self, tab)
-	local count = 0
-	for k, v in pairs(tab) do
-		if type(v) == "table" then
-			self:WipeRec(v)
-		end
-		tab[k] = nil
-		count = count + 1
-	end
-
-	for i = count + 1, count * 2 do
-		tab[i] = nil
-	end
-end
-
-MSChildren = function( tab)
-	for k, v in pairs(tab) do
-		local mem = core:MS(v)
-		if mem > 1 then
-			print(k, mem)
-		end
-	end
-end
-
-CountRec = function(tab)
-	local count = 0
-
-	for k, v in pairs(tab) do
-		if type(v) == "table" then
-			count = count + CountRec(v)
-		else
-			count = count + 1
-		end
-	end
-
-	return count
-end
-
-------
-
 -- TODO: do we want to make certain transmog related utilities global or not?
 
 -- using API provided function
@@ -435,6 +378,24 @@ core.GetNPCID = function(guid)
 	local unitType = tonumber(guid:sub(5,5), 16) % 8
 	
 	return unitType == 3 and tonumber(guid:sub(8, 12), 16)
+end
+
+core.GetItemIDFromLink = function(itemLink)
+    if type(itemLink) == "number" then
+        return itemLink
+    end
+
+    itemLink = strmatch(itemLink, "item:(%d+)")
+    return itemLink and tonumber(itemLink)
+end
+
+core.GetEnchantIDFromLink = function(itemLink)
+    if type(itemLink) == "number" then
+        return nil
+    end
+
+    itemLink = strmatch(itemLink, "item:%d+:(%d+)")
+    return itemLink and tonumber(itemLink) or nil
 end
 
 

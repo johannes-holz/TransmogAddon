@@ -18,6 +18,7 @@ libs\RisingAPI\index.xml
 
 Localization.lua
 Utilities.lua
+DebugUtilities.lua
 LDB.lua
 API_Extensions.lua
 
@@ -58,5 +59,6 @@ Frames\ActiveSkinDropDown.lua
 Outfits.lua
 Frames\OutfitFrame\OutfitDropDown.lua
 Frames\OutfitFrame\OutfitFrame.lua
+Frames\OutfitFrame\DressUpFrame.lua
 
 BalanceDisplay.lua

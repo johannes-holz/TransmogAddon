@@ -1,7 +1,9 @@
 local folder, core = ...
 
--- might wanna upgrade this at some point to behave like a stack and have dynamic query limiting, so we stay under the ~250? requests per 30s, that the client enforces
+-- TODO: might wanna upgrade this at some point to behave like a stack and have dynamic query limiting, so we stay under the ~250? requests per 30s, that the client enforces
 -- (when going over this limit by requesting e.g. 750 items, we don't get any info for ~1:30, at which point we receive all info at once)
+-- additionally the ram usage of the waitframe goes up quite a bit when this happens
+-- while we still want to be able to do FIFO queries, the item collection queries should probably be LIFO and limited per timeframe and in stacksize to keep ram usage low
 
 local Length = core.Length
 

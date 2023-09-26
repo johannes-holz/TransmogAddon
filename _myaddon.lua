@@ -1,11 +1,6 @@
 -- Folder, SharedTable
 local folder, core = ...
 
--- TODO: REMOVE! just used for debug
-Addy = core
-
---TODO: dummy items securen, deutsche item categorien etc lokalisierbar machen
-
 -- ("(\\(\\         Made              (\\_/)")
 -- ("( -.-)          by           =(´o.o`)=")
 -- ("o_(\")(\")      Qhoernchen (\")_(\")")	
@@ -1331,80 +1326,30 @@ end
 
 -- Should probably do a full rework of this at some point with all the new Tricks Ive found
 
-
--- Displays Weapons mainHand and offHand on DressUpModel mod as well as possible (i.e. can't display dualwielding weapons, if the player can't dualwield and wasn't logged into a dualwielding char earlier in the session)
+-- Displays weapons mainHand and offHand on DressUpModel mod as well as possible (i.e. can't display dualwielding weapons, if the player can't dualwield and wasn't logged into a dualwielding char earlier in the session)
 -- the login thing is just another DressUpModel weirdness, since it would be confusing and we can't track it anyway, we ignore that point
 -- requires an undress of the weapons before usage, now that we use that EquipToOffhand trick sometimes instead of always using an "in(not so much)visible" wepaon in MH
-local function ShowMeleeWeapons(mod, mainHand, offHand)
-	if not (mainHand or offHand) or not mod then return end
-	
-	local mhSubType, mhInvType, ohSubType, ohInvType
-	if mainHand then
-		mhSubType, _, mhInvType = select(7, GetItemInfo(mainHand)) -- TODO: this would spout an error if we dont have item cached, so this is pointless. should instead make sure iteminfo is always secured before this gets called (which we do apparently?) At least I haven't see this give an error so far
-		if not mhSubType then
-			FunctionOnItemInfo(mainHand, ShowMeleeWeapons, mod, mainHand, offHand)
-			return
-		end
-	end
-	if offHand then
-		ohSubType, _, ohInvType = select(7, GetItemInfo(offHand))
-		if not ohSubType then
-			FunctionOnItemInfo(offHand, ShowMeleeWeapons, mod, mainHand, offHand)
-			return
-		end
-	end
-	
-	local hasTitanGrip = core.HasTitanGrip()
-	local canDualWield = core.CanDualWield()
-
-	if mainHand then
-		mod:TryOn(DUMMY_POLEARM)
-		mod:TryOn(mainHand)
-		if offHand then
-			if ohInvType == "INVTYPE_SHIELD" or ohInvType == "INVTYPE_HOLDABLE" or ohInvType == "INVTYPE_WEAPONOFFHAND"
-				or canDualWield and (ohInvType ~= "INVTYPE_2HWEAPON" or hasTitanGrip and core.CanBeTitanGripped(ohSubType)) then
-				core.EquipOffhandNext(mod)
-				mod:TryOn(offHand)
-			else
-				--am("MyAdddon: Cannot preview "..select(1, GetItemInfo(offHand)).." in offhand with "..select(1, GetItemInfo(mainHand)).." in mainhand.")
-				return 1
-			end
-		end
-	else
-		if (ohInvType == "INVTYPE_SHIELD" or ohInvType == "INVTYPE_HOLDABLE" or ohInvType == "INVTYPE_WEAPONOFFHAND") then
-			mod:TryOn(offHand)
-		elseif canDualWield and (ohInvType == "INVTYPE_WEAPON" or (hasTitanGrip and core.CanBeTitanGripped(ohSubType))) then
-			if ohInvType == "INVTYPE_WEAPON" then -- trick of toggling hand on other model does not work with 1H, when nothing is equipped in mh .. 
-				mod:TryOn(DUMMY_POLEARM)
-				mod:TryOn(DUMMY_INVISIBLE_ONEHANDER)
-			else
-				core.EquipOffhandNext(mod)
-			end
-			--core.EquipOffhandNext(mod)
-			mod:TryOn(offHand)
-		else
-			--core.am("MyAdddon: Cannot preview "..select(1, GetItemInfo(offHand)).." in offhand.")
-			return 1
-		end
-	end
-end
-core.ShowMeleeWeapons = ShowMeleeWeapons
-
 core.ShowMeleeWeapons = function(mod, mainHand, offHand)
 	if not (mainHand or offHand) or not mod then return end
+
+	if mainHand and (type(mainHand) ~= "number") then mainHand = core.GetItemIDFromLink(mainHand) end
+	if offHand and (type(offHand) ~= "number") then offHand = core.GetItemIDFromLink(offHand) end
+
+	if mainHand and mainHand <= 1 then mainHand = nil end
+	if offHand and offHand <= 1 then offHand = nil end
 	
 	local mhSubType, mhInvType, ohSubType, ohInvType
 	if mainHand then
 		mhSubType, _, mhInvType = select(7, GetItemInfo(mainHand)) -- TODO: this would spout an error if we dont have item cached, so this is pointless. should instead make sure iteminfo is always secured before this gets called (which we do apparently?) At least I haven't see this give an error so far
 		if not mhSubType then
-			FunctionOnItemInfo(mainHand, ShowMeleeWeapons, mod, mainHand, offHand)
+			FunctionOnItemInfo(mainHand, core.ShowMeleeWeapons, mod, mainHand, offHand)
 			return
 		end
 	end
 	if offHand then
 		ohSubType, _, ohInvType = select(7, GetItemInfo(offHand))
 		if not ohSubType then
-			FunctionOnItemInfo(offHand, ShowMeleeWeapons, mod, mainHand, offHand)
+			FunctionOnItemInfo(offHand, core.ShowMeleeWeapons, mod, mainHand, offHand)
 			return
 		end
 	end
@@ -1445,8 +1390,7 @@ core.ShowMeleeWeapons = function(mod, mainHand, offHand)
 	end
 end
 
-
-local CheckForInvalidSetname = function(name)
+local CheckForInvalidSkinName = function(name)
 	local denyMessage
 	if string.len(name) < 1 then
 		denyMessage = core.SKIN_NAME_TOO_SHORT
@@ -1458,7 +1402,7 @@ local CheckForInvalidSetname = function(name)
 end
 
 core.AttemptSkinRename = function(skinID, newName)
-	local denyMessage = CheckForInvalidSetname(newName)
+	local denyMessage = CheckForInvalidSkinName(newName)
 	if denyMessage then
 		core.am(denyMessage)		
 		UIErrorsFrame:AddMessage(denyMessage, 1.0, 0.1, 0.1, 1.0)
@@ -1467,28 +1411,6 @@ core.AttemptSkinRename = function(skinID, newName)
 
 	core.RequestSkinRename(skinID, newName)
 end
-
-
-
--- core.OnEquippedItemChange = function(itemSlot, itemEquipped)
--- 	if not core.transmogFrame:IsShown() then
--- 		if not itemEquipped then
--- 			core.availableMogs[itemSlot] = {}
--- 		else
--- 			core.availableMogsUpdateNeeded[itemSlot] = true -- Update when we open Transmogwindow
--- 		end
--- 	else
--- 		if not itemEquipped then
--- 			if itemSlot == selectedSlot then
--- 				SetSlotAndCategory(nil, nil)
--- 			end
--- 			SetCurrentChangesSlot(itemSlot, nil)
--- 		else
--- 			core.RequestUnlocksSlot(itemSlot)
--- 		end
--- 		UpdateListeners("inventory")
--- 	end
--- end
 
 core.OnEquippedItemChange = function(itemSlot, itemEquipped)	
 	local selectedSkin = core.GetSelectedSkin()
@@ -1582,9 +1504,6 @@ a:RegisterEvent("PLAYER_MONEY")
 a:SetScript("OnEvent", function(self, event, ...)
 	if event == "PLAYER_ENTERING_WORLD" then
 		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
-
-		-- core.InitializeFrame() -- TODO: change to work like the other frames
-		-- core.CreateActiveSkinDropDown(PaperDollFrame)
 		
 		core.InitLDB()
 		core.RequestSkins()

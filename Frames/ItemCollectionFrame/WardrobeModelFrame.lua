@@ -1,6 +1,6 @@
 local folder, core = ...
 
--- This is not the WardrobeDressUpModel, but is used to test Mannequin Settings (Poses, FogNear/Far values, Scale, etc)
+-- This is not intended as the WardrobeDressUpModel. It is used to test Mannequin Settings (Poses, FogNear/Far values, Scale, etc)
 
 local modelColors = {
     DARKGREY = {0.05, 0.05, 0.05,},

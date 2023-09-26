@@ -305,14 +305,6 @@ core.IsItemUnlocked = function(itemID)
 end
 
 
-
-
--- Bobby = function()
---     core:WipeRec(core.itemInfo)
---     core:WipeRec(core.displayIDs)
---     collectgarbage("collect")
--- end
-
 ------------ Experimenting with Compressing Data into big String -----------------------------------
 
 local function newStack ()

@@ -1,7 +1,9 @@
 local folder, core = ...
 
-core.CreateActiveSkinDropDown = function(parent)
-	local skinDropDown = CreateFrame("Frame", folder .. "ActiveSkinDropDown", parent, "UIDropDownMenuTemplate")
+local counter = 1
+core.CreateActiveSkinDropDown = function(parent, menu)
+	local skinDropDown = CreateFrame("Frame", folder .. "ActiveSkinDropDown" .. counter, parent, "UIDropDownMenuTemplate")
+	counter = counter + 1
 
 	skinDropDown.noTransmogInfo = "No Data"
 
@@ -65,33 +67,63 @@ core.CreateActiveSkinDropDown = function(parent)
 	core.RegisterListener("skins", skinDropDown)
 	
 	UIDropDownMenu_JustifyText(skinDropDown, "LEFT") 
-	UIDropDownMenu_Initialize(skinDropDown, skinDropDown.Initialize)
-    UIDropDownMenu_SetButtonWidth(skinDropDown, 40)
+	UIDropDownMenu_Initialize(skinDropDown, skinDropDown.Initialize, menu and "MENU" or nil)
 
-	UIDropDownMenu_SetWidth(skinDropDown, 100, 0)
-    skinDropDown:SetScale(0.9)
-    skinDropDown:Hide()
+	if not menu then
+		UIDropDownMenu_SetButtonWidth(skinDropDown, 40)
+		UIDropDownMenu_SetWidth(skinDropDown, 100, 0)
+		skinDropDown:SetScale(0.9)
+		skinDropDown:Hide()
+	end
 	
 	return skinDropDown
 end
 
 core.activeSkinDropDown = core.CreateActiveSkinDropDown(PaperDollFrame)
 
+core.activeSkinButton = core.CreateMeATextButton(CharacterModelFrame, 70, 20, core.SKINS)
+core.activeSkinButton:SetFrameLevel(core.activeSkinButton:GetFrameLevel() + 2)
+core.activeSkinButton:SetPoint("BOTTOMLEFT", 2, 24)
+_G[folder .. "ActiveSkinButton"] = core.activeSkinButton -- dirty hack, so ToggleDropDownMenu can find the button
+core.activeSkinButton.ddm = core.CreateActiveSkinDropDown(core.activeSkinButton, true)
+
+core.activeSkinButton:SetScript("OnClick", function(self, button)
+	if button == "LeftButton" then
+		ToggleDropDownMenu(nil, nil, self.ddm, _G[folder .. "ActiveSkinButton"], 0, 0)
+	end
+end)
+
 PaperDollFrame:HookScript("OnShow", function(self)
 	local skins = core.GetSkins()
+	-- show when we have bought a skin or when we have usable skins?
 	-- local usableSkinCount = 0
 	-- for _, skin in pairs(skins) do
 	-- 	if skin.name and skin.name ~= "" then
 	-- 		usableSkinCount = usableSkinCount + 1
 	-- 	end
 	-- end
-	-- show when we have bought a skin or when we have usable skins?
-	if skins and core.Length(skins) > 0 and not core.activeSkinDropDown:IsShown() then  -- TODO: dropdown / button / nothing? option
-		UIDropDownMenu_SetWidth(PlayerTitleFrame, 90)
-		PlayerTitleFrame:ClearAllPoints()
-		PlayerTitleFrame:SetPoint("TOPRIGHT", CharacterLevelText, "BOTTOM", 0, -9)
-		core.activeSkinDropDown:SetPoint("LEFT", PlayerTitleFrameButton, "RIGHT", -12, -2)
-		core.activeSkinDropDown:SetFrameLevel(core.activeSkinDropDown:GetParent():GetFrameLevel() + 2)
-		core.activeSkinDropDown:Show()
+
+	local enableActiveSkinDropDown = true
+	local enableActiveSkinButton = false
+
+	if enableActiveSkinDropDown then
+		if skins and core.Length(skins) > 0 and not core.activeSkinDropDown:IsShown() then  -- TODO: dropdown / button / nothing? option
+			UIDropDownMenu_SetWidth(PlayerTitleFrame, 90)
+			PlayerTitleFrame:ClearAllPoints()
+			PlayerTitleFrame:SetPoint("TOPRIGHT", CharacterLevelText, "BOTTOM", 0, -9)
+			core.activeSkinDropDown:SetPoint("LEFT", PlayerTitleFrameButton, "RIGHT", -12, -2)
+			core.activeSkinDropDown:SetFrameLevel(core.activeSkinDropDown:GetParent():GetFrameLevel() + 2)
+			core.activeSkinDropDown:Show()
+		end
+	else
+		if core.activeSkinDropDown:IsShown() then
+			core.activeSkinDropDown:Hide()
+			UIDropDownMenu_SetWidth(PlayerTitleFrame, 160)
+			PlayerTitleFrame:ClearAllPoints()
+			PlayerTitleFrame:SetPoint("TOP", CharacterLevelText, "BOTTOM", 0, -9)
+		end
 	end
+
+	core.SetShown(core.activeSkinButton, enableActiveSkinButton)
+
 end)
