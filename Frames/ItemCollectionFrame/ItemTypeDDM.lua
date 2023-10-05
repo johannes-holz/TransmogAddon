@@ -24,6 +24,7 @@ core.CreateItemTypeDDM = function(self, parent)
 
         local slot = parent.selectedSlot
         local cat = parent.selectedCategory
+        local atTransmogrifier = core.IsAtTransmogrifier()
         
         local info = UIDropDownMenu_CreateInfo()
         local types = core.slotCategories[slot]
@@ -36,6 +37,15 @@ core.CreateItemTypeDDM = function(self, parent)
         --         types = {"Rüstung Schilde", "Rüstung Verschiedenes", "Verschiedenes Plunder", "Waffe Dolche", "Waffe Faustwaffen", "Waffe Einhandäxte", "Waffe Einhandstreitkolben", "Waffe Einhandschwerter", "Waffe Verschiedenes"}
         --     end
         -- end        
+    
+        if not atTransmogrifier then
+            info.text = ALL
+            info.arg1 = nil
+            info.checked = not cat
+            info.func = ItemTypeDDM_ButtonOnClick
+            --info.justifyH = "RIGHT" -- doesn't do anything?? Only takes "CENTER" or nil as arguments, but somehow not even Center seems to work here. Could try scuffed solution with space/pixel? padding
+            UIDropDownMenu_AddButton(info, level)
+        end
         
         for _, itemType in pairs(types) do
             info.text = core.CATEGORY_DISPLAY_NAME[itemType] or core.RemoveFirstWordInString(itemType) -- TODO: Make all this category stuff less scuffed?

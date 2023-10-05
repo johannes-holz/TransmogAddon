@@ -50,17 +50,25 @@ local ShowApplyTransmogPopup = function()
 	costs.points = costs.points or costs.shards
 
 	local lines = {}
-	for slot, pending in pairs(core.GetCurrentChanges()) do
+	for _, slot in pairs(core.itemSlots) do
 		local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot, id)
-		local _, link, _, _, _, _, _, _, _, tex = GetItemInfo(pendingID)
 		if pendingID then
+			local _, link, _, _, _, _, _, _, _, tex = GetItemInfo(pendingID)
 			local itemText = pendingID > 1 and (link and (core.GetTextureString(tex, 16) .. " " .. core.LinkToColoredString(link)) or pendingID) or
-							 pending == 1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex) or 
-							 core.GetColoredString(core.TRANSMOG_TOOLTIP_REMOVE_MOG, core.yellowTextColor.hex)
-			tinsert(lines, core.SLOT_NAMES[slot])
-			tinsert(lines, ": ")
-			tinsert(lines, itemText)
-			tinsert(lines, "\n")
+							pendingID == 1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex) or 
+							core.GetColoredString(core.TRANSMOG_TOOLTIP_REMOVE_MOG, core.yellowTextColor.hex)
+			local line = core.SLOT_NAMES[slot] .. ": " .. itemText .. "\n"
+			tinsert(lines, line)
+			-- if strlen(line) < 100 then
+			-- 	line = line .. strrep(" ", 100 - strlen(line))
+			-- end
+			-- line = line .. "\n"
+			-- tinsert(lines, line)
+
+		-- 	tinsert(lines, core.SLOT_NAMES[slot])
+		-- 	tinsert(lines, ": ")
+		-- 	tinsert(lines, itemText)
+		-- 	tinsert(lines, "\n")		
 		end
 	end			
 
@@ -625,10 +633,14 @@ core.InitializeFrame = function()
 		f.buttons["tab2"]:Show()
 		f.buttons["tab2"]:Enable()
 		--f.buttons["tab2"]:SetNormalTexture("Interface\\AddOns\\".. folder .."\\images\\UI-AuctionFrame-Bid-Top")
+		
+		StaticPopup_Hide("ApplyTransmogPopup")		
+		StaticPopup_Hide("TransferVisualsToSkinPopup")
 	end
 	f.update()
 	core.RegisterListener("selectedSkin", f)
 	core.RegisterListener("inventory", f)
+	core.RegisterListener("currentChanges", f)
 	
 	f:Hide()
 end

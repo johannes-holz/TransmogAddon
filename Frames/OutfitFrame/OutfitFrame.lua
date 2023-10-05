@@ -88,8 +88,11 @@ core.CreateOutfitFrame = function(parent)
 
         if self.e < 0 then
             self.e = self.e + self.interval
-                     
-            local show = core.MouseIsOver(self) or UIDropDownMenu_GetCurrentDropDown() == self.outfitDDM and DropDownList1:IsShown() or core.IsOutfitPopupActive()
+            
+            local currentDDM = UIDropDownMenu_GetCurrentDropDown()
+            local ddmActive = DropDownList1:IsShown()
+            local show = core.MouseIsOver(self) or currentDDM == self.outfitDDM and ddmActive or core.IsOutfitPopupActive()
+            local show = show and not (currentDDM ~= self.outfitDDM and ddmActive)
             self.targetAlpha = show and 1 or self.fadedAlpha
             self.fadeOutTimer = show and self.fadeOutDelay or self.fadeOutTimer - self.interval
 

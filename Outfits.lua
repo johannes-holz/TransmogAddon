@@ -44,7 +44,7 @@ core.DeleteOutfit = function(name)
     core.UpdateListeners("outfits")
 end
 
-core.RenameOutfit = function(oldName, newName) -- or oldName, newName ...    
+core.RenameOutfit = function(oldName, newName)
     assert(oldName and MyAddonDB.outfits[oldName] and newName)
 
     local invalidReason = core.IsInvalidOutfitName(newName)
@@ -54,8 +54,10 @@ core.RenameOutfit = function(oldName, newName) -- or oldName, newName ...
     end
 
     MyAddonDB.outfits = MyAddonDB.outfits or {}
-    MyAddonDB.outfits[newName] = MyAddonDB.outfits[oldName]
+    local set = MyAddonDB.outfits[oldName]
     MyAddonDB.outfits[oldName] = nil
+    MyAddonDB.outfits[newName] = set 
+    
     core.UpdateListeners("outfits")
     return true
 end
@@ -95,24 +97,232 @@ end
 --		OffHand		- appearanceID
 --		OffHand		- illusionID
 
-local slashCommandMap = {
-	[1] = "HeadSlot",
+
+local outfitLinkType = "outfit"
+
+local NUM_MAX_SLOTS = 15
+local chatEncodingIDToSlot = {
+	-- [1] = "HeadSlot",
+	-- [2] = "ShoulderSlot",
+    -- -- [3] = "SecondaryShoulderSlot",
+	-- [4] = "BackSlot",
+	-- [5] = "ChestSlot",
+	-- [6] = "ShirtSlot",
+	-- [7] = "TabardSlot",
+	-- [8] = "WristSlot",
+	-- [9] = "HandsSlot",
+	-- [10] = "WaistSlot",
+	-- [11] = "LegsSlot",
+	-- [12] = "FeetSlot",
+	-- [13] = "MainHandSlot",
+    -- -- [14] = "SecondaryMainHandSlot",
+	-- -- [15] = "MainHandEnchantSlot",
+	-- [16] = "SecondaryHandSlot",
+	-- -- [17] = "SecondaryHandEnchantSlot",
+	-- -- [18] = "RangedSlot",
+    [1] = "HeadSlot",
 	[2] = "ShoulderSlot",
-	[4] = "BackSlot",
-	[5] = "ChestSlot",
-	[6] = "ShirtSlot",
-	[7] = "TabardSlot",
-	[8] = "WristSlot",
-	[9] = "HandsSlot",
-	[10] = "WaistSlot",
-	[11] = "LegsSlot",
-	[12] = "FeetSlot",
-	[13] = "MainHandSlot",
-	-- [15] = "MainHandEnchantSlot",
-	[16] = "SecondaryHandSlot",
-	-- [17] = "SecondaryHandEnchantSlot",
-	-- [18] = "RangedSlot",
+	[3] = "BackSlot",
+	[4] = "ChestSlot",
+	[5] = "ShirtSlot",
+	[6] = "TabardSlot",
+	[7] = "WristSlot",
+	[8] = "HandsSlot",
+	[9] = "WaistSlot",
+	[10] = "LegsSlot",
+	[11] = "FeetSlot",
+	[12] = "MainHandSlot",
+    [13] = "ShieldHandWeaponSlot",
+	[14] = "OffhandSlot",
+    [15] = "RangedSlot",
+	-- [16] = "MainHandEnchantSlot",
+	-- [17] = "ShieldHandWeaponEnchantSlot",
 }
+local chatEncodingSlotToID = {}
+for k, v in pairs(chatEncodingIDToSlot) do
+    chatEncodingSlotToID[v] = k
+end
+
+core.EncodeOutfit = function(items)
+    local string = ""
+    for i = 1, NUM_MAX_SLOTS do
+        local slot = chatEncodingIDToSlot[i]
+        string = string .. ":" .. (slot and items[slot] or "0")
+    end
+    return string
+end
+
+core.DecodeOutfit = function(link)
+    -- we accept link or string format, but want to work with outfitString
+    if strfind(link, "|H") then
+        link = select(3, strfind(link, "|H(.-)|h"))
+    end
+
+    local data = { select(2, strsplit(":", link)) }
+    local set = {}
+    for i, itemID in pairs(data) do
+        local slot = chatEncodingIDToSlot[i]
+        if slot and itemID ~= "" then
+            itemID = tonumber(itemID)
+            if itemID and itemID > 0 then
+                set[slot] = itemID
+            end
+        end
+    end
+    return set
+end
+
+core.IsValidSet = function(set)
+    return set and type(set) == "table"
+end
+
+-- "\124cffff00ff\124Houtfit:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000\124h[Transmog Outfit]\124h\124r"
+core.GenerateOutfitLink = function(set, name) -- allow name? better not imo
+    if not set or not core.IsValidSet(set) then return end
+
+    local displayName = "[Transmog Outfit]"
+    local color = core.mogTooltipTextColor.hex or "ffff00ff"
+    return "\124c" .. color .. "\124H" .. outfitLinkType .. core.EncodeOutfit(set) .. "\124h" .. displayName .. "\124h\124r"
+end
+
+-- From wiki https://wowwiki-archive.fandom.com/wiki/ItemLink, supposedly works with item links, strings, ids:
+-- local _, _, Color, Ltype, Id, Enchant, Gem1, Gem2, Gem3, Gem4, Suffix, Unique, LinkLvl, Name = string.find(itemLink, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
+
+local OriginalSetHyperlink = ItemRefTooltip.SetHyperlink
+ItemRefTooltip.SetHyperlink = function(self, link, ...)    
+    local linkType, id = strsplit(":", link or "")
+
+    -- print(link, linkType, sender)
+    if linkType == outfitLinkType then
+        local set = core.DecodeOutfit(link)
+        core.ShowOutfitTooltip(set)
+        return
+    end
+
+    core.HideOutfitTooltipStuff() -- Or Hook OnTooltipCleared?
+    -- print("its not outfit")
+    return OriginalSetHyperlink(self, link, ...)
+end
+
+local OnDressUpItemLink = function(link)
+    -- print("hi i am dressup", link)
+    if type(link) == "number" then return end
+    local start, finish, linkType = strfind(link, "\124H(%w+):")
+    -- print(linkType)
+
+    if linkType == outfitLinkType then
+        if not DressUpFrame:IsShown() then
+            ShowUIPanel(DressUpFrame)
+            DressUpModel:SetUnit("player")
+        end
+        DressUpModel:SetAll(core.DecodeOutfit(link))
+    end
+end
+
+local DressUpItemLinkOrig = DressUpItemLink
+DressUpItemLink = function(link)
+    if not OnDressUpItemLink(link) then
+        return DressUpItemLinkOrig(link)
+    end
+end
+
+
+--[[
+Directly:
+Option A: Jemandem direkt die Setinfo schicken. Dann bräuchte der andere aber wie in DressMe eine Liste empfangener outfits. Bin ich kein Fan von
+
+Chatlinks:
+Chatlinks haben imo den großen Vorteil, dass der Empfänger eine einfache Möglichkeit hat, zu entscheiden, ob und wann er das Set angucken will
+Sind equivalent wie man sich auch so schon einzelne Items verlinkt, Sender kann ganz einfach entscheiden wo und wem er etwas senden will etc.
+
+Option B: Chatlink und auf CHAT_MSG Event das Set im entsprechenden Channel broadcasten. Nachteil: Man kann zB. in SAY und YELL nicht Addon Nachrichten verschicken
+Option C: Quasi voll im Stiel von WA. CHATMSG, die von anderen AddonUsern in einen Link umgewandelt wird, der Absendername und Identifier enthält
+            Klickt jemand auf den Link wird Set von Absender abgefragt und bei Erhalt der Tooltip aktualisiert (wenn sichtbar und richtige ID) bzw Set anprobiert
+            Braucht viel Aufwand und Schutz vor Abuse, aber vermutlich die höchstwertigste Lösung
+Option D: Setdaten direkt in die Nachricht schreiben. Vorteil: Spart extrem viel Aufwand und sollte am reibungslosesten funktionieren
+            Nachteil: Chat wird für nicht-addon user ziemlich vollgespammt? Würde dann zB so aussehen:
+            [name:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000]
+
+]]
+
+--[[
+Custom Itemlinks get denied by TrinityCore.
+WeakAura appararently handles links by first just sending an unformated chat message alla "[WeakAuras: Charname - Displayname]"
+People without the addon will see it like that, while people with addon will get it modified with chatfilters to a clickable link, that than has item link format and reads [Charname - Displayname]
+On Clicking a custom Tooltip opens and in the background the data for Displayname will get requested from Charname
+
+Unsure, why we do not directly send an addon chatmessage and manually add it to chatframe for everyone who received the message in the corresponding channel?
+Maybe the latter is not so trivial, especially with chat addons etc?
+]]
+
+-- SendAddonMessage("prefix", "text", "type", "target")
+-- Can't send AddonMessage in every channal. Particularly no say/yell. Technically we could just put full outfit into the normal message, and display it however we want with chat filter for other addon users
+-- Might be seen as too spammy tho for non-addon users
+-- Is the chat paste approach generally ok tho? If we do it as chat pasted link style, we have to do it full WA style tho? Or even more scuffed
+-- SEND = function(set, name)
+--     if not set then return end
+
+--     SendAddonMessage("outfit v1", core.EncodeOutfit(set), "PARTY")
+
+--     local msg = "[Outfit: " .. UnitName("player") .. " - " .. (name or "Unnamed") .. "]"
+--     SendChatMessage(msg, "PARTY")
+-- end
+
+-- local received = {}
+
+-- local f = CreateFrame("Frame")
+-- f:RegisterEvent("CHAT_MSG_ADDON")
+-- f:SetScript("OnEvent", function(self, event, prefix, msg, channel, sender)
+--     print(event, prefix, msg, channel, sender)
+
+--     if prefix == "outfit v1" and DressUpModel:IsShown() then
+--         local set = core.DecodeOutfit(msg)
+--         received[sender] = set
+--     end
+-- end)
+
+-- -- |cff9d9d9d|Hitem:3299::::::::20:257::::::|h[Fractured Canine]|h|r
+-- local function filterFunc(_, event, msg, player, l, cs, t, flag, channelId, ...)
+--     local start, finish, characterName, outfitName = msg:find("%[Outfit: ([^%s]+) %- (.+)%]")
+--     print(event, msg, player, start, finish, characterName, outfitName)
+--     local newMsg = msg
+--     if characterName and outfitName then
+--         newMsg = msg:sub(1, start - 1)
+--             .. "|c" .. core.mogTooltipTextColor.hex .. "|Hitem:" .. outfitLinkType .. ":" .. characterName .. ":::::::::::::::" .. "|h[" .. "Outfit" .. " - " .. outfitName .. "]|h|r"
+--             .. msg:sub(finish + 1)
+--     end
+--     return false, newMsg, player, l, cs, t, flag, channelId, ...
+-- end
+
+-- ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL", filterFunc)
+-- ChatFrame_AddMessageEventFilter("CHAT_MSG_YELL", filterFunc)
+-- ChatFrame_AddMessageEventFilter("CHAT_MSG_GUILD", filterFunc)
+-- ChatFrame_AddMessageEventFilter("CHAT_MSG_OFFICER", filterFunc)
+-- ChatFrame_AddMessageEventFilter("CHAT_MSG_PARTY", filterFunc)
+-- ChatFrame_AddMessageEventFilter("CHAT_MSG_PARTY_LEADER", filterFunc)
+-- ChatFrame_AddMessageEventFilter("CHAT_MSG_RAID", filterFunc)
+-- ChatFrame_AddMessageEventFilter("CHAT_MSG_RAID_LEADER", filterFunc)
+-- ChatFrame_AddMessageEventFilter("CHAT_MSG_SAY", filterFunc)
+-- ChatFrame_AddMessageEventFilter("CHAT_MSG_WHISPER", filterFunc)
+-- ChatFrame_AddMessageEventFilter("CHAT_MSG_WHISPER_INFORM", filterFunc)
+-- ChatFrame_AddMessageEventFilter("CHAT_MSG_BN_WHISPER", filterFunc)
+-- ChatFrame_AddMessageEventFilter("CHAT_MSG_BN_WHISPER_INFORM", filterFunc)
+-- ChatFrame_AddMessageEventFilter("CHAT_MSG_BATTLEGROUND", filterFunc)
+-- ChatFrame_AddMessageEventFilter("CHAT_MSG_BATTLEGROUND_LEADER", filterFunc)
+
+-- not sure what the custom link exploit was, that caused trinity core to filter out custom links, but just stick to the way WA does it and prehook?
+-- local ItemRefTooltip_OnSetHyperlink = function(self, itemString)
+--     local linkData = { strsplit(":", itemString) } -- item:itemID:enchantID:gemID1:::::::
+--     local _, linkType, sender = strsplit(":", itemString)
+    
+--     AM(linkType, sender)
+--     if linkType == outfitLinkType and received[sender] then
+--         -- no mod: open some kind of tooltip
+--         AM("open tooltip with:", received[sender])
+--     end
+-- end
+-- hooksecurefunc(ItemRefTooltip, "SetHyperlink", ItemRefTooltip_OnSetHyperlink)
+
 
 -- blizzard uses explicit items for hidden slots
 
@@ -162,70 +372,44 @@ SlashCmdList["OUTFIT"] = core.ParseOutfitSlashCommand
 --    print("Hello World!")
 -- end 
 
---[[
-Custom Itemlinks get denied by TrinityCore.
-WeakAura appararently handles links by first just sending an unformated chat message alla "[WeakAuras: Charname - Displayname]"
-People without the addon will see it like that, while people with addon will get it modified with chatfilters to a clickable link, that than has item link format and reads [Charname - Displayname]
-On Clicking a custom Tooltip opens and in the background the data for Displayname will get requested from Charname
-
-Unsure, why we do not directly we an addon chatmessage and manually add it to chatframe for everyone who received the message in the corresponding channel?
-Maybe the latter is not so trivial, especially with chat addons etc?
-]]
 
 
 
-local outfitLinkType = "outfit_v1"
+-- local outfitLinkType = "outfit_v1"
 
-local linkMap = {
+-- local linkMap = {
     
-}
+-- }
 
-local ItemRefTooltip_OnSetHyperlink = function(self, itemString)
-    local linkData = { strsplit(":", itemString) } -- item:itemID:enchantID:gemID1:::::::
+-- local ItemRefTooltip_OnSetHyperlink = function(self, itemString)
+--     local linkData = { strsplit(":", itemString) } -- item:itemID:enchantID:gemID1:::::::
 
-    if linkType == outfitLinkType then
-        -- Do whatever you want.
-        print("outfit link")
-    end
-    if linkData[2] == outfitLinkType then
-        print("data get")
-        AM(linkData)
-    end
-end
+--     if linkType == outfitLinkType then
+--         -- Do whatever you want.
+--         print("outfit link")
+--     end
+--     if linkData[2] == outfitLinkType then
+--         print("data get")
+--         AM(linkData)
+--     end
+-- end
 
-hooksecurefunc(ItemRefTooltip, "SetHyperlink", ItemRefTooltip_OnSetHyperlink)
+-- hooksecurefunc(ItemRefTooltip, "SetHyperlink", ItemRefTooltip_OnSetHyperlink)
 
-LINK = function()
-    print("|Hitem:" .. outfitLinkType .. ":1:2:3:4:5:6:7:8:9:10:11:12:13:14:15:16:17:18:19:20|h[Click here!]|h")
-    local link = "\124Hitem:" .. 2000
-    for i = 1, 10 do
-        link = link .. ":" .. (50000 + i)
-    end
-    link = link .. "\124h[Click here!]\124h"
-    print(link)
+-- LINK = function()
+--     print("|Hitem:" .. outfitLinkType .. ":1:2:3:4:5:6:7:8:9:10:11:12:13:14:15:16:17:18:19:20|h[Click here!]|h")
+--     local link = "\124Hitem:" .. 2000
+--     for i = 1, 10 do
+--         link = link .. ":" .. (50000 + i)
+--     end
+--     link = link .. "\124h[Click here!]\124h"
+--     print(link)
 
-    link = "|cff9d9d9d|Hitem:3299::::::::20:257::::::|h[Fractured Canine]|h|r"
-    ChatEdit_InsertLink(link)
-end
+--     link = "|cff9d9d9d|Hitem:3299::::::::20:257::::::|h[Fractured Canine]|h|r"
+--     ChatEdit_InsertLink(link)
+-- end
 
 
-local function filterFunc(_, event, msg, player, l, cs, t, flag, channelId, ...)
-    print(event, msg, player)
-end
-    
 
-ChatFrame_AddMessageEventFilter("CHAT_MSG_CHANNEL", filterFunc)
-ChatFrame_AddMessageEventFilter("CHAT_MSG_YELL", filterFunc)
-ChatFrame_AddMessageEventFilter("CHAT_MSG_GUILD", filterFunc)
-ChatFrame_AddMessageEventFilter("CHAT_MSG_OFFICER", filterFunc)
-ChatFrame_AddMessageEventFilter("CHAT_MSG_PARTY", filterFunc)
-ChatFrame_AddMessageEventFilter("CHAT_MSG_PARTY_LEADER", filterFunc)
-ChatFrame_AddMessageEventFilter("CHAT_MSG_RAID", filterFunc)
-ChatFrame_AddMessageEventFilter("CHAT_MSG_RAID_LEADER", filterFunc)
-ChatFrame_AddMessageEventFilter("CHAT_MSG_SAY", filterFunc)
-ChatFrame_AddMessageEventFilter("CHAT_MSG_WHISPER", filterFunc)
-ChatFrame_AddMessageEventFilter("CHAT_MSG_WHISPER_INFORM", filterFunc)
-ChatFrame_AddMessageEventFilter("CHAT_MSG_BN_WHISPER", filterFunc)
-ChatFrame_AddMessageEventFilter("CHAT_MSG_BN_WHISPER_INFORM", filterFunc)
-ChatFrame_AddMessageEventFilter("CHAT_MSG_BATTLEGROUND", filterFunc)
-ChatFrame_AddMessageEventFilter("CHAT_MSG_BATTLEGROUND_LEADER", filterFunc)
+
+-- SendAddonMessage("prefix", "text", "type", "target");

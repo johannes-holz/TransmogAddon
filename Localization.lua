@@ -21,7 +21,10 @@ L.deDE = {
     LOADING1 = "lädt ...",
     LOADING2 = "Gegenstand wird geladen ...",
     UNDRESS = "Ausziehen",
+    TRY_ON = "Anprobieren",
     PRINT = "Drucken",
+    SHARE = "Teilen",
+    SELECT_ITEM_TYPE = "Gegenstandsarten", -- "Gegenstandsart auswählen",
 
     HIDE = "Verstecken",
     UNMOG = "Entmogrifizieren",
@@ -45,6 +48,7 @@ L.deDE = {
     BUY_SKIN_SLOT = "Weiteren Skinplatz kaufen",
     EMPTY_SKIN_SLOT = "[Freier Skinplatz]",
 
+    OUTFIT = "Outfit",
     NEW_OUTFIT = "Neues Outfit erstellen",
     NO_OUTFIT = "Kein Outfit",
     CREATE_OUTFIT_TEXT1 = "Namen für neues Outfit eingeben:",
@@ -185,7 +189,10 @@ L.enEU = {
     LOADING1 = "loading ...",
     LOADING2 = "Loading item info ...",
     UNDRESS = "Undress",
+    TRY_ON = "Try on",
     PRINT = "Print",
+    SHARE = "Share",
+    SELECT_ITEM_TYPE = "Item types", -- "Select item type",
 
     HIDE = "Hide",
     UNMOG = "Unmog",
@@ -209,6 +216,7 @@ L.enEU = {
     BUY_SKIN_SLOT = "Buy another skin slot",
     EMPTY_SKIN_SLOT = "[Free skin slot]",
 
+    OUTFIT = "Outfit",
     NEW_OUTFIT = "Create new outfit",
     NO_OUTFIT = "No outfit",
     CREATE_OUTFIT_TEXT1 = "Enter name for new outfit:",

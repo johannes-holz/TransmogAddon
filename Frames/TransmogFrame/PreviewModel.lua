@@ -129,12 +129,12 @@ core.CreatePreviewModel = function(parent, width, height)
 			--if x > 0.65 then z = z + x / 20 end
 			x = x - 0.05
 			model.texRatio = model.texRatio - 0.014
-			model.texCutoff = model.texCutoff-0.01
-		elseif delta > 0 and x < 1 then
+			model.texCutoff = model.texCutoff - 0.01
+		elseif delta > 0 and x < 0.9 then
 			x = x + 0.05
 			--if x > 0.65 then z = z - x / 20 end
 			model.texRatio = model.texRatio + 0.014
-			model.texCutoff = model.texCutoff+0.01
+			model.texCutoff = model.texCutoff + 0.01
 		end
 		--Hängt von der Kameraposition und der Hintergrundtexture ab und braucht daher auch pro rasse/geschlecht abgestimmte parameter
 		--Nach oben hin auch weniger punktflucht als zur seite? bei himmel gut, bei wänden und co weniger
@@ -156,7 +156,7 @@ core.CreatePreviewModel = function(parent, width, height)
 	local path = "Interface\\DressUpFrame\\"
 	if race == "Gnome" or race == "Troll" or race == "Orc" then
 		--race = "Nightborne"--"Nightborne"--"TROLL"--"Worgen"--"HighmountainTauren"
-		path = "Interface\\AddOns\\".. folder .."\\images\\"
+		path = "Interface\\AddOns\\".. folder .."\\images\\DressUpFrame\\"
 		--model.texRatio = 4/5 --spillt textur über
 		--model:SetPosition(0.1, 0, -0.1)
 	end

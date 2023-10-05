@@ -314,13 +314,22 @@ DressUpFrame.undressButton:SetScript("OnClick", function(self)
     DressUpModel:Undress()
 end)
 
-DressUpFrame.printButton = core.CreateMeATextButton(DressUpFrame, 80, 22, core.PRINT)
+DressUpFrame.printButton = core.CreateMeATextButton(DressUpFrame, 80, 22, core.SHARE)
 DressUpFrame.printButton:SetPoint("BOTTOMRIGHT", DressUpFrame.undressButton, "BOTTOMLEFT")
 DressUpFrame.printButton:SetScript("OnClick", function(self)
-    for slot, itemID in pairs(items) do
-        local _, itemLink = GetItemInfo(itemID)
-        print(core.SLOT_NAMES[slot], ": ", itemLink or (itemID == 1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)) or itemID)
-    end
+    -- SEND(items)
+    -- for slot, itemID in pairs(items) do
+    --     local _, itemLink = GetItemInfo(itemID)
+    --     print(core.SLOT_NAMES[slot], ": ", itemLink or (itemID == 1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)) or itemID)
+    -- end
+    -- local link = "\124cffff00ff\124Houtfit:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000\124h[Transmog Outfit]\124h\124r"
+    local link = core.GenerateOutfitLink(items)
+    -- link = "\124cffaa00ff\124Houtfit:0:0:0:0:0:0:0:0:1:0:0:0:0:0:0\124h[Transmog Outfit]\124h\124r"
+    -- link = "\124cffaa00ff\124Houtfit:0:0:0:0:0:0:0:0:1:0:0:0:0:0:0\124h[Transmog Outfit uwu " .. core.GetTextureString("Interface/Buttons/UI-CheckBox-Check") .. "]\124h\124r"
+    -- link = "\124cffaa00ff\124Houtfit:0" ..core.GetTextureString("Interface/Buttons/UI-CheckBox-Check") .. ":0:0:0:0:0:0:0:1:0:0:0:0:0:0\124h[Transmog Outfit]\124h\124r"
+    
+    -- ChatFrame1EditBox:SetFocus()
+    ChatEdit_InsertLink(link)
 end)
 
 -- blizzlike item list frame. at least usefull for debugging atm
@@ -430,3 +439,4 @@ DressUpFrame.listButton:SetPoint("TOPRIGHT", -44, -40)
 DressUpFrame.listButton:SetScript("OnClick", function(self)
     core.SetShown(self:GetParent().itemListFrame, not self:GetParent().itemListFrame:IsShown())
 end)
+

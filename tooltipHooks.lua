@@ -36,6 +36,8 @@ local OwnerFrame_GetUnitSlot = function(f)
 end
 
  -- for non player units we get visualID through GetInventoryItemID, for the player can get the itemtransmog through its itemlink and skin information through the API GetSkins()
+ -- TODO: This was originally written for GameTooltip (to work with InspectFrame etc) and requires some rework for e.g. ItemRefTooltip Extratooltip to work etc
+		-- Also gotta fix that scuffness with out transmog line hiding etc at some point
 local function TooltipAddMogLine(tooltip)
 	--if not tooltip:IsShown() then return end
 	tooltip:Show()
@@ -88,44 +90,6 @@ local function TooltipAddMogLine(tooltip)
 		local skinName = skinVisualID == 1 and core.HIDDEN or GetItemInfo(skinVisualID)
 		text = text .. "\124c" .. core.skinTextColor.hex .. core.ITEM_TOOLTIP_ACTIVE_SKIN .. "\n" .. (skinName or skinVisualID) .. "\124r"
 	end
-
-	-- using table and concat somehow creates more garbage :)
-
-	-- local text = {}
-	-- if visualID and visualID > 0 then
-	-- 	tinsert(text, "\124c")
-	-- 	tinsert(text, core.mogTooltipTextColor.hex)
-	-- 	tinsert(text, "Transmogrified to:")
-	-- 	tinsert(text, "\n")
-	-- 	if visualID == 1 then				
-	-- 		tinsert(text, core.HIDDEN)
-	-- 		tinsert(text, "\124r")
-	-- 	else
-	-- 		local mogName = GetItemInfo(visualID)
-	-- 		if mogName then
-	-- 			tinsert(text, mogName)
-	-- 			tinsert(text, "\124r")
-	-- 		else				
-	-- 			tinsert(text, "fetching name for itemID ")
-	-- 			tinsert(text, visualID)
-	-- 			tinsert(text, "\124r")
-	-- 			core.FunctionOnItemInfo(visualID, TooltipAddMogLine, tooltip, link) -- player transmog items seem to be cached anyway, but probably needed for Hyperlinks from chat
-	-- 		end
-	-- 	end
-	-- 	if skinVisualID then 
-	-- 		tinsert(text, "\n")
-	-- 	end
-	-- end	
-	-- if skinVisualID then
-	-- 	local skinName = skinVisualID == 1 and "Hidden" or GetItemInfo(skinVisualID)
-	-- 	tinsert(text, "\124c")
-	-- 	tinsert(text, core.skinTextColor.hex)
-	-- 	tinsert(text, "Active Skin:")
-	-- 	tinsert(text, "\n")
-	-- 	tinsert(text, skinName or skinVisualID)
-	-- 	tinsert(text, "\124r")
-	-- end
-	-- text = table.concat(text, "")
 		
 	if not tooltip.mogText then	
 		tooltip.mogText = tooltip:CreateFontString()
@@ -134,16 +98,17 @@ local function TooltipAddMogLine(tooltip)
 		--tooltip.mogText:SetTextColor(core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)
 		tooltip.mogText:SetPoint("BOTTOMLEFT", textLeft2, "TOPLEFT", 0, 1)
 
-		tooltip:HookScript("OnHide", function()
-			--textLeft1:SetJustifyV("MIDDLE")
+		tooltip.HideTransmogLine = function(self)
 			if textLeft1.justifyHOld then
 				textLeft1:SetHeight(textLeft1:GetStringHeight())
 				textLeft1:SetJustifyH(textLeft1.justifyHOld)
 				textLeft1:SetJustifyV(textLeft1.justifyVOld)
 				textLeft1.justifyHOld, textLeft1.justifyVOld = nil, nil
-				tooltip.mogText:SetText("")
-			end
-		end)
+				self.mogText:SetText("")
+			end			
+		end
+
+		tooltip:HookScript("OnHide", tooltip.HideTransmogLine)
 	end
 	
 	textLeft1.justifyHOld = textLeft1:GetJustifyH()
@@ -165,10 +130,31 @@ local function TooltipAddMogLine(tooltip)
 	end
 end
 
-local tooltips = {GameTooltip, ItemRefTooltip, ItemRefShoppingTooltip1, ItemRefShoppingTooltip2, ItemRefShoppingTooltip3, ShoppingTooltip1, ShoppingTooltip2, ShoppingTooltip3}
+local tooltips = { GameTooltip, ItemRefTooltip, ItemRefShoppingTooltip1, ItemRefShoppingTooltip2, ItemRefShoppingTooltip3, ShoppingTooltip1, ShoppingTooltip2, ShoppingTooltip3 }
+
+-- hooksecurefunc("SetItemRef", function(string, link)
+-- 	print("HOOKY", string, link)
+-- 	local textLeft1 = "ItemRefTooltip" .. "TextLeft1"
+-- 	if textLeft1.justifyHOld then
+-- 		textLeft1:SetHeight(textLeft1:GetStringHeight())
+-- 		textLeft1:SetJustifyH(textLeft1.justifyHOld)
+-- 		textLeft1:SetJustifyV(textLeft1.justifyVOld)
+-- 		textLeft1.justifyHOld, textLeft1.justifyVOld = nil, nil
+-- 		ItemRefTooltip.mogText:SetText("")
+-- 	end
+-- 	ItemRefTooltip.mogText:SetText("")
+-- end)
 
 for _, tooltip in pairs(tooltips) do
 	tooltip:HookScript("OnTooltipSetItem", TooltipAddMogLine)
+end
+
+for _, tooltip in pairs(tooltips) do
+	tooltip:HookScript("OnTooltipCleared", function(self)
+		if self.HideTransmogLine then
+			self:HideTransmogLine()
+		end
+	end)
 end
 
 -- TODO: change to removable posthooks, so we can have option to disable these

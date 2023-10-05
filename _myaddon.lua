@@ -180,7 +180,7 @@ do
 	}
 end
 
--- hex colors are encoded as "AARRGGBB" for string formatting
+-- hex colors are encoded as "AARRGGBB" (alpha first!) for string formatting
 core.mogTooltipTextColor = { ["r"] = 0xff / 255, ["g"] = 0x9c / 255, ["b"] = 0xe6 / 255, ["a"] = 1, hex = "FFFF9CE6"}
 core.skinTextColor = { ["r"] = 0x9c / 255, ["g"] = 0xe6 / 255, ["b"] = 0xff / 255, ["a"] = 1, hex = "FF9CE6FF" }
 core.setItemTooltipTextColor = { ["r"] = 1, ["g"] = 1, ["b"] = 0.6, ["a"] = 1 }
@@ -325,6 +325,7 @@ local slotToID = {
 }
 core.slotToID = slotToID
 
+-- InventorySlots
 local idToSlot = {
 	[1] = "HeadSlot",
 	[3] = "ShoulderSlot",
@@ -722,7 +723,7 @@ SetCurrentChangesSlot = function(slot, id, silent)
 	core.RequestPriceSlot(slot)
 
 	if not silent then	
-		UpdateListeners("currentChanges")	
+		UpdateListeners("currentChanges")
 		--core.RequestPriceTotal()
 	end
 end

@@ -87,20 +87,28 @@ end)
 itemCollectionFrame.SetSlotAndCategory = function(self, slot, category, update)
 	--print("set location, type", locationName, itemType)
 	if not update and itemCollectionFrame.selectedSlot == slot and itemCollectionFrame.selectedCategory == category then return end
+	
+	-- if theres only one category in slot, select it, just so it gets shown in ddm? core.SetSlotAndCategory would need this too? :/
+	-- if not category and slot and core.slotCategories[slot] and core.Length(core.slotCategories[slot]) == 1 then
+	-- 	category = core.slotCategories[1] -- TODO: why no worky?
+	-- end
 
 	itemCollectionFrame.selectedSlot = slot
 	itemCollectionFrame.selectedCategory = category
 	
-	-- local inventorySlot = select(2, core:GetTransmogLocationInfo(locationName))
+	-- highlight current slot button in wardrobe
 	if not core.IsAtTransmogrifier() then
 		for _, button in pairs(self.slotButtons) do
 			core.SetShown(button.selectedTexture, button.itemSlot == slot)
 		end
 	end
 
+	-- TODO: setshown all the other shit: shown = not (atNpc and not slot)
 	core.SetShown(itemCollectionFrame.noSlotSelectedText, not slot)
+
+	print("cat:", category)
 	
-	UIDropDownMenu_SetText(itemCollectionFrame.itemTypeDDM, core.CATEGORY_DISPLAY_NAME[category] or core.RemoveFirstWordInString(category or ""))
+	UIDropDownMenu_SetText(itemCollectionFrame.itemTypeDDM, category and (core.CATEGORY_DISPLAY_NAME[category] or core.RemoveFirstWordInString(category)) or core.SELECT_ITEM_TYPE)
 	if UIDropDownMenu_GetCurrentDropDown() == itemCollectionFrame.itemTypeDDM then CloseDropDownMenus() end
 	core.UIDropDownMenu_SetEnabled(itemCollectionFrame.itemTypeDDM, slot and core.slotCategories[slot] and core.Length(core.slotCategories[slot]) > 1)
 

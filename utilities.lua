@@ -117,6 +117,7 @@ core.am = function(...)
 	end
 	DEFAULT_CHAT_FRAME:AddMessage(printResult)
 end
+core.AM = core.am
 
 core.GetTextureString = function(texturePath, height)
 	height = height or 0
@@ -222,6 +223,7 @@ end
 -- Fix for Tooltip Bug, see: https://wowwiki-archive.fandom.com/wiki/UIOBJECT_GameTooltip#Blizzard's_GameTooltip
 -- For some reason, GameTooltipTextLeft9 and GameTooltipTextRight9 are called GameTooltipTextLeft1 and GameTooltipTextRight1
 -- Most of the time, that causes no problems, but when an item has exactly 9 lines, SetTooltipMoney fails and throws an error for example
+-- TODO: Still bugged after relog, until one hovers 32479 again o.O
 core.FixTooltip = function(tooltip)
 	local initItem = 32479 -- item with enough lines to trigger tooltip to generate the problematic line 9
 	if not GetItemInfo(initItem) then
@@ -229,7 +231,9 @@ core.FixTooltip = function(tooltip)
 		return
 	end
 
-	tooltip:SetHyperlink("item:" .. initItem) 
+	-- tooltip:SetOwner(UIParent)
+	tooltip:SetHyperlink("item:" .. initItem)
+
 	local regions = { tooltip:GetRegions() }
 	local buggoLeft, buggoRight -- are u making fun of my nose?
 	for i, region in pairs(regions) do
@@ -247,6 +251,22 @@ core.FixTooltip = function(tooltip)
 		_G[tooltip:GetName()  .. "TextLeft9"] = buggoLeft
 		_G[tooltip:GetName()  .. "TextRight9"] = buggoRight
 	end
+	
+	-- tooltip:SetHyperlink("item:" .. initItem)
+
+	
+	-- tooltip:Show()
+	-- tooltip:Hide()
+
+	-- tooltip:SetOwner(WorldFrame)
+	
+	-- for i = 1, 10 do
+	-- 	tooltip:AddLine("Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscing elitr, sed diam nonumy eirmod tempor invidunt ut labore et dolore magna aliquyam erat, sed diam voluptua. At vero eos et accusam et justo duo dolores et ea rebum. Stet clita kasd gubergren, no sea takimata sanctus est Lorem ipsum dolor sit amet.")
+	-- 	SetTooltipMoney(tooltip, 1234567890)
+	-- end
+	-- tooltip:Show()
+
+	-- tooltip:Hide()
 end
 
 core.SetTooltip = function(frame, text, r, g, b, a, wrap)

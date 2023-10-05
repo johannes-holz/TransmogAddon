@@ -33,7 +33,8 @@ TooltipHooks.lua
 data\DataUtils.lua
 data\enchants.lua
 data\items.lua
-data\names.lua
+data\ItemNamesEnglish.lua
+data\ItemNamesGerman.lua
 
 # ItemCollectionFrame
 Frames\ItemCollectionFrame\CollectionSlotButton.lua
@@ -60,5 +61,6 @@ Outfits.lua
 Frames\OutfitFrame\OutfitDropDown.lua
 Frames\OutfitFrame\OutfitFrame.lua
 Frames\OutfitFrame\DressUpFrame.lua
+Frames\OutfitFrame\OutfitTooltip.lua
 
 BalanceDisplay.lua
