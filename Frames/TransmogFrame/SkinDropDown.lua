@@ -163,7 +163,7 @@ core.ShowVisualsToSkinPopup = function(id, costs)
 	costs.points = costs.points or costs.shards
 
 	local lines = {}
-	for _, slot in pairs(core.itemSlots) do
+	for _, slot in ipairs(core.itemSlots) do
 		local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot, id)
 		if visualID and visualID > 0 and (not skinVisualID or skinVisualID == 0) then
 			local link = visualID > 1 and core.LinkToColoredString(select(2, GetItemInfo(visualID))) or core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)

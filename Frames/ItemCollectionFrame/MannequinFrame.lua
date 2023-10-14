@@ -214,15 +214,18 @@ core.CreateMannequinFrame = function(self, parent, id, width, height)
 	m.skinVisualTexture:SetPoint("BOTTOMRIGHT", offset * 0.5, -offset * 0.5)
 	m.skinVisualTexture:SetAlpha(0.5)
 	
+	offset = 0.08 * height
 	m.pendingTexture = m:CreateTexture(nil, "ARTWORK")
 	m.pendingTexture:SetTexture("Interface\\AddOns\\".. folder .."\\images\\Transmogrify")
-	m.pendingTexture:SetTexCoord(8/512, 98/512, 8/512, 122/512)
+	m.pendingTexture:SetTexCoord(5/512, 101/512, 3/512, 127/512)
 	m.pendingTexture:SetPoint("TOPLEFT", -offset, offset)
 	m.pendingTexture:SetPoint("BOTTOMRIGHT", offset, -offset)
-	m.pendingTexture:SetAlpha(0.9)
+	m.pendingTexture:SetAlpha(0.8)
 
-	m.transmogPending = {8/512, 98/512, 8/512, 122/512}
-	m.skinPending = {199/512, 289/512, 223/512, 337/512}
+	-- m.transmogPending = {5/512, 101/512, 3/512, 127/512}
+	-- m.skinPending = {196/512, 292/512, 218/512, 342/512}
+	-- m.transmogPending = {8/512, 98/512, 8/512, 122/512}
+	-- m.skinPending = {199/512, 289/512, 223/512, 337/512}
 
 
 	-- m.testFrame = CreateFrame("Frame", folder.."Mannequin"..id.."LoadingFrame", m)
@@ -276,9 +279,9 @@ core.CreateMannequinFrame = function(self, parent, id, width, height)
 			core.SetShown(self.pendingTexture, (self.itemID == pendingID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(pendingID)))))
 			if self.pendingTexture:IsShown() then
 				if skinID then 
-					self.pendingTexture:SetTexCoord(199/512, 289/512, 223/512, 337/512)
+					self.pendingTexture:SetTexCoord(196/512, 292/512, 218/512, 342/512)
 				else
-					self.pendingTexture:SetTexCoord(8/512, 98/512, 8/512, 122/512)
+					self.pendingTexture:SetTexCoord(5/512, 101/512, 3/512, 127/512)
 				end
 			end
 		else

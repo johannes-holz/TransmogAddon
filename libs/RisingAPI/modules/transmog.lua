@@ -2,7 +2,7 @@ local M, API = LibStub:GetLibrary("RisingAPI"):newModule("Transmog")
 local Utils = API.Utils
 local deferred = LibStub("deferred")
 
-M.Slots = {
+M.Slot = {
 	Head                = 1,
 	Shoulders           = 3,
 	Body                = 4, -- shirt
@@ -18,30 +18,34 @@ M.Slots = {
 	Ranged              = 15,
 	Back                = 16,
 	Tabard              = 19,
+
+	EnchantMainHand	    = 20,
+	EnchantOffHand	    = 21,
 }
 
 local transmogSlotToInvSlot = {
-	[M.Slots.Head] = 1,
-	[M.Slots.Shoulders] = 3,
-	[M.Slots.Body] = 4,
-	[M.Slots.Chest] = 5,
-	[M.Slots.Waist] = 6,
-	[M.Slots.Legs] = 7,
-	[M.Slots.Feet] = 8,
-	[M.Slots.Wrists] = 9,
-	[M.Slots.Hands] = 10,
-	[M.Slots.MainHand] = 16,
-	[M.Slots.ShieldHandWeapon] = 17,
-	[M.Slots.OffHand] = 17,
-	[M.Slots.Ranged] = 18,
-	[M.Slots.Back] = 15,
-	[M.Slots.Tabard] = 19,
+	[M.Slot.Head] = 1,
+	[M.Slot.Shoulders] = 3,
+	[M.Slot.Body] = 4,
+	[M.Slot.Chest] = 5,
+	[M.Slot.Waist] = 6,
+	[M.Slot.Legs] = 7,
+	[M.Slot.Feet] = 8,
+	[M.Slot.Wrists] = 9,
+	[M.Slot.Hands] = 10,
+	[M.Slot.MainHand] = 16,
+	[M.Slot.ShieldHandWeapon] = 17,
+	[M.Slot.OffHand] = 17,
+	[M.Slot.Ranged] = 18,
+	[M.Slot.Back] = 15,
+	[M.Slot.Tabard] = 19,
 }
 
+M.NoTransmog = 0
 M.HideItem = 1
 
 local function checkSlotMap(slots, forSkin)
-	if (not forSkin and slots[M.Slots.OffHand] ~= nil and slots[M.Slots.ShieldHandWeapon] ~= nil) then
+	if (not forSkin and slots[M.Slot.OffHand] ~= nil and slots[M.Slot.ShieldHandWeapon] ~= nil) then
 		error("cannot transmogrify both shield and offhand at the same time")
 	end
 end
@@ -200,4 +204,96 @@ function M.GetVisualFromItemLink(itemLink)
 	else
 		return nil
 	end
+end
+
+local linkIndexToTransmogSlot = {
+	M.Slot.Head,
+	M.Slot.Shoulders,
+	M.Slot.Body,
+	M.Slot.Chest,
+	M.Slot.Waist,
+	M.Slot.Legs,
+	M.Slot.Feet,
+	M.Slot.Wrists,
+	M.Slot.Hands,
+	M.Slot.MainHand,
+	M.Slot.ShieldHandWeapon,
+	M.Slot.OffHand,
+	M.Slot.Ranged,
+	M.Slot.Back,
+	M.Slot.Tabard,
+	M.Slot.EnchantMainHand,
+	M.Slot.EnchantOffHand,
+}
+
+local EMPTY = '!'
+local HIDDEN = '"'
+local OFFSET = 35
+local BASE = 89
+local MAX_ID = math.pow(BASE, 3) - 1
+
+function M.EncodeOutfitLink(slots, text)
+	local data = ""
+	local pending = ""
+	for _, slot in ipairs(linkIndexToTransmogSlot) do
+		local visual = slots[slot]
+		if (visual == nil or visual == M.NoTransmog) then
+			pending = pending .. EMPTY
+		else
+			local encoded
+			if (visual == M.HideItem) then
+				encoded = HIDDEN
+			else
+				if (visual > MAX_ID) then
+					error("EncodeOutfitLink: invalid visual (" .. visual .. ")")
+				end
+				encoded = ""
+				for i = 1, 3 do
+					encoded = string.char(visual % BASE + OFFSET) .. encoded
+					visual = math.floor(visual / BASE)
+				end
+				assert(visual == 0)
+			end
+			data = data .. pending .. encoded
+			pending = ""
+		end
+	end
+	return "|cffff80ff|Hplayer::outfit:" .. data .. "|h[" .. (text or "Outfit") .. "]|h|r"
+end
+
+function M.DecodeOutfitLink(link)
+	local pos = select(2, link:find("player::outfit:"))
+	if (pos == nil) then
+		return nil
+	end
+	pos = pos + 1
+	local slots = {}
+	for _, slot in ipairs(linkIndexToTransmogSlot) do
+		local c = link:sub(pos, pos)
+		if (c == "" or c == "|") then
+			slots[slot] = M.NoTransmog
+		elseif (c == EMPTY) then
+			slots[slot] = M.NoTransmog
+			pos = pos + 1
+		elseif (c == HIDDEN) then
+			slots[slot] = M.HideItem
+			pos = pos + 1
+		else
+			if (pos + 2 > #link) then
+				return nil
+			end
+			local visual = 0
+			for i = 0, 2 do
+				local decoded = link:byte(pos + i) - OFFSET
+				if (decoded < 0 or decoded >= BASE) then
+					return nil
+				end
+				visual = visual * BASE + decoded
+			end
+			slots[slot] = visual
+			pos = pos + 3
+		end
+	end
+
+	return slots
 end

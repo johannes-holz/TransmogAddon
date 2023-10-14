@@ -233,26 +233,37 @@ function M.AllSettled(args)
 	return d
 end
 
-function M.Map(args, fn)
+function M.Any(args)
 	local d = M.New()
-	local results = {}
-	local function donext(i)
-		if i > #args then
-			d:resolve(results)
-		else
-			fn(args[i]):next(function(res)
-				table.insert(results, res)
-				donext(i+1)
-			end, function(err)
-				d:reject(err)
-			end)
+	if #args == 0 then
+		return d:reject({})
+	end
+
+	local pending = #args
+	local errors = {}
+
+	local function handleResolve(val)
+		d:resolve(val)
+	end
+
+	local function handleError(i)
+		return function(err)
+			errors[i] = err
+			pending = pending - 1
+			if pending == 0 then
+				d:reject(errors)
+			end
 		end
 	end
-	donext(1)
+
+	for i = 1, pending do
+		args[i]:next(handleResolve, handleError(i))
+	end
+
 	return d
 end
 
-function M.First(args)
+function M.Race(args)
 	local d = M.New()
 	for _, v in ipairs(args) do
 		v:next(function(res)
@@ -265,13 +276,9 @@ function M.First(args)
 end
 
 function M.Resolved(value)
-	local d = M.New()
-	d:resolve(value)
-	return d
+	return M.New():resolve(value)
 end
 
 function M.Rejected(err)
-	local d = M.New()
-	d:reject(err)
-	return d
+	return M.New():reject(err)
 end

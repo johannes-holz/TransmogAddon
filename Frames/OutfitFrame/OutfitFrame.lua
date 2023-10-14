@@ -1,11 +1,12 @@
 local folder, core = ...
 
+-- Outfitframe with dropdown and save button
+-- Needs to be parented to DressUpModel Frame, that has to implement a GetAll and SetAll method
 local counter = 1
 core.CreateOutfitFrame = function(parent)
     local outfitFrame = CreateFrame("Frame", folder .. "OutfitFrame" .. counter, parent)
     outfitFrame:SetSize(220, 31)
     outfitFrame:EnableMouse(true)
-    -- outfitFrame:SetBackdrop(BACKDROP_TUTORIAL_16_16)
 
     outfitFrame.SetSelectedOutfit = function(self, name)
         local outfits = core.GetOutfits()
@@ -115,7 +116,6 @@ core.CreateOutfitFrame = function(parent)
     end
 
     outfitFrame.Resize = function(self)
-        print(self.outfitDDM:GetWidth(), self.saveButton:GetWidth())
         self:SetWidth(self.outfitDDM:GetWidth() + self.saveButton:GetWidth() + 24)
     end    
     outfitFrame.outfitDDM:HookScript("OnSizeChanged", function(self)
@@ -129,9 +129,9 @@ core.CreateOutfitFrame = function(parent)
 end
 
 DressUpFrameDescriptionText:Hide()
-local outfitFrame = core.CreateOutfitFrame(DressUpModel)
-outfitFrame:SetPoint("BOTTOMRIGHT", DressUpModel, "TOPRIGHT", -40, 6)
-UIDropDownMenu_SetWidth(outfitFrame.outfitDDM, 110, 0)
+core.dressUpModelOutfitFrame = core.CreateOutfitFrame(DressUpModel)
+core.dressUpModelOutfitFrame:SetPoint("BOTTOMRIGHT", DressUpModel, "TOPRIGHT", -40, 6)
+UIDropDownMenu_SetWidth(core.dressUpModelOutfitFrame.outfitDDM, 110, 0)
 
 core.previewModelOutfitFrame = core.CreateOutfitFrame(core.previewModel)
 core.previewModelOutfitFrame:SetPoint("TOPRIGHT", core.previewModel, "TOPRIGHT", -67 * core.transmogFrame.scale, -1)
@@ -139,10 +139,3 @@ UIDropDownMenu_SetWidth(core.previewModelOutfitFrame.outfitDDM, 100, 0)
 core.previewModelOutfitFrame:SetScale(0.9)
 core.previewModelOutfitFrame:EnableFading(true)
 core.previewModelOutfitFrame:EnableBackground(true)
-
---[[
-
-
-/run UIDropDownMenu_SetWidth(Addy.previewModelOutfitFrame.outfitDDM, 200, 0)
-
-]]

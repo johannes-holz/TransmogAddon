@@ -83,6 +83,9 @@ DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
     if itemID and type(itemID) ~= "number" then
         itemID = core.GetItemIDFromLink(itemID)
     end
+    if itemID == 0 then
+        itemID = nil
+    end
     assert(itemID == nil or itemID == 1 or core.GetItemData(itemID) ~= nil, "Invalid itemID in DressUpModel.SetSlot")
 
     if itemID then
@@ -164,7 +167,7 @@ end
 local TryOnOld = DressUpModel.TryOn
 DressUpModel.TryOnOld = DressUpModel.TryOn
 DressUpModel.TryOn = function(self, itemLink, itemSlot)
-    local itemID = core.GetItemIDFromLink(itemLink)
+    local itemID = core.GetRecipeInfo(itemLink) or core.GetItemIDFromLink(itemLink)
     local enchantID = core.GetEnchantIDFromLink(itemLink)
     print("enchant", enchantID)
     if not itemID then
@@ -202,7 +205,7 @@ DressUpModel.TryOn = function(self, itemLink, itemSlot)
     end
                 
     if not itemSlot then
-        print("Could not find proper Inventory Slot for " .. itemLink .. ".")
+        print("Could not find proper Inventory Slot for " .. itemLink .. ". Maybe it is an invisible inventory item like rings or trinkets.")
         return
     end
 
@@ -241,7 +244,17 @@ DressUpModel.Dress = function(self)
     self:SetAll(shownItems)
 end
 
--- TODO: Weapon Display Logic. Allow only what we can display? Problem is, that Transmog allows more than we can display anyway, so we can't show what we wear in some cases
+-- Normally SetUnit on e.g. "target", sets DressUpModel to use target model and currently visible items
+-- But since we have no reliable way to know what those items are, we can't have that. Allow changing unit, but show our current item state
+-- Maybe implement "steal look" button in InspectFrame
+local SetUnitOld = DressUpModel.SetUnit
+DressUpModel.SetUnit = function(self, unit)
+    SetUnitOld(self, unit)
+    self:update()
+end
+
+
+-- TODO: Weapon Display Logic. Allow only what we can display? Transmog allows more than we can display anyway, so we can't show what we wear in some cases
 -- Also what do we do with outfits, we created on dualwield char or titangrip spec, that we are now unable to display ...
 DressUpModel.update = function(self)
     -- local debug = {}
@@ -292,7 +305,7 @@ core.RegisterListener("dressUpModel", DressUpModel)
 -- TODO: is this the way to do this? basically have to do Dress() OnShow, but that overwrites the TryOn item, which triggered the OnShow in the first place
     -- Another way could be to call show (maybe with tryonold), dress and update from SetSlot, if the model is not shown?
 DressUpModel:HookScript("OnShow", function(self)
-    tmp = core.DeepCopy(items) -- tmp should only contain the item from the TryOn call, that caused Frame to show
+    tmp = core.DeepCopy(items) -- if we clear items on hide, tmp only contains the item from the DressUpItemLink call
     self:Dress()
     for slot, itemID in pairs(tmp) do
         self:SetSlot(slot, itemID, true)
@@ -301,7 +314,7 @@ DressUpModel:HookScript("OnShow", function(self)
 end)
 
 DressUpModel:HookScript("OnHide", function(self)
-    items = {}
+    items = {} -- TODO: make optional if we wanna reset our model or remember our last state, so we dont loose changes on accident. Not resetting can be confusing tho
 end)
 
 
@@ -317,18 +330,16 @@ end)
 DressUpFrame.printButton = core.CreateMeATextButton(DressUpFrame, 80, 22, core.SHARE)
 DressUpFrame.printButton:SetPoint("BOTTOMRIGHT", DressUpFrame.undressButton, "BOTTOMLEFT")
 DressUpFrame.printButton:SetScript("OnClick", function(self)
-    -- SEND(items)
-    -- for slot, itemID in pairs(items) do
-    --     local _, itemLink = GetItemInfo(itemID)
-    --     print(core.SLOT_NAMES[slot], ": ", itemLink or (itemID == 1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)) or itemID)
-    -- end
-    -- local link = "\124cffff00ff\124Houtfit:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000:2000\124h[Transmog Outfit]\124h\124r"
-    local link = core.GenerateOutfitLink(items)
+    local link = core.API.EncodeOutfitLink(core.ToApiSet(items)) -- , "I bims, 1 Outfit")
+    core.am("Input:", core.ToApiSet(items))
+    core.am("Decoded:", core.API.DecodeOutfitLink(link))
     -- link = "\124cffaa00ff\124Houtfit:0:0:0:0:0:0:0:0:1:0:0:0:0:0:0\124h[Transmog Outfit]\124h\124r"
     -- link = "\124cffaa00ff\124Houtfit:0:0:0:0:0:0:0:0:1:0:0:0:0:0:0\124h[Transmog Outfit uwu " .. core.GetTextureString("Interface/Buttons/UI-CheckBox-Check") .. "]\124h\124r"
     -- link = "\124cffaa00ff\124Houtfit:0" ..core.GetTextureString("Interface/Buttons/UI-CheckBox-Check") .. ":0:0:0:0:0:0:0:1:0:0:0:0:0:0\124h[Transmog Outfit]\124h\124r"
     
-    -- ChatFrame1EditBox:SetFocus()
+    print(link)
+
+    ChatFrame1EditBox:SetFocus()
     ChatEdit_InsertLink(link)
 end)
 
@@ -355,7 +366,9 @@ core.CreateSlotListFrame = function(parent, slot)
     slotFrame.text:SetFontObject(GameFontWhiteSmall)
     slotFrame.text:SetJustifyH("LEFT")
     slotFrame.text:SetJustifyV("MIDDLE")
-    slotFrame.text:SetAllPoints()
+    slotFrame.text:SetPoint("LEFT")
+    slotFrame.text:SetPoint("RIGHT")
+    slotFrame.text:SetHeight(14)
 
     slotFrame.SetText = function(self, text)
         self.text:SetText(text or "")

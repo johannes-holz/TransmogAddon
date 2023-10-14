@@ -11,7 +11,7 @@ end
 
 core.IsInvalidOutfitName = function(name)    
 	local denyMessage
-	if string.len(name) < 1 then -- or require visible char with name:gsub(" ", "") ?
+	if string.len(name) < 1 then -- or name:gsub(" ", "") ?
 		denyMessage = core.OUTFIT_NAME_TOO_SHORT
 	elseif string.find(name, "[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz _.,'1234567890]") then
 		denyMessage = core.OUTFIT_NAME_INVALID_CHARACTERS
@@ -70,69 +70,7 @@ core.SaveOutfit = function(name, set)
     return true
 end
 
-
-core.IsValidSet = function(set)
-    return set and type(set) == "table"
-end
-
--- From wiki https://wowwiki-archive.fandom.com/wiki/ItemLink, supposedly works with item links, strings, ids:
--- local _, _, Color, Ltype, Id, Enchant, Gem1, Gem2, Gem3, Gem4, Suffix, Unique, LinkLvl, Name = string.find(itemLink, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
-
-ChatFrame_OnHyperlinkShow_Orig = ChatFrame_OnHyperlinkShow
-ChatFrame_OnHyperlinkShow = function(self, link, text, button)
-    local apiSet = core.API.DecodeOutfitLink(text)
-    if apiSet then
-        local set = core.FromApiSet(apiSet)
-        -- SetItemRef would call HandleModifiedItemClick for us. When hooking into OnHyperlinkShow, we have to do this manually
-        if IsModifiedClick("CHATLINK") then
-            if ChatEdit_InsertLink(text) then
-                return true
-            end
-        end
-
-        if IsModifiedClick("DRESSUP") then
-            DressUpItemLink(text)
-            return true
-        end
-
-        core.ShowOutfitTooltip(set)
-        return true
-    end
-
-    core.HideOutfitTooltipStuff() -- or Hook OnTooltipCleared?
-    
-    return ChatFrame_OnHyperlinkShow_Orig(self, link, text, button)
-end
-
-
-
-local OnDressUpItemLink = function(link)
-    if type(link) == "number" then return end
-    local apiSet = core.API.DecodeOutfitLink(link)
-    if apiSet then
-        if not DressUpFrame:IsShown() then
-            ShowUIPanel(DressUpFrame)
-            DressUpModel:SetUnit("player")
-        end
-        DressUpModel:SetAll(core.FromApiSet(apiSet))
-        return true
-    end
-end
-
-local DressUpItemLinkOrig = DressUpItemLink
-DressUpItemLink = function(link)
-    if not OnDressUpItemLink(link) then
-        return DressUpItemLinkOrig(link)
-    end
-end
-
-core.IsRangedWeapon = function(itemID)
-    local _, _, inventoryType = core.GetItemData(itemID)
-    return inventoryType == 15 or inventoryType == 25 or inventoryType == 26
-end
-
-
--- Outfitlink en-/decoding is now done by the API
+-- Outfitlink en-/decoding now through API.
 
 --[===[
 
@@ -301,9 +239,82 @@ end
 
 --]===]
 
+core.IsValidSet = function(set)
+    return set and type(set) == "table"
+end
+
+-- From wiki https://wowwiki-archive.fandom.com/wiki/ItemLink, supposedly works with item links, strings, ids:
+-- local _, _, Color, Ltype, Id, Enchant, Gem1, Gem2, Gem3, Gem4, Suffix, Unique, LinkLvl, Name = string.find(itemLink, "|?c?f?f?(%x*)|?H?([^:]*):?(%d+):?(%d*):?(%d*):?(%d*):?(%d*):?(%d*):?(%-?%d*):?(%-?%d*):?(%d*):?(%d*):?(%-?%d*)|?h?%[?([^%[%]]*)%]?|?h?|?r?")
+
+local OriginalSetHyperlink = ItemRefTooltip.SetHyperlink
+-- ItemRefTooltip.SetHyperlink = function(self, link, ...)
+--     local linkType, id = strsplit(":", link or "")
+
+--     -- print(link, linkType, sender)
+--     if linkType == outfitLinkType then
+--         local set = core.API.DecodeOutfitLink(link)
+--         set = core.FromApiSet(set)
+--         core.ShowOutfitTooltip(set)
+--         return
+--     end
+
+--     core.HideOutfitTooltipStuff() -- or Hook OnTooltipCleared?
+    
+--     return OriginalSetHyperlink(self, link, ...)
+-- end
+ItemRefTooltip.SetHyperlink = function(self, link, ...)
+    print(link, set)
+end
+
+ChatFrame_OnHyperlinkShow_Orig = ChatFrame_OnHyperlinkShow
+ChatFrame_OnHyperlinkShow = function(self, link, ...)
+    local set = core.API.DecodeOutfitLink(link)
+    if set then
+        core.ShowOutfitTooltip(core.FromApiSet(set))
+        return
+    end
+    
+    core.HideOutfitTooltipStuff() -- or Hook OnTooltipCleared?
+    
+    return ChatFrame_OnHyperlinkShow_Orig(self, link, ...)
+end
 
 
 
+local OnDressUpItemLink = function(link)
+    -- print("hi i am dressup", link)
+    if type(link) == "number" then return end
+    -- local start, finish, linkType = strfind(link, "\124H(%w+):")
+    -- print(linkType)
+    -- if linkType == outfitLinkType then
+    --     if not DressUpFrame:IsShown() then
+    --         ShowUIPanel(DressUpFrame)
+    --         DressUpModel:SetUnit("player")
+    --     end
+    --     DressUpModel:SetAll(core.DecodeOutfit(link))
+    -- end
+    local set = core.API.DecodeOutfitLink(link)
+    if set then
+        if not DressUpFrame:IsShown() then
+            ShowUIPanel(DressUpFrame)
+            DressUpModel:SetUnit("player")
+        end
+        DressUpModel:SetAll(core.FromApiSet(set))
+        return true
+    end
+end
+
+local DressUpItemLinkOrig = DressUpItemLink
+DressUpItemLink = function(link)
+    if not OnDressUpItemLink(link) then
+        return DressUpItemLinkOrig(link)
+    end
+end
+
+core.IsRangedWeapon = function(itemID)
+    local _, _, inventoryType = core.GetItemData(itemID)
+    return inventoryType == 15 or inventoryType == 25 or inventoryType == 26
+end
 
 --[[
 Directly:

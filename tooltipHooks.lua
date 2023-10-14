@@ -12,7 +12,7 @@ ScanningTooltip = core.ScanningTooltip
 ScanningTooltip:SetOwner( WorldFrame, "ANCHOR_NONE" )
 ScanningTooltip:AddFontStrings(ScanningTooltip:CreateFontString( "$parentTextLeft1", nil, "GameTooltipText" ), ScanningTooltip:CreateFontString( "$parentTextRight1", nil, "GameTooltipText" ))
 
--- Getting VisualID works differently for non-player units
+-- Getting VisualID works differently for units, that are not the player
 local lastUnit, lastSlot
 local SetLastUnit = function(self, unit, slot, nameOnly)
 	lastUnit, lastSlot = unit, slot -- This gets called too late, after we do our OnItem stuff. Getting Unit/Slot atm from OwnerFrame, unsure if that's the way to go
@@ -130,40 +130,22 @@ local function TooltipAddMogLine(tooltip)
 	end
 end
 
-local tooltips = { GameTooltip, ItemRefTooltip, ItemRefShoppingTooltip1, ItemRefShoppingTooltip2, ItemRefShoppingTooltip3, ShoppingTooltip1, ShoppingTooltip2, ShoppingTooltip3 }
+local function TooltipHideMogLine(tooltip)
+	if tooltip.HideTransmogLine then
+		tooltip:HideTransmogLine()
+	end
+end 
+		
 
--- hooksecurefunc("SetItemRef", function(string, link)
--- 	print("HOOKY", string, link)
--- 	local textLeft1 = "ItemRefTooltip" .. "TextLeft1"
--- 	if textLeft1.justifyHOld then
--- 		textLeft1:SetHeight(textLeft1:GetStringHeight())
--- 		textLeft1:SetJustifyH(textLeft1.justifyHOld)
--- 		textLeft1:SetJustifyV(textLeft1.justifyVOld)
--- 		textLeft1.justifyHOld, textLeft1.justifyVOld = nil, nil
--- 		ItemRefTooltip.mogText:SetText("")
--- 	end
--- 	ItemRefTooltip.mogText:SetText("")
--- end)
+local tooltips = { GameTooltip, ItemRefTooltip, ItemRefShoppingTooltip1, ItemRefShoppingTooltip2, ItemRefShoppingTooltip3, ShoppingTooltip1, ShoppingTooltip2, ShoppingTooltip3 }
 
 for _, tooltip in pairs(tooltips) do
 	tooltip:HookScript("OnTooltipSetItem", TooltipAddMogLine)
 end
 
 for _, tooltip in pairs(tooltips) do
-	tooltip:HookScript("OnTooltipCleared", function(self)
-		if self.HideTransmogLine then
-			self:HideTransmogLine()
-		end
-	end)
+	tooltip:HookScript("OnTooltipCleared", TooltipHideMogLine)
 end
-
--- TODO: change to removable posthooks, so we can have option to disable these
--- GameTooltip:HookScript("OnTooltipSetItem", TooltipAddMogLine)
-
-
---hooksecurefunc(ItemRefTooltip, "SetHyperlink", TooltipAddMogLine)
---ItemRefTooltip:HookScript("OnTooltipSetItem", TooltipAddMogLine)
-
 
 core.TooltipDisplayTransmog = TooltipAddMogLine -- ??
 
@@ -172,41 +154,6 @@ core.TooltipDisplayTransmog = TooltipAddMogLine -- ??
 -- recipe item: not sure yet if theres a way to find crafted item id from recipe tooltip
 -- trainer: might be able to do hook SetTrainerService(i) and get itemLink from GetTrainerServiceItemLink(i)
 -- trade ui: SetTradeSkillItem(TradeSkillFrame.selectedSkill, self:GetID()), GetTradeSkillReagentItemLink(i, j)
-
-
-
--- ShoppingTooltips would need modified version of AddMogLine since they have an extra line on top that says "currently equipped". But not sure if this is really needed
--- if GameTooltip.shoppingTooltips then -- TODO: Find global names or check if those are always created already / hook it somewhere where they are
--- 	for k, shoppingTooltip in pairs(GameTooltip.shoppingTooltips) do
--- 		--shoppingTooltip:HookScript("OnTooltipSetItem", HandleItem)
--- 		hooksecurefunc(shoppingTooltip, "SetHyperlinkCompareItem", HandleItem, shoppingTooltip)
--- 	end
--- end
-
-
-
-
--- hooksecurefunc("SetItemRef", function(link, ...)  -- TODO: This might taint our code when we call OnItemInfo in TooltipAddMogLine?
--- 	TooltipAddMogLine(ItemRefTooltip, link)
--- end)
-
-
---[[
-hooksecurefunc("ChatFrame_OnHyperlinkShow", function(self, link, text, button)
-	--am(link)
-end)
---]]
-
---[[
-local SetHyperlinkOrig = ItemRefTooltip.SetHyperlink
-function ItemRefTooltip:SetHyperlink(link, ...)
-    if link and string.sub(link, 1, 11) == "transmogset" then
-        return
-    end
-	
-    return SetHyperlinkOrig(self, link, ...)
-end
---]]
 
 -- or use lastUnit, lastSlot again
 GetInspectFrameVisualID = function(frame)
@@ -224,10 +171,23 @@ GetInspectFrameVisualID = function(frame)
 end
 
 
--- What to preview / insert into chat
--- Since everyone and their mother is prehooking this function, we might have to ensure, that we are last to hook
--- If any AddOn has problem with this, we can add support or give the option to disable this
+ -- Original code of HandleModifiedItemClick:
+--  function HandleModifiedItemClick(link)
+-- 	if ( IsModifiedClick("CHATLINK") ) then
+-- 		if ( ChatEdit_InsertLink(link) ) then
+-- 			return true;
+-- 		end
+-- 	end
+-- 	if ( IsModifiedClick("DRESSUP") ) then
+-- 		DressUpItemLink(link);
+-- 		return true;
+-- 	end
+-- 	return false;
+-- end
 
+-- What to preview / insert into chat
+-- Since a lot of AddOns are prehooking this function, we might have to ensure, that we are last to hook
+-- If any AddOn has problem with this, we can add support or give the option to disable this
 core.PreHook_ModifiedItemClick = function()
 	local HandleModifiedItemClickOrig = HandleModifiedItemClick
 	HandleModifiedItemClick = function(link, ...)
@@ -280,20 +240,6 @@ core.PreHook_ModifiedItemClick = function()
 	end
 end
 
- -- Original code of HandleModifiedItemClick:
---  function HandleModifiedItemClick(link)
--- 	if ( IsModifiedClick("CHATLINK") ) then
--- 		if ( ChatEdit_InsertLink(link) ) then
--- 			return true;
--- 		end
--- 	end
--- 	if ( IsModifiedClick("DRESSUP") ) then
--- 		DressUpItemLink(link);
--- 		return true;
--- 	end
--- 	return false;
--- end
-
  --https://www.mmo-champion.com/threads/2184270-Track-hidden-aura
  
  
@@ -318,6 +264,7 @@ f:SetScript("OnEvent", function(self, event, ...)
 	PaperDollItemSlotButton_Update(_G["Character" .. core.idToSlot[slot]])
 end)
 
+-- TODO: Works pretty scuffed atm and bugs out sometimes. Needs more work or at the least be made optional
 -- InspectFrame Skin Fix
 -- As above but also the return values from GetInventoryItemLink never update for other players with skins without a new NotifyInspect call
 local f = CreateFrame("Frame")
@@ -372,8 +319,8 @@ f.onUpdate = function(self, e)
 	end
 end
 
-local SetInventoryItem_SetFix = function(self, unit, slot, nameOnly) -- Only works for player atm (scans hidden tooltip for correct SetBoni display in with SetHyperlink(CompareItem))
-	if nameOnly or not unit or UnitGUID(unit) ~= UnitGUID("player") then return end
+local SetInventoryItem_SetFix = function(self, unit, slot, nameOnly) -- Only works for player atm (scans hidden tooltip for correct SetBoni with SetHyperlink(CompareItem))
+	if nameOnly or not unit or UnitGUID(unit) ~= UnitGUID("player") or slot > 19 then return end
 	local name, link = self:GetItem()
 	if not link then return end
 
@@ -401,281 +348,3 @@ local SetInventoryItem_SetFix = function(self, unit, slot, nameOnly) -- Only wor
 	end	
 end
 hooksecurefunc(GameTooltip, "SetInventoryItem", SetInventoryItem_SetFix)
-
-
-
--- Old bad player set boni fix
-
--- core.L = {
--- 	boundOnEquip = "Wird beim Anlegen gebunden",
--- 	boundOnPickup = "Wird beim Aufheben gebunden",
--- 	soulbound = "Seelengebunden",
--- }
-
--- Fixes set boni display for the player inventory by overwriting SetInventoryItem's tooltip with SetHyperlink, which displays player set boni correctly
--- Could alternatively use SetHyperlink on hidden tooltip and manually copy the correct lines to the GameTooltip
--- SetHyperlinkCompareItem displays set boni and soulbound status correctly, but adds "currently equipped" line at start, which is harder to fix than just fixing the soulbound line I belive
--- I could not find a simple hack to fix the display of other people's set boni. Would probably need complete setdata, something like: setID = {itemID = setID}, setBoni = {setID = {2, 4, 7}}
-
--- Breaks some stuff (i.e. temp. enchants), so we have to parse hidden tooltip and copy the setlines (text and color?)
--- GameTooltip.SetInventoryItemOld = GameTooltip.SetInventoryItem
--- GameTooltip.SetInventoryItem = function(self, unit, slot, nameOnly)
--- 	lastUnit, lastSlot = unit, slot
--- 	local hasItem, hasCooldown, repairCost = self:SetInventoryItemOld(unit, slot, nameOnly)
-
--- 	local link = GetInventoryItemLink(unit, slot)
-
--- 	if link and UnitGUID(unit) == UnitGUID("player") then
--- 		local owner = GameTooltip:GetOwner()
--- 		local anchor, x, y = GameTooltip:GetAnchorType()
--- 		self:SetOwner(owner, anchor, x, y)
--- 		lastUnit, lastSlot = unit, slot -- got reset by SetOwner()
--- 		--self:SetUnit("player") -- setting a tooltip to the same item twice hides the tooltip. can avoid this by either setting it to something else between the calls or calling SetOwner with the current parameters, which clears the tooltip
--- 		self:ClearLines()
--- 		self:SetHyperlink(link)
--- 		if GameTooltipTextLeft2:GetText() == core.L.boundOnPickup or GameTooltipTextLeft2:GetText() == core.L.boundOnEquip then GameTooltipTextLeft2:SetText(core.L.soulbound) end
--- 		-- Still missing durability (repair status) line. maybe use comparehyperlink after all and loop over all lines?
--- 	end
-
--- 	return hasItem, hasCooldown, repairCost
--- end
-
-
--- Somehow breaks SetHyperlinkCompareItem stuff, so use above secure hook, which works
--- GameTooltip.SetInventoryItemOld = GameTooltip.SetInventoryItem
--- GameTooltip.SetInventoryItem = function(self, unit, slot, nameOnly) -- Is it save to hook this unsecurely?
--- 	lastUnit, lastSlot = unit, slot
--- 	return self:SetInventoryItemOld(unit, slot, nameOnly)
--- end
-
--- not sure if we should fix this and call the old function something like GetInventoryVisualID, which could handle the different behaviour for player and other units, probably more correct?
--- choosing not to overwrite this atm, correct information an be retrivied via core.GetInventoryItemID and core.GetInventoryVisualID?
---[[
-GetInventoryItemIDOld = GetInventoryItemID
-GetInventoryItemID = function(unit, slotID)
-	local link = GetInventoryItemLink(unit, slotID)
-	if not link then
-		return GetInventoryItemIDOld(unit, slotID)
-	else
-		local _, itemID = string.split(":", link)
-		print(itemID, link, gsub(link, "\124", "\124\124"))
-		return tonumber(itemID)
-	end
-end
---]]
-
-
---[[
-GetContainerItemLinkOld = GetContainerItemLink
-GetContainerItemLink = function(...)
-	print("itemlinky")
-	return GetContainerItemLinkOld(...)
-end
-GetContainerItemInfoOld = GetContainerItemInfo
-GetContainerItemInfo = function(...)
-	print("informative")
-	return GetContainerItemInfoOld(...)
-end
-GetContainerItemIDOld = GetContainerItemID
-GetContainerItemID = function(...)
-	print("ID YO")
-	return GetContainerItemIDOld(...)
-end
---]]
-
-
- --[[ 
-
--- original function from ItemButtonTemplate.lua
-function HandleModifiedItemClick(link)
-	if ( IsModifiedClick("CHATLINK") ) then
-		if ( ChatEdit_InsertLink(link) ) then
-			return true;
-		end
-	end
-	if ( IsModifiedClick("DRESSUP") ) then
-		DressUpItemLink(link);
-		return true;
-	end
-	return false;
-end
-
- ]]
- 
---[[
-local SendTmogLink = function()
-	local link = "|Hplayer:Kaso|h[Kaso]|h"
-	
-	SendChatMessage(link)
-	SendChatMessage("uwu")
-	print(link)
-end
-
-SendTmogLink()
-	]]
---[[
-ItemRefTooltip:HookScript("OnTooltipSetItem", function(tooltip, ...)
-	local name, link = tooltip:GetItem()
-	if not link then return end
-	local _, itemId, enchantId, jewelId1, jewelId2, jewelId3, jewelId4, suffixId, uniqueId,
-	  linkLevel, specializationID, reforgeId, unknown1, unknown2 = strsplit(":", link)
-	  
-	--am("OnTooltipSetItem", itemId)
-	local tmogID = bit.rshift(uniqueId, 16)
-	
-	--TooltipAddMogLine(ItemRefTooltip, itemId)
-	
---	if tooltip.notFirstTime then
---		TooltipAddMogLine(ItemRefTooltip, itemId)
---	else
---		tooltip.notFirstTime = true
---		ItemRefTooltip:Hide()
---		MyWaitFunction(0.3, ItemRefTooltip.SetHyperlink, ItemRefTooltip, link, ...)
---	end
-end)]]
-
---Here no problems with first tooltip?!?!?
---[[
-local SetHyperlink = ItemRefTooltip.SetHyperlink
-ItemRefTooltip.SetHyperlink = function(self, link)	
-	local _, itemId, enchantId, jewelId1, jewelId2, jewelId3, jewelId4, suffixId, uniqueId,
-	  linkLevel, specializationID, reforgeId, unknown1, unknown2 = strsplit(":", link)
-	  
-	am(itemId)
-	
-	SetHyperlink(self, link)
-	TooltipAddMogLine(ItemRefTooltip, itemId)
-end]]
-
---hooksecurefunc("SetItemRef", am("SetItemRef"))
---hooksecurefunc("ChatFrame_OnHyperlinkShow", function(...)
---    print("ToggleBackpack called.")
---end)
-
---hooksecurefunc("ItemRefTooltip_SetHyperlink", function(...)
---	am(...)
---end)
-
-
-
--- SetBoniDisplay Hack. would need data about which sets mix (gladiator, t7-10, some classic sets?, etc) and how many parts are needed for each setbonus of every set
---[[
-
-
-local allInventorySlots = {
-	"HeadSlot",
-	"NeckSlot",
-	"ShoulderSlot",
-	"BackSlot",
-	"ChestSlot",
-	"ShirtSlot",
-	"TabardSlot",
-	"WristSlot",
-	"HandsSlot",
-	"WaistSlot",
-	"LegsSlot",
-	"FeetSlot",
-	"Finger0Slot",
-	"Finger1Slot",
-	"Trinket0Slot",
-	"Trinket1Slot",
-	"MainHandSlot",
-	"SecondaryHandSlot",
-	"RangedSlot",
-	"AmmoSlot"
-}
-
-
-local FindSetItemBaseName = function(itemName)
-	local baseItemName
-	if string.find(itemName, ".* des %a+ Gladiators") then
-		baseItemName = string.sub(itemName, 1, select(1, string.find(itemName, string.match(itemName, ".* des (%a+) Gladiators"))) - 1) .. "Gladiators"
-	elseif string.find(itemName, "%a+ Gladiator's .*") then
-		baseItemName = string.sub(itemName, select(2, string.find(itemName, string.match(itemName, "(%a+) Gladiator's .*"))) + 2)
-		
-	elseif string.find(itemName, "%a+ %a+ des Ymirjarfürsten") then
-		baseItemName = string.sub(itemName, select(2, string.find(itemName, string.match(itemName, "(%a+) %a+ des Ymirjarfürsten"))) + 2)
-	end
-	
-	return baseItemName
-end
-
-local function FixSetDisplay()	-- pointless to take tooltip as param and then iterate over gametooltips lines
-	if not GameTooltip:GetOwner() then return end
-	
-	local ownerName = GameTooltip:GetOwner():GetName()	
-	
-
-	local currentItems, setItemBaseNames = {}, {}
-	local setName, setLine, setCount, setMax, isSetItemLine
-	for i=1,40 do		
-		local line = _G["GameTooltipTextLeft" .. i]
-		--
-		--am(string.format('%q', '(%d/%d)'))
-		--local str = "Schlachtrüstung des Schreckenspanzers (8/8)"
-		--am(string.sub(str, string.find(str, "%(%d/%d%)")))
-		if line then
-			--am(line:GetName(), line:GetText(), line:GetTextColor())
-			if isSetItemLine then
-				if line:GetText() == " " then
-					isSetItemLine = false
-				else
-					local setItemName = string.gsub(line:GetText(), '^%s*(.-)%s*$', '%1')
-					
-					local r, g, b, a = line:GetTextColor()
-					
-					if r < 0.75 then
-						for slot, currentItem in pairs(currentItems) do
-							if (currentItem == setItemName or (setItemBaseNames[slot] and setItemBaseNames[slot] == setItemName)) then	
-								line:SetTextColor(myadd.setItemTooltipTextColor.r, myadd.setItemTooltipTextColor.g, myadd.setItemTooltipTextColor.b, myadd.setItemTooltipTextColor.a)
-								line:SetText("  "..currentItem)
-								setCount = setCount + 1
-							end
-						end
-					end	
-					
-					if r > 0.75 and not myadd.Contains(currentItems, setItemName) then
-						line:SetTextColor(myadd.setItemMissingTooltipTextColor.r, myadd.setItemMissingTooltipTextColor.g, myadd.setItemMissingTooltipTextColor.b, myadd.setItemMissingTooltipTextColor.a)
-						local setItemBaseName = FindSetItemBaseName(setItemName)
-						if setItemBaseName then
-							line:SetText("  "..setItemBaseName)
-						end
-						setCount = setCount - 1
-					end
-				end
-			end
-			if line:GetText() and string.find(line:GetText(), "%(%d/%d%)") then
-				setLine = line
-				setName = string.match(line:GetText(), "(.+) %(%d/%d%)")
-				setMax = tonumber(string.match(line:GetText(), ".*%(%d/(%d)%)"))
-				setCount = tonumber(string.match(line:GetText(), ".*%((%d)/%d%)"))
-				for k, v in pairs(allInventorySlots) do
-					if GetInventoryItemID("player", GetInventorySlotInfo(v)) then
-						currentItems[v] = GetItemInfo(GetInventoryItemID("player", GetInventorySlotInfo(v)))
-						
-						setItemBaseNames[v] = FindSetItemBaseName(currentItems[v])
-					end
-				end
-				isSetItemLine = true
-			end
-			if line:GetText() and string.find(line:GetText(), "%(%d%) Set:.*") then
-				local required = tonumber(string.match(line:GetText(), "%((%d)%) Set:.*"))
-				if setCount >= required then
-					line:SetTextColor(myadd.bonusTooltipTextColor.r, myadd.bonusTooltipTextColor.g, myadd.bonusTooltipTextColor.b, myadd.bonusTooltipTextColor.a)
-					line:SetText(string.sub(line:GetText(), 5))
-				end
-			end
-			--TODO: False Positive Setboni ausgrauen. benötigt info darüber, wie viele parts jeweilige boni benötigen und variable die tracked um den wievielten setbonus es sich handelt, um tabelle nutzen zu können die sagt Ymirjarfürsten = {2,4}
-					--oder den ganzen kram mehr id basiert machen?
-					--nachfragen wie man an die setdaten kommt, die auf https://db.rising-gods.de/?itemsets dargestellt werden?
-					--aus https://wow.tools/dbc/?dbc=itemset&build=3.3.5.12340&locale=deDE#page=1&search=ymir könnte man die bonus thresholds extrahieren
-		end
-	end
-	if setLine then
-		setLine:SetText(setName.." ("..setCount.."/"..setMax..")")
-	end
-end
-
-
-
-]]

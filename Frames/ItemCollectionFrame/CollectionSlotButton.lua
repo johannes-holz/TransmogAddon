@@ -34,7 +34,7 @@ core.CreateSlotButtonFrame = function(self, parent, transmogLocation, size)
 
 
 	f.location = transmogLocation
-	f.locationID = core.API.Slots[transmogLocation]
+	f.locationID = locationID
 	f.slotID = slotID
 	f.itemSlot = itemSlot
 

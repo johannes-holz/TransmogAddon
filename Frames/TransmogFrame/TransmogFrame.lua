@@ -50,7 +50,7 @@ local ShowApplyTransmogPopup = function()
 	costs.points = costs.points or costs.shards
 
 	local lines = {}
-	for _, slot in pairs(core.itemSlots) do
+	for _, slot in ipairs(core.itemSlots) do
 		local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot, id)
 		if pendingID then
 			local _, link, _, _, _, _, _, _, _, tex = GetItemInfo(pendingID)

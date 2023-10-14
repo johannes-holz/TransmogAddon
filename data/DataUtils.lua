@@ -117,6 +117,22 @@ core.AddItem = function(displayID,itemID,class,subClass,inventoryType,quality,re
 	--core.itemInfo["allowableFaction"][itemID] = allowableFaction
 end
 
+core.recipeData = { recipes = {}, spells = {} }
+core.LoadRecipe = function(recipeID, spellID, itemID)
+	core.recipeData.recipes[recipeID] = itemID
+	core.recipeData.recipes[spellID] = itemID
+end
+
+core.GetRecipeInfo = function(recipe)
+	recipe = core.GetItemIDFromLink(recipe)
+	return recipe and core.recipeData.recipes[recipe]
+end
+
+core.GetSpellRecipeInfo = function(spell)
+	spell = core.GetSpellIDFromLink(spell)
+	return spell and core.recipeData.recipes[spell]
+end
+
 
 -- LUA 5.1 stores all numbers as doubles and is only precise up to 2^53?
 -- Also the default rshift does not work for numbers >= 2^32

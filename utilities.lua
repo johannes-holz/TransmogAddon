@@ -409,6 +409,15 @@ core.GetItemIDFromLink = function(itemLink)
     return itemLink and tonumber(itemLink)
 end
 
+core.GetSpellIDFromLink = function(spellLink)
+    if type(spellLink) == "number" then
+        return spellLink
+    end
+
+    spellLink = strmatch(spellLink, "spell:(%d+)")
+    return spellLink and tonumber(spellLink)
+end
+
 core.GetEnchantIDFromLink = function(itemLink)
     if type(itemLink) == "number" then
         return nil

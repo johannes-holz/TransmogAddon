@@ -181,7 +181,8 @@ do
 end
 
 -- hex colors are encoded as "AARRGGBB" (alpha first!) for string formatting
-core.mogTooltipTextColor = { ["r"] = 0xff / 255, ["g"] = 0x9c / 255, ["b"] = 0xe6 / 255, ["a"] = 1, hex = "FFFF9CE6"}
+-- core.mogTooltipTextColor = { ["r"] = 0xff / 255, ["g"] = 0x9c / 255, ["b"] = 0xe6 / 255, ["a"] = 1, hex = "FFFF9CE6"}
+core.mogTooltipTextColor = { ["r"] = 0xff / 255, ["g"] = 0x80 / 255, ["b"] = 0xff / 255, ["a"] = 1, hex = "ffff80ff"}
 core.skinTextColor = { ["r"] = 0x9c / 255, ["g"] = 0xe6 / 255, ["b"] = 0xff / 255, ["a"] = 1, hex = "FF9CE6FF" }
 core.setItemTooltipTextColor = { ["r"] = 1, ["g"] = 1, ["b"] = 0.6, ["a"] = 1 }
 core.setItemMissingTooltipTextColor = { ["r"] = 0.5, ["g"] = 0.5, ["b"] = 0.5, ["a"] = 1 }
@@ -388,9 +389,9 @@ if true then -- TODO: Option to enable these?
 end
 
 core.GetTransmogLocationInfo = function(self, locationName)
-	if not core.API.Slots[locationName] then return end
+	if not core.API.Slot[locationName] then return end
 
-	local locationID = core.API.Slots[locationName]
+	local locationID = core.API.Slot[locationName]
 	local inventorySlot = core.locationToInventorySlot[locationName]
 	local slotID, slotTexture = GetInventorySlotInfo(core.locationToInventorySlot[locationName])
 	local itemSlot = inventorySlot
@@ -431,8 +432,8 @@ local invSlotToTransmogLocation = {
 	ShieldHandWeaponSlot = "ShieldHandWeapon",
 	OffHandSlot = "OffHand",
 	--SecondaryHandSlot", special case
-	--MainHandEnchantSlot, --TODO: erlaubt?
-	--SecondaryHandEnchantSlot,
+	MainHandEnchantSlot = "EnchantMainHand", --TODO: erlaubt?
+	SecondaryHandEnchantSlot = "EnchantOffHand",
 	RangedSlot = "Ranged",
 }
 
@@ -440,18 +441,24 @@ ToTransmogLocation = function(itemSlot) --, special)
 	if type(itemSlot) == "number" then itemSlot = idToSlot[itemSlot] end
 
 	if invSlotToTransmogLocation[itemSlot] then
-		return API.Slots[invSlotToTransmogLocation[itemSlot]]
+		return API.Slot[invSlotToTransmogLocation[itemSlot]]
 	elseif itemSlot == "SecondaryHandSlot" then
 		local equipped = GetInventoryItemID("player", 17)
-		if not equipped then return API.Slots.ShieldHandWeapon end -- No offhand equipped, so the field will be nil anyway, but have to return something
+		if not equipped then return API.Slot.ShieldHandWeapon end -- No offhand equipped, so the field will be nil anyway, but have to return something
 		local invtype = select(9, GetItemInfo(equipped)) -- item info should always be cached/available for equipped items
 		if invtype == "INVTYPE_SHIELD" or invtype == "INVTYPE_HOLDABLE" then
-			return API.Slots.OffHand
+			return API.Slot.OffHand
 		else
-			return API.Slots.ShieldHandWeapon
+			return API.Slot.ShieldHandWeapon
 		end
 	end
 end
+
+local transmogLocationToItemSlot = {}
+for itemSlot, transmogLocation in pairs(invSlotToTransmogLocation) do
+	transmogLocationToItemSlot[core.API.Slot[transmogLocation]] = itemSlot
+end
+core.am(transmogLocationToItemSlot)
 
 core.GetSkinSlotVisualID = function(skinID, slotID)
 	if not skinID then return end
@@ -568,6 +575,20 @@ local ToApiSet = function(set)
 	end
 	core.am(apiSet)
 	return apiSet
+end
+core.ToApiSet = ToApiSet
+
+core.FromApiSet = function(apiSet)
+	local set = {}
+	for slotID, itemID in pairs(apiSet) do
+		if itemID ~= 0 then
+			local itemSlot = transmogLocationToItemSlot[slotID]
+			set[itemSlot] = itemID
+		end
+	end
+	am("apiset:", apiSet)
+	am("set:", set)
+	return set
 end
 
 RegisterListener = function(field, frame)
