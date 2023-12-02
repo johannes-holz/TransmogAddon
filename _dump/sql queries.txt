@@ -1,4 +1,0 @@
-SELECT enchants.ItemVisual, enchants.ID, Spell.field1 FROM Spell JOIN enchants ON (Spell.field111 = enchants.ID)
-WHERE Spell.field72 = 53 AND enchants.ItemVisual > 0 AND NOT Spell.field140 REGEXP ".*QA.*" AND NOT Spell.field140 REGEXP ".*Test.*";
---Spell.field140,
-SELECT * FROM Spell WHERE Spell.field1 = 59621;

@@ -1,7 +1,0 @@
-with open("item_locale.csv") as f:
-    for line in f.readlines():
-        line = line.replace("\"", "")
-        itemID, englishName, germanName = line.split(";")
-        if germanName == "" or germanName == "\n":
-            germanName = englishName + "\n"
-        print("[" + itemID + "]", "=", "\"" + germanName[:-1] + "\",")
