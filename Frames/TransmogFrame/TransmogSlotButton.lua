@@ -37,126 +37,95 @@ SlotButton_UpdateIcon = function(self)
 end
 
 local SlotButton_OnEnter = function(self)
+	if self.blockedTex:IsShown() then return end
+
+	self.htex:Show()
+	
 	core.itemSlotOptionsFrame:SetOwner(self)
-	if not self.blockedTex:IsShown() then
-		self.htex:Show()
-		
-		core.itemSlotOptionsFrame:SetOwner(self)
-		core.itemSlotOptionsFrame:Show()
-		-- if f.isEnchantSlot then
-		-- 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")		
-		-- 	GameTooltip:ClearLines()
-		-- 	local itemLink, itemID, enchantID, spellID, origEnchantName, mogEnchantName
-		-- 	if f.itemSlot == "MainHandEnchantSlot" then
-		-- 		itemLink = GetInventoryItemLink("player", GetInventorySlotInfo("MainHandSlot"))
-		-- 	else				
-		-- 		itemLink = GetInventoryItemLink("player", GetInventorySlotInfo("SecondaryHandSlot"))
-		-- 	end
-		-- 	if itemLink then
-		-- 		itemID, enchantID = itemLink:match("item:(%d+):(%d+)")
-		-- 	end
-		-- 	if itemLink and enchantID then
-		-- 		spellID = core.enchantInfo["spellID"][tonumber(enchantID)]					
-		-- 	end
-		-- 	if spellID then
-		-- 		origEnchantName = GetSpellInfo(spellID)
-		-- 		GameTooltip:AddLine(origEnchantName, 1, 1, 1)
-		-- 	end
-			
-		-- 	enchantID = MyAddonDB.currentChanges[f.itemSlot]
-		-- 	if enchantID then
-		-- 		spellID = core.enchantInfo["spellID"][enchantID]
-		-- 		mogEnchantName = GetSpellInfo(spellID)
-		-- 		GameTooltip:AddLine("transmogrify to:", core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)					
-		-- 		GameTooltip:AddLine(mogEnchantName, 1, 1, 1)
-		-- 	end
+	core.itemSlotOptionsFrame:Show()
+	
+	local itemID, visualID, skinVisualID, pendingID, costsShards, costsCopper, canTransmogrify, cannotTransmogrifyReason = core.TransmogGetSlotInfo(self.itemSlot)
+	local selectedSkin = core.GetSelectedSkin()
 
-		-- 	if origEnchantName or mogEnchantName then GameTooltip:Show() end
-		-- 	return
-		-- end
-		local itemID, visualID, skinVisualID, pendingID, costsShards, costsCopper, canTransmogrify, cannotTransmogrifyReason = core.TransmogGetSlotInfo(self.itemSlot)
-		local selectedSkin = core.GetSelectedSkin()
-
-		local itemNames = {}
-		local itemNameColors = {}
-		local itemIcons = {}
-		for k, v in pairs({itemID, visualID, skinVisualID, pendingID}) do
-			if v then 
-				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")		
-				GameTooltip:SetHyperlink("item:"..v)
-				local mytext =_G["GameTooltipTextLeft" .. 1]
-				local tex = select(10, GetItemInfo(v))
-				itemNames[v] = mytext:GetText()--"["..mytext:GetText().."]")
-				itemNameColors[v] = { mytext:GetTextColor() }
-				itemIcons[v] = tex
-			end
+	local itemNames = {}
+	local itemNameColors = {}
+	local itemIcons = {}
+	for k, v in pairs({itemID, visualID, skinVisualID, pendingID}) do
+		if v then 
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")		
+			GameTooltip:SetHyperlink("item:"..v)
+			local mytext =_G["GameTooltipTextLeft" .. 1]
+			local tex = select(10, GetItemInfo(v))
+			itemNames[v] = mytext:GetText()--"["..mytext:GetText().."]")
+			itemNameColors[v] = { mytext:GetTextColor() }
+			itemIcons[v] = tex
 		end
-		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")		
-		GameTooltip:ClearLines()
-
-		if selectedSkin then
-			GameTooltip:AddLine(core.SLOT_NAMES[self.itemSlot], 1, 1, 1, 1)
-			if skinVisualID then
-				GameTooltip:AddLine(" ")
-				GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_CURRENT_MOG, core.skinTextColor.r, core.skinTextColor.g, core.skinTextColor.b, core.skinTextColor.a)
-				if skinVisualID > 1 then
-					GameTooltip:AddLine(itemNames[skinVisualID], itemNameColors[skinVisualID][1], itemNameColors[skinVisualID][2], itemNameColors[skinVisualID][3])
-				elseif skinVisualID == 1 then
-					GameTooltip:AddLine(core.HIDDEN, core.skinTextColor.r, core.skinTextColor.g, core.skinTextColor.b, core.skinTextColor.a)
-				end
-			end
-			if pendingID then
-				GameTooltip:AddLine(" ")
-				GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_PENDING_CHANGE, core.skinTextColor.r, core.skinTextColor.g, core.skinTextColor.b, core.skinTextColor.a)
-				if pendingID == 0 then
-					GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_REMOVE_SKIN, core.yellowTextColor.r, core.yellowTextColor.g, core.yellowTextColor.b, core.yellowTextColor.a)
-				elseif pendingID > 1 then
-					GameTooltip:AddLine(itemNames[pendingID], itemNameColors[pendingID][1], itemNameColors[pendingID][2], itemNameColors[pendingID][3])
-				elseif pendingID == 1 then
-					GameTooltip:AddLine(core.HIDDEN, core.skinTextColor.r, core.skinTextColor.g, core.skinTextColor.b, core.skinTextColor.a)
-				end
-			end
-		else			
-			if itemID then
-				GameTooltip:AddLine(itemNames[itemID], itemNameColors[itemID][1], itemNameColors[itemID][2], itemNameColors[itemID][3])
-			end
-			if visualID and visualID > 0 then
-				GameTooltip:AddLine(" ")
-				GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_CURRENT_MOG, core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)
-				if visualID > 1 then
-					GameTooltip:AddLine(itemNames[visualID], itemNameColors[visualID][1], itemNameColors[visualID][2], itemNameColors[visualID][3])
-				elseif visualID == 1 then
-					GameTooltip:AddLine(core.HIDDEN, core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)
-				end
-			end			
-			if pendingID then
-				GameTooltip:AddLine(" ")
-				GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_PENDING_CHANGE, core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)
-				if pendingID == 0 then
-					GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_REMOVE_MOG, core.yellowTextColor.r, core.yellowTextColor.g, core.yellowTextColor.b, core.yellowTextColor.a)
-				elseif pendingID > 1 then
-					GameTooltip:AddLine(--[["|T"..itemIcons[i]..":0|t "..]]itemNames[pendingID], itemNameColors[pendingID][1], itemNameColors[pendingID][2], itemNameColors[pendingID][3])
-				elseif pendingID == 1 then
-					GameTooltip:AddLine(core.HIDDEN, core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)
-				end
-			end
-		end
-
-		if costsShards or costsCopper then
-			local color = selectedSkin and core.skinTextColor or core.mogTooltipTextColor
-
-			GameTooltip:AddLine(" ")
-			GameTooltip:AddLine(core.COSTS .. ":", color.r, color.g, color.b, color.a)
-			GameTooltip:AddLine(core.GetPriceString(costsShards, costsCopper, true))
-		end
-
-		if cannotTransmogrifyReason then
-			GameTooltip:AddLine(" ")
-			GameTooltip:AddLine("Error: " .. cannotTransmogrifyReason, 1, 0, 0, 1)
-		end
-			
-		GameTooltip:Show()
 	end
+	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")		
+	GameTooltip:ClearLines()
+
+	if selectedSkin then
+		GameTooltip:AddLine(core.SLOT_NAMES[self.itemSlot], 1, 1, 1, 1)
+		if skinVisualID then
+			GameTooltip:AddLine(" ")
+			GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_CURRENT_MOG, core.skinTextColor.r, core.skinTextColor.g, core.skinTextColor.b, core.skinTextColor.a)
+			if skinVisualID > 1 then
+				GameTooltip:AddLine(itemNames[skinVisualID], itemNameColors[skinVisualID][1], itemNameColors[skinVisualID][2], itemNameColors[skinVisualID][3])
+			elseif skinVisualID == 1 then
+				GameTooltip:AddLine(core.HIDDEN, core.skinTextColor.r, core.skinTextColor.g, core.skinTextColor.b, core.skinTextColor.a)
+			end
+		end
+		if pendingID then
+			GameTooltip:AddLine(" ")
+			GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_PENDING_CHANGE, core.skinTextColor.r, core.skinTextColor.g, core.skinTextColor.b, core.skinTextColor.a)
+			if pendingID == 0 then
+				GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_REMOVE_SKIN, core.yellowTextColor.r, core.yellowTextColor.g, core.yellowTextColor.b, core.yellowTextColor.a)
+			elseif pendingID > 1 then
+				GameTooltip:AddLine(itemNames[pendingID], itemNameColors[pendingID][1], itemNameColors[pendingID][2], itemNameColors[pendingID][3])
+			elseif pendingID == 1 then
+				GameTooltip:AddLine(core.HIDDEN, core.skinTextColor.r, core.skinTextColor.g, core.skinTextColor.b, core.skinTextColor.a)
+			end
+		end
+	else			
+		if itemID then
+			GameTooltip:AddLine(itemNames[itemID], itemNameColors[itemID][1], itemNameColors[itemID][2], itemNameColors[itemID][3])
+		end
+		if visualID and visualID > 0 then
+			GameTooltip:AddLine(" ")
+			GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_CURRENT_MOG, core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)
+			if visualID > 1 then
+				GameTooltip:AddLine(itemNames[visualID], itemNameColors[visualID][1], itemNameColors[visualID][2], itemNameColors[visualID][3])
+			elseif visualID == 1 then
+				GameTooltip:AddLine(core.HIDDEN, core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)
+			end
+		end			
+		if pendingID then
+			GameTooltip:AddLine(" ")
+			GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_PENDING_CHANGE, core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)
+			if pendingID == 0 then
+				GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_REMOVE_MOG, core.yellowTextColor.r, core.yellowTextColor.g, core.yellowTextColor.b, core.yellowTextColor.a)
+			elseif pendingID > 1 then
+				GameTooltip:AddLine(--[["|T"..itemIcons[i]..":0|t "..]]itemNames[pendingID], itemNameColors[pendingID][1], itemNameColors[pendingID][2], itemNameColors[pendingID][3])
+			elseif pendingID == 1 then
+				GameTooltip:AddLine(core.HIDDEN, core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)
+			end
+		end
+	end
+
+	if costsShards or costsCopper then
+		local color = selectedSkin and core.skinTextColor or core.mogTooltipTextColor
+
+		GameTooltip:AddLine(" ")
+		GameTooltip:AddLine(core.COSTS .. ":", color.r, color.g, color.b, color.a)
+		GameTooltip:AddLine(core.GetPriceString(costsShards, costsCopper, true))
+	end
+
+	if cannotTransmogrifyReason then
+		GameTooltip:AddLine(" ")
+		GameTooltip:AddLine("Error: " .. cannotTransmogrifyReason, 1, 0, 0, 1)
+	end
+		
+	GameTooltip:Show()
 end
 
 local SlotButton_OnLeave = function(self)
@@ -258,7 +227,7 @@ end
 
 
 core.CreateSlotButton = function(self, parent, width, itemSlot)
-	local f = CreateFrame("Frame", itemSlot.."Frame", parent)
+	local f = CreateFrame("Frame", itemSlot .. "Frame", parent)
 	f.itemSlot = itemSlot
 	if itemSlot == "MainHandEnchantSlot" or itemSlot == "SecondaryHandEnchantSlot" then f.isEnchantSlot = true end
 	f:SetSize(width, width)
@@ -501,7 +470,7 @@ core.CreateItemSlotOptionsFrame = function(parent)
 	
 	local kids = { itemSlotOptionsFrame:GetChildren() }
 
-	for _, child in ipairs(kids) do
+	for _, child in pairs(kids) do
 		child:HookScript("OnEnter", function(self)
 			self:GetParent().hideMe = false
 		end)

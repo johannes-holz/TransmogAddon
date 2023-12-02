@@ -88,6 +88,8 @@ DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
     end
     assert(itemID == nil or itemID == 1 or core.GetItemData(itemID) ~= nil, "Invalid itemID in DressUpModel.SetSlot")
 
+    print("Set Slot:", itemSlot, itemID)
+
     if itemID then
         -- Only allow Offhand or ShieldHandWeapon?
         if itemSlot == "OffHandSlot" then
@@ -108,7 +110,7 @@ DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
             local _, _, _, _, _, _, itemSubType, _, itemEquipLoc = GetItemInfo(itemID)
             if not itemSubType then -- TODO: Hide this scuffness in data function
                 local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
-                itemSubType = core.classSubclassToType[class][subClass] -- it's category now, but CanBeTitanGripped accepts either
+                itemSubType = core.classSubclassToType[class][subClass] -- contains categories (type + subtype) now, but CanBeTitanGripped accepts either
                 itemEquipLoc = core.inventoryTypes[inventoryType]
             end
             if not core.CanDualWield() or (itemEquipLoc == "INVTYPE_2HWEAPON" and not (core.HasTitanGrip() and core.CanBeTitanGripped(itemSubType))) then
@@ -169,7 +171,7 @@ DressUpModel.TryOnOld = DressUpModel.TryOn
 DressUpModel.TryOn = function(self, itemLink, itemSlot)
     local itemID = core.GetRecipeInfo(itemLink) or core.GetItemIDFromLink(itemLink)
     local enchantID = core.GetEnchantIDFromLink(itemLink)
-    print("enchant", enchantID)
+    
     if not itemID then
         print("TryOn was called with invalid itemLink.")
         return
@@ -184,7 +186,7 @@ DressUpModel.TryOn = function(self, itemLink, itemSlot)
         return
     end
 
-    print("DressUp", itemLink, itemSlot, itemEquipLoc)
+    print("DressUp", itemLink, itemSlot, itemEquipLoc, itemID, enchantID)
 
     itemSlot = itemSlot or core.equipLocToInventorySlot[itemEquipLoc]
     if not itemSlot then

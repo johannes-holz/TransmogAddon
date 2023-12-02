@@ -23,7 +23,7 @@ core.TMOG_NPC_ID = 1010969
 core.CURRENCY_ICON = "Interface\\Icons\\inv_misc_gem_sapphire_03"
 core.CURRENCY_FAKE_ITEMID = -1337
 
--- The following tables do not need to be localized manually! We autopopulate those with GetAuctionItemClasses() and GetAuctionItemSubClasses()
+-- The following tables do not need to be localized manually. We overwrite these with the correct localized names using GetAuctionItemClasses() and GetAuctionItemSubClasses()
 core.ITEM_CLASSES = {
 	ARMOR = "Rüstung",
 	WEAPON = "Waffe",
@@ -97,6 +97,7 @@ core.CATEGORIES = {
 }
 
 do
+	-- localize item categories by using auction house item classes + subclasses
 	local classes = { GetAuctionItemClasses() }
 	core.ITEM_CLASSES = {
 		ARMOR = classes[2],
@@ -178,6 +179,7 @@ do
 	core.CATEGORY_DISPLAY_NAME = {
 		[core.CATEGORIES.TRADE_GOODS_MEAT] = core.ITEM_SUB_CLASSES.MEAT,
 	}
+	
 end
 
 -- hex colors are encoded as "AARRGGBB" (alpha first!) for string formatting
@@ -199,7 +201,7 @@ local RequestUnlocksSlot, RequestPriceTotal, RequestPriceSlot, RequestApplyCurre
 -- Functions setting data and trigger update function of registered GUI elements
 local SetCosts, SetSlotCostsAndReason, SetSkinCosts, SetCurrentChanges, SetCurrentChangesSlot, SetSlotAndCategory, SetBalance, SetSkinData, SetAvailableMogs
 
-------------------- Data we modify through Setters, that cause Listening Frames to update -----------------------------------
+------------------- Data we modify through Setters, that cause frames registered with RegisterListener to call their .update function -----------------------------------
 
 -- MyAddonDB.currentChanges = MyAddonDB.currentChanges or {} -- Get reset on Login and all the time atm., so no point in saving it in DB. Would have to save per character anyways
 local balance = {}
@@ -213,15 +215,15 @@ local slotReason = {}
 local config = nil
 
 
-local atTransmogrifier -- used in e.g. ItemTab to get different behaviour depending wether we are using it in TransmogFrame or WardrobeFrame
+local atTransmogrifier -- used in e.g. itemCollectionFrame to get different behaviour depending on wether we are using it in TransmogFrame or WardrobeFrame
 
-------------------- Updoots (for speed or for better readability) ------------------------
+------------------- Updoots (for speed and better readability) ------------------------
 local GetCoinTextureStringFull = core.GetCoinTextureStringFull
 local API = core.API
 local Length = core.Length
 local DeepCompare = core.DeepCompare
 local FunctionOnItemInfo = core.FunctionOnItemInfo
-local ClearAllOutstandingOIIF= core.ClearAllOutstandingOIIF
+local ClearAllOutstandingOIIF = core.ClearAllOutstandingOIIF
 local SetTooltip = core.SetTooltip
 local MyWaitFunction = core.MyWaitFunction
 local am = core.am
@@ -297,6 +299,19 @@ local itemSlots = {
 	"RangedSlot",
 }
 core.itemSlots = itemSlots
+
+core.enchantSlots = {
+	"MainHandEnchantSlot",
+	"OffHandEnchantSlot",
+}
+
+-- local isEnchant = {}
+-- for k, slot in ipairs(core.enchantSlots) do
+-- 	isEnchant[slot] = true
+-- end
+core.IsEnchantSlot = function(slot)
+	return slot and (slot == core.enchantSlots[0] or slot == core.enchantSlots[1])
+end
 
 for k, v in pairs(itemSlots) do
 	if v ~= "MainHandEnchantSlot" and v ~= "SecondaryHandEnchantSlot" then
@@ -374,6 +389,8 @@ core.slotCategories = {
 	["MainHandEnchantSlot"] = {},
 	["SecondaryHandEnchantSlot"] = {},
 }
+
+-- what follows are additional slot categories for items that are in the game, but are either quest items (-> not transmogable) or weird bugged test items, that can't be unlocked by normal means
 if true then -- TODO: Option
 	tinsert(core.slotCategories.MainHandSlot, core.CATEGORIES.WEAPON_1H_EXOTICA)
 end
@@ -381,11 +398,33 @@ end
 if true then -- TODO: Option to enable these?
 	tinsert(core.slotCategories.HeadSlot, core.CATEGORIES.QUEST_QUEST)
 	tinsert(core.slotCategories.BackSlot, core.CATEGORIES.QUEST_QUEST)
+	tinsert(core.slotCategories.BackSlot, core.CATEGORIES.ARMOR_MISC) -- one quest cloak has armor type misc., even gets unlocked when added, but quest is deactivated
 	tinsert(core.slotCategories.ChestSlot, core.CATEGORIES.QUEST_QUEST)
 	tinsert(core.slotCategories.MainHandSlot, core.CATEGORIES.QUEST_QUEST)
 	tinsert(core.slotCategories.SecondaryHandSlot, core.CATEGORIES.QUEST_QUEST)
 	tinsert(core.slotCategories.OffHandSlot, core.CATEGORIES.QUEST_QUEST)
 	tinsert(core.slotCategories.RangedSlot, core.CATEGORIES.QUEST_QUEST)
+end
+
+if true then
+	tinsert(core.slotCategories.ShirtSlot, core.CATEGORIES.ARMOR_CLOTH) -- martins fury
+end
+
+if true then -- completely bugged items, that should probably not be included?
+	-- INVTYPE_WEAPON: staves, 2hswords, 2haxes, polearms. these are all included in mhslot already, but would technically be usable as tmog for 1h in offhand?
+	-- INVTYPE_2HWEAPON: armor misc (obtainable quest item),
+	-- INVTYPE_WEAPONMAINHAND: 2hswords,
+	-- INVTYPE_RANGEDRIGHT: 1haxes, 
+end
+
+core.DUMMY_WEAPONS = {
+	POLEARM = 1485,
+	INVISIBLE_1H = 25194, 			-- 45630 should be "Invisible Axe", but it shows as the debug cube model instead. 25194 is smallest knuckle duster
+	ENCHANT_PREVIEW_WEAPON = 2000, 	-- 2000: Archeus, basic 2H sword
+}
+
+for name, itemID in pairs(core.DUMMY_WEAPONS) do
+	core.QueryItem(itemID)
 end
 
 core.GetTransmogLocationInfo = function(self, locationName)
@@ -1298,15 +1337,15 @@ local function canReceiveTransmog(mogTarget, mogSource, slot)
 end
 core.CanReceiveTransmog = canReceiveTransmog
 
-local function canBeEnchanted(itemSlot)
-	local itemID = MyAddonDB.currentChanges[itemSlot]
-	--local itemID = GetInventoryItemID("player", GetInventorySlotInfo(itemSlot))
-	if not itemID then return false end
-	local itemSubType = select(7, GetItemInfo(itemID))
-	--core.am(itemSubType)
-	return core.Contains({core.ITEM_SUB_CLASSES.DAGGERS, core.ITEM_SUB_CLASSES.FIST_WEAPONS, core.ITEM_SUB_CLASSES["1H_AXES"], core.ITEM_SUB_CLASSES["1H_MACES"], core.ITEM_SUB_CLASSES["1H_SWORDS"],
-						core.ITEM_SUB_CLASSES.POLEARMS, core.ITEM_SUB_CLASSES.STAVES, core.ITEM_SUB_CLASSES["2H_AXES"], core.ITEM_SUB_CLASSES["2H_MACES"], core.ITEM_SUB_CLASSES["2H_SWORDS"]}, itemSubType)	
-end
+-- local function canBeEnchanted(itemSlot)
+-- 	local itemID = MyAddonDB.currentChanges[itemSlot]
+-- 	--local itemID = GetInventoryItemID("player", GetInventorySlotInfo(itemSlot))
+-- 	if not itemID then return false end
+-- 	local itemSubType = select(7, GetItemInfo(itemID))
+-- 	--core.am(itemSubType)
+-- 	return core.Contains({core.ITEM_SUB_CLASSES.DAGGERS, core.ITEM_SUB_CLASSES.FIST_WEAPONS, core.ITEM_SUB_CLASSES["1H_AXES"], core.ITEM_SUB_CLASSES["1H_MACES"], core.ITEM_SUB_CLASSES["1H_SWORDS"],
+-- 						core.ITEM_SUB_CLASSES.POLEARMS, core.ITEM_SUB_CLASSES.STAVES, core.ITEM_SUB_CLASSES["2H_AXES"], core.ITEM_SUB_CLASSES["2H_MACES"], core.ITEM_SUB_CLASSES["2H_SWORDS"]}, itemSubType)	
+-- end
 
 core.HasTitanGrip = function()
 	return select(2, UnitClass("player")) == "WARRIOR" and select(5, GetTalentInfo(2, 27)) == 1
@@ -1322,66 +1361,49 @@ core.CanBeTitanGripped = function(itemSubClass)
 	return canBeTitanGripped[itemSubClass]
 end
 
-local DUMMY_POLEARM = 20083
-local DUMMY_INVISIBLE_ONEHANDER = 25194 -- 45630 -- 45630 should be "Invisible Axe", but it's a debug cube model instead, 25194 is smallest knuckle duster
-core.QueryItem(DUMMY_POLEARM)
-core.QueryItem(DUMMY_INVISIBLE_ONEHANDER)
-
 core.EquipOffhandNext = function(model)
 	if not core.DUMMY_MODEL then
 		core.DUMMY_MODEL = CreateFrame("DressUpModel", nil, UIParent)		
 		core.DUMMY_MODEL:SetUnit("player")
 	end
-	--core.DUMMY_MODEL:SetParent(model)
-	--core.DUMMY_MODEL:SetSize(100, 100)
-	--core.DUMMY_MODEL:SetUnit("player")
-	--core.DUMMY_MODEL:SetPoint("RIGHT", UIParent, "LEFT")
+
 	core.DUMMY_MODEL:Show()
-	core.DUMMY_MODEL:TryOn(DUMMY_POLEARM) -- reset
-	core.DUMMY_MODEL:TryOn(DUMMY_INVISIBLE_ONEHANDER) -- equip 1h one time so next one goes into offhand
+	core.DUMMY_MODEL:TryOn(core.DUMMY_WEAPONS.POLEARM) -- reset with polearm
+	core.DUMMY_MODEL:TryOn(core.DUMMY_WEAPONS.INVISIBLE_1H) -- equip 1h one time so next one goes into offhand
 	core.DUMMY_MODEL:Hide()
 end
--- TODO: Guarantee that only the latest Call per Model gets retried On Item Info (or ensure we always have iteminfo before setting anything) the current oniteminfo stuff would not work if needed
--- TODO?: Does not use the newest trick yet, that lets us display 2h + off hand only item for dualwielders
+
+-- Should probably do a full rework of this at some point with all the new Tricks Ive found
 -- The EquipToOffhand trick relies on weaponslots being cleared, which breaks the way previewmodel uses this function, so i removed it for now in the only offhand part.
 -- still has the problem for no titangrip chars that we cant put 2h into offhand there and either have to do another error message or try to do something with animations or both... should work on this later
 
--- Should probably do a full rework of this at some point with all the new Tricks Ive found
 
--- Displays weapons mainHand and offHand on DressUpModel mod as well as possible (i.e. can't display dualwielding weapons, if the player can't dualwield and wasn't logged into a dualwielding char earlier in the session)
--- the login thing is just another DressUpModel weirdness, since it would be confusing and we can't track it anyway, we ignore that point
--- requires an undress of the weapons before usage, now that we use that EquipToOffhand trick sometimes instead of always using an "in(not so much)visible" wepaon in MH
+-- Displays weapons mainHand and offHand on DressUpModel mod as well as possible (i.e. can't display dualwielding weapons, if the player can't dualwield (and wasn't logged into a dualwielding char earlier in the session))
+-- the "logged in on dualwielder before" thing is just another DressUpModel weirdness, since it would be confusing and we can't track it anyway, we don't try to use that feature
+-- requires an undress of the weapons before usage, now that we use that EquipToOffhand trick sometimes instead of always using an "invisible" weapon in MH
 core.ShowMeleeWeapons = function(mod, mainHand, offHand)
 	if not (mainHand or offHand) or not mod then return end
 
-	if mainHand and (type(mainHand) ~= "number") then mainHand = core.GetItemIDFromLink(mainHand) end
-	if offHand and (type(offHand) ~= "number") then offHand = core.GetItemIDFromLink(offHand) end
+	local mainHandID = core.GetItemIDFromLink(mainHand)
+	local offHandID = core.GetItemIDFromLink(offHand)
 
-	if mainHand and mainHand <= 1 then mainHand = nil end
-	if offHand and offHand <= 1 then offHand = nil end
+	if not mainHandID or mainHandID < 0 then mainHand = nil end
+	if not offHandID or offHandID < 0 then offHand = nil end
 	
-	local mhSubType, mhInvType, ohSubType, ohInvType
-	if mainHand then
-		mhSubType, _, mhInvType = select(7, GetItemInfo(mainHand)) -- TODO: this would spout an error if we dont have item cached, so this is pointless. should instead make sure iteminfo is always secured before this gets called (which we do apparently?) At least I haven't see this give an error so far
-		if not mhSubType then
-			FunctionOnItemInfo(mainHand, core.ShowMeleeWeapons, mod, mainHand, offHand)
-			return
-		end
-	end
-	if offHand then
-		ohSubType, _, ohInvType = select(7, GetItemInfo(offHand))
-		if not ohSubType then
-			FunctionOnItemInfo(offHand, core.ShowMeleeWeapons, mod, mainHand, offHand)
-			return
-		end
+	local _, _, _, _, _, _, mhSubType, _, mhInvType = GetItemInfo(mainHand or 0)
+	local _, _, _, _, _, _, ohSubType, _, ohInvType = GetItemInfo(offHand or 0)
+	if mainHand and not mhSubType or offHand and not ohSubType then -- could also check if the items are weapons here
+		print(folder, "- Error/wrong usage of ShowMeleeWeapons. Please assure the weapons are cached before using ShowMeleeWeapons!")
+		if mainHand then core.QueryItem(mainHandID) end
+		if offHand then core.QueryItem(offHandID) end
 	end
 	
-	local TryOn = mod.TryOnOld or mod.TryOn
+	local TryOn = mod.TryOnOld or mod.TryOn -- Incase our model has modified TryOn. Hacky as fuck I know, maybe better to take the correct TryOn method as optional parameter?
 	local hasTitanGrip = core.HasTitanGrip()
 	local canDualWield = core.CanDualWield()
 
 	if mainHand then
-		TryOn(mod, DUMMY_POLEARM)
+		TryOn(mod, core.DUMMY_WEAPONS.POLEARM)
 		TryOn(mod, mainHand)
 		if offHand then
 			if ohInvType == "INVTYPE_SHIELD" or ohInvType == "INVTYPE_HOLDABLE" or ohInvType == "INVTYPE_WEAPONOFFHAND"
@@ -1398,8 +1420,8 @@ core.ShowMeleeWeapons = function(mod, mainHand, offHand)
 			TryOn(mod, offHand)
 		elseif canDualWield and (ohInvType == "INVTYPE_WEAPON" or (hasTitanGrip and canBeTitanGripped[ohSubType])) then
 			if ohInvType == "INVTYPE_WEAPON" then -- trick of toggling hand on other model does not work with 1H, when nothing is equipped in mh .. 
-				TryOn(mod, DUMMY_POLEARM)
-				TryOn(mod, DUMMY_INVISIBLE_ONEHANDER)
+				TryOn(mod, core.DUMMY_WEAPONS.POLEARM)
+				TryOn(mod, core.DUMMY_WEAPONS.INVISIBLE_1H)
 			else
 				core.EquipOffhandNext(mod)
 			end
@@ -1474,7 +1496,6 @@ core.IsWeaponSlot = function(slot)
 	return isWeaponSlot[slot]
 end
 
-
 core.OpenTransmogWindow = function()
 	core.wardrobeFrame:Hide()	
 	core.SetIsAtTransmogrifier(true)
@@ -1511,13 +1532,13 @@ core.gossipOpenTransmogButton:SetScript("OnClick", function()
 	core.OpenTransmogWindow()
 end)
 core.gossipOpenTransmogButton:SetPoint("TOP", GossipNpcNameFrame, "BOTTOM", 0, -10)
+
 ------------------------------------------------------
--- / LOAD THE SHIT / -- and event listener frame
+-- loading and event stuff
 ------------------------------------------------------  
 
 local a = CreateFrame("Frame")
 a:RegisterEvent("PLAYER_ENTERING_WORLD")
-a:RegisterEvent("CHAT_MSG_ADDON")
 a:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 a:RegisterEvent("GOSSIP_SHOW")
 a:RegisterEvent("GOSSIP_CLOSED")
@@ -1526,22 +1547,25 @@ a:RegisterEvent("PLAYER_MONEY")
 a:SetScript("OnEvent", function(self, event, ...)
 	if event == "PLAYER_ENTERING_WORLD" then
 		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
+
+		SetCurrentChanges({})
 		
 		core.InitLDB()
+
+		core.GenerateDisplayGroups()
+
 		core.RequestSkins()
 		core.RequestActiveSkin()
-		core.GenerateCompressedItemData()
 		core.RequestUnlocksAll()
 		core.RequestBalance()
 		core.RequestSkinCosts()
 		core.RequestGetConfig()
-		SetCurrentChanges({})
 
 		core.PreHook_ModifiedItemClick()
 		--BackgroundItemInfoWorker.Start()		
 
 	elseif event == "PLAYER_EQUIPMENT_CHANGED" then
-		print(event, ...)
+		-- print(event, ...)
 		local inventorySlotID, itemEquipped = ...
 		local itemSlot = idToSlot[inventorySlotID]
 		if not itemSlot then return end
@@ -1588,11 +1612,11 @@ end)
 
 --Hooks
 
-CharacterFrame:HookScript("OnShow", function()
-	if core.transmogFrame:IsShown() then
-		--MyWaitFunction(0.01, CloseGossip)
-	end
-end)
+-- CharacterFrame:HookScript("OnShow", function()
+-- 	if core.transmogFrame:IsShown() then
+-- 		--MyWaitFunction(0.01, CloseGossip)
+-- 	end
+-- end)
 
 --[[
 --local gossipFrameWidthBackup
@@ -1617,7 +1641,7 @@ GossipFrame:HookScript("OnHide", function()
 end)]]
 
 
-
+-- DEBUG
 
 
 PrintCurrentChanges = function()

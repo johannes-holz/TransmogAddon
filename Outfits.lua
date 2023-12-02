@@ -104,8 +104,6 @@ ChatFrame_OnHyperlinkShow = function(self, link, text, button)
     return ChatFrame_OnHyperlinkShow_Orig(self, link, text, button)
 end
 
-
-
 local OnDressUpItemLink = function(link)
     if type(link) == "number" then return end
     local apiSet = core.API.DecodeOutfitLink(link)

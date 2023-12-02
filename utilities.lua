@@ -401,7 +401,7 @@ core.GetNPCID = function(guid)
 end
 
 core.GetItemIDFromLink = function(itemLink)
-    if type(itemLink) == "number" then
+    if not itemLink or type(itemLink) == "number" then
         return itemLink
     end
 

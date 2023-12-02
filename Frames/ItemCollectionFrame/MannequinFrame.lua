@@ -81,38 +81,139 @@ core.mannequinPositions = {
 		["MainHandEnchantSlot"] = {0, 0, 0.1, math.pi * 0.3},
 		["SecondaryHandEnchantSlot"] = {0, 0, 0.1, -math.pi * 0.3},
 		["RangedSlot"] = {0, 0, 0.1, math.pi * 0.3},},
-	--[[head 1.04, 0, -0.18
-shoulder 0.82, 0, 0
-chest 1.14, 0, 0.14
-shirt
-tabard
-wrist
-hands
-wrists
-legs 1.2, 0, 0.28
-feet 1.16, 0, 0.4
-mh 0, 0, 0.1
-oh same?
-	["axe"] = {0.2, 0, 0, math.pi * 0.4},
-	["sword"] = {0.2, 0, 0, math.pi * 0.4},
-	["mace"] = {0.2, 0, 0, math.pi * 0.4},
-	["dagger"] = {1.1, 0, 0, math.pi * 0.3},
-	["fistweapon"] = {0.9, 0, 0, math.pi * 0.3},
-	["polearm"] = {0.2, 0, 0, math.pi * 0.2},
-	["staff"] = {0.2, 0, 0, math.pi * 0.4},
-	["fishingpole"] = {0.2, 0, 0, math.pi * 0.4},
-	["bow"] = {0.2, 0, 0, math.pi * 0.4},
-	["crossbow"] = {0.2, 0, 0, math.pi * 0.4},
-	["gun"] = {0.2, 0, 0, math.pi * 0.4},
-	["thrown"] = {0.2, 0, 0, math.pi * 0.4},
-	["wand"] = {0.2, 0, 0, math.pi * 0.4},
-	["offhand"] = {0.2, 0, 0, -math.pi * 0.4},
-	["shield"] = {0.2, 0, 0, -math.pi * 0.4},]]--
 }
 
+-- Model frames get reset to the initial position on SetUnit and OnHide, but their internal x, y, z values do not.
+-- When calling SetPosition(x, y, z) it moves the model by the difference to its own internal position, so if we don't manage this ourselves, it will stop working as intended after after SetUnit/Hide.
+-- For Example: SetPosition(1, 0, 0) -> SetUnit("player") -> SetPosition(1, 0, 0). The second SetPosition call would not move the model away from the origin, since its internal x value is still 1.
+-- There are different ways to fix this, I chose to reset the models to (0, 0, 0) before SetUnit and OnHide, so that the interal values match with what we see.
+local Model_SetUnit = function(self, unit)
+	local x, y, z = self:GetPosition()
+	self:SetPosition(0, 0, 0)
+	self:SetUnitOld(unit)
+	self:SetPosition(x, y, z)
+end
 
+local Model_OnHide = function(self)
+	self:SetPosition(0, 0, 0)
+end
 
+local Model_OnShow = function(self)
+	self:SetUnit("player")
+	self:Undress()
+	if self.itemID then self:TryOn(self.itemID) end
+end
 
+local Model_GetID = function(self)
+	return self.id
+end
+
+local Model_SetLoading = function(self, loading)
+	core.SetShown(self.loadingFrame, loading)
+	self.loading = loading
+	if loading then
+		self:SetFogColor(0.1, 0.1, 0.1)
+		self:SetFogNear(0)
+		self:SetFogFar(0.1)
+	else
+		--self:SetFogColor(nil)
+		self:SetFogNear(10)
+	end
+end
+
+-- Set and show display item. If we don't have the item cached, we query it and show a loading frame. The loading frame also periodically checks, if the item has been loaded
+local Model_TryOn = function(self, itemID)
+	assert(type(itemID) == "number")  -- expects clean numerical itemID!
+	self.itemID = itemID		
+	
+	if core.IsEnchantSlot(core.itemCollectionFrame.selectedSlot) then
+		local itemString = "item:2000:" .. (itemID == 0 and 0 or core.enchants[itemID]["enchantIDs"][1]) -- itemID is the enchantID in this case
+		-- self:TryOnOld(1485) -- TODO: use equip to slot functionality instead of doing the weapon slot manipulation manually like this?
+		-- self:TryOnOld("item:2000:" .. (itemID == 0 and 0 or core.enchants[itemID]["enchantIDs"][1]))
+		core.ShowMeleeWeapons(self, itemString, nil)
+		self:SetLoading(false)
+	elseif GetItemInfo(itemID) then
+		local slot = self:GetParent():GetParent().selectedSlot
+		local enchant = core.itemCollectionFrame.enchant
+		local itemString = enchant and "item:" .. itemID .. ":" .. enchant or itemID
+		self:Undress()
+		-- self:TryOnOld(39519) -- Black Gloves
+		-- self:TryOnOld(11731) -- Black Shoes
+		-- self:TryOnOld(6835) -- Black Leggings
+		-- self:TryOnOld(3427) -- Black Shirt
+		-- self:TryOnOld(9998) -- Black West
+		if slot == "MainHandSlot" then 
+			core.ShowMeleeWeapons(self, itemString, nil)
+		elseif slot == "ShieldHandWeaponSlot" then
+			core.ShowMeleeWeapons(self, nil, itemString) -- TODO: fails for 2H weapons without titangrip. would need to find a good model animation + position, where both hands are on the weapon
+		else
+			self:TryOnOld(itemString)
+		end
+		self:SetLoading(false)
+	else
+		self:SetLoading(true)
+		core.QueryItem(itemID)
+	end
+	self:UpdateBorders()
+end
+
+-- Displays a special border for equipped item, current transmog, skin or pending
+local Model_UpdateBorders = function(self)
+	local slot = self:GetParent():GetParent().selectedSlot
+	local isEnchantSlot = slot and core.IsEnchantSlot(slot)
+
+	if slot and self.itemID and core.IsAtTransmogrifier() then
+		local _, displayGroup = core.GetItemData(self.itemID)
+		local skinID = core.GetSelectedSkin()
+		local equippedID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot)
+
+		core.SetShown(self.equippedTexture, not skinID and ((self.itemID == equippedID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(equippedID))))))
+		core.SetShown(self.visualTexture, not skinID and ((self.itemID == visualID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(visualID))))))
+		core.SetShown(self.skinVisualTexture, (self.itemID == skinVisualID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(skinVisualID)))))
+		core.SetShown(self.pendingTexture, (self.itemID == pendingID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(pendingID)))))
+		if self.pendingTexture:IsShown() then
+			if skinID then 
+				self.pendingTexture:SetTexCoord(196/512, 292/512, 218/512, 342/512)
+			else
+				self.pendingTexture:SetTexCoord(5/512, 101/512, 3/512, 127/512)
+			end
+		end
+	else
+		self.equippedTexture:Hide()
+		self.visualTexture:Hide()
+		self.skinVisualTexture:Hide()
+		self.pendingTexture:Hide()
+
+		if isEnchantSlot and self.itemID then
+			local enchant = self.itemID ~= 0 and core.enchants[self.itemID].enchantIDs[1] or nil
+			if enchant == self:GetParent():GetParent().enchant then
+				self.equippedTexture:Show()
+			end
+		end
+	end
+end
+
+local Model_update = function(self)
+	self:UpdateBorders()
+end
+
+local Model_SetAnimation = function(self, sequenceID, sequenceTime, sequenceSpeed) -- requires that SetSequence(...) is called in OnUpdate
+	-- core.am("Set Model Animation:", sequenceID, sequenceTime, sequenceSpeed)
+	self.sequence = (sequenceID and sequenceID >= 0 and sequenceID <= 506) and sequenceID or 15 -- sequence ID must be in the range 0, 506
+	self.sequenceTime = sequenceTime or 0
+	self.sequenceSpeed = sequenceSpeed or 1000
+end
+
+local Model_OnUpdate = function(self, elapsed) -- this lets us use different model animation (some will be glitchy). without setting this in OnUpdate, it will show the default standing animation
+	self.sequenceTime = self.sequenceTime + elapsed * self.sequenceSpeed
+	self:SetSequenceTime(self.sequence, self.sequenceTime)
+end
+
+local Model_SetDisplayMode = function(self, unlocked) -- change style depending on whether the item is unlocked or not
+	self:SetAlpha(unlocked and 1 or 0.8)
+	core.SetShown(self.lockedTexture, not unlocked)
+	self:SetLight(unpack(LIGHT[unlocked and "default" or "locked"]))
+end
 
 local UPDATE_INTERVAL = 0.5
 local LoadingFrame_OnUpdate = function(self, e)
@@ -127,35 +228,20 @@ local LoadingFrame_OnUpdate = function(self, e)
 	end
 end
 
-
-
 core.CreateMannequinFrame = function(self, parent, id, width, height)
-	local m = CreateFrame("DressUpModel", folder.."Mannequin"..id, parent)
-	
-	m.SetUnitOld = m.SetUnit
-	m.SetUnit = function(self, unit)
-		local x, y, z = self:GetPosition()
-		self:SetPosition(0, 0, 0)
-		self:SetUnitOld(unit)
-		self:SetPosition(x, y, z)
-	end
-
-	m.HideOld = m.Hide
-	m.Hide = function(self)
-		self:SetPosition(0, 0, 0)
-		self:HideOld()
-	end
-
-
-	m.id = id
-	m.GetID = function(self)
-		return self.id
-	end
-
+	local m = CreateFrame("DressUpModel", folder .. "Mannequin" .. id, parent)
+	-- Setting frame strata to HIGH or above would cause the main model to be loaded before the mannequins (models (frames?) get loaded back to front)
+	-- This causes ugly clipping tho in combination with SetTopLevel frames, so have to find another way
+	-- m:SetFrameStrata("HIGH")
 	m:SetSize(width, height)
-		
 	m:EnableMouse()
 	m:EnableMouseWheel()
+
+	m.id = id
+	m.GetID = Model_GetID	
+
+	m.SetUnitOld = m.SetUnit
+	m.SetUnit = Model_SetUnit		
 	
 	-- m.borderFrame = CreateFrame("Frame", nil, m)
 	-- m.borderFrame:SetAllPoints()
@@ -253,228 +339,30 @@ core.CreateMannequinFrame = function(self, parent, id, width, height)
 
 	m.loadingFrame:SetScript("OnUpdate", LoadingFrame_OnUpdate)
 
-	m.SetLoading = function(self, loading)
-		core.SetShown(self.loadingFrame, loading)
-		if loading then
-			self:SetFogColor(0.1, 0.1, 0.1)
-			self:SetFogNear(0)
-			self:SetFogFar(0.1)
-		else
-			--self:SetFogColor(nil)
-			self:SetFogNear(10)
-		end
-	end
+	m.SetLoading = Model_SetLoading
 
-	m.UpdateBorders = function(self)
-		local slot = self:GetParent():GetParent().selectedSlot
-		-- Displaying a special border for equipped item, current transmog, skin or pending
-		if slot and self.itemID and core.IsAtTransmogrifier() then
-			local _, displayGroup = core.GetItemData(self.itemID)
-			local skinID = core.GetSelectedSkin()
-			local equippedID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot)
+	-- TODO: Display of 2H in offhand without titangrip
+	m.TryOnOld = m.TryOn
+	m.TryOn = Model_TryOn
 
-			core.SetShown(self.equippedTexture, not skinID and ((self.itemID == equippedID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(equippedID))))))
-			core.SetShown(self.visualTexture, not skinID and ((self.itemID == visualID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(visualID))))))
-			core.SetShown(self.skinVisualTexture, (self.itemID == skinVisualID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(skinVisualID)))))
-			core.SetShown(self.pendingTexture, (self.itemID == pendingID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(pendingID)))))
-			if self.pendingTexture:IsShown() then
-				if skinID then 
-					self.pendingTexture:SetTexCoord(196/512, 292/512, 218/512, 342/512)
-				else
-					self.pendingTexture:SetTexCoord(5/512, 101/512, 3/512, 127/512)
-				end
-			end
-		else
-			self.equippedTexture:Hide()
-			self.visualTexture:Hide()
-			self.skinVisualTexture:Hide()
-			self.pendingTexture:Hide()
-		end
-	end
-	m.update = function(self)
-		self:UpdateBorders()
-	end
+	m.SetDisplayMode = Model_SetDisplayMode
+		
+	m.sequence = 15 -- Standing Still Animation
+	m.sequenceTime = 0
+	m.sequenceSpeed = 1000	
+	m.SetAnimation = Model_SetAnimation
+
+	m.UpdateBorders = Model_UpdateBorders
+	m.update = Model_update
+
 	core.RegisterListener("currentChanges", m)
 	core.RegisterListener("selectedSkin", m)
 	core.RegisterListener("inventory", m)
 	-- core.RegisterListener("availableMogs", m)
-
-
-	-- TODO: Display of 2H in offhand fails without Titangrip (and without Dualwielding obviously). Could use different Modelpose, that holds 2h in both hands maybe
-	m.TryOnOld = m.TryOn
-	m.TryOn = function(self, itemID) -- or link/string. Force numerical itemID? Since we control how this gets called in itemcollection, not really neccessary?
-		-- Set and show display item. If we don't have the item cached, we query it and show a loading frame. The loading frame also periodically checks, if the item has been loaded
-		self.itemID = itemID
-		if GetItemInfo(itemID) then
-			local enchant = core.itemCollectionFrame.enchant
-			self:Undress()
-			-- self:TryOnOld(39519) -- Black Gloves
-			-- self:TryOnOld(11731) -- Black Shoes
-			-- self:TryOnOld(6835) -- Black Leggings
-			-- self:TryOnOld(3427) -- Black Shirt
-			-- self:TryOnOld(9998) -- Black West
-			local slot = self:GetParent():GetParent().selectedSlot
-			if slot == "MainHandSlot" then self:TryOnOld(1485) end
-			if slot == "ShieldHandWeaponSlot" then self:TryOnOld(1485); self:TryOnOld(20954) end -- TODO: irgendwann nochmal korrekt machen mit fog etc? diese lösung failed für 2h ohne titangrip
-			self:TryOnOld(enchant and "item:" .. itemID .. ":" .. enchant or itemID)
-			self:SetLoading(false)
-		else
-			self:SetLoading(true)
-			core.QueryItem(itemID)
-		end
-		self:UpdateBorders()
-	end
-
-	m.SetDisplayMode = function(self, unlocked)
-		self:SetAlpha(unlocked and 1 or 0.8)
-		core.SetShown(self.lockedTexture, not unlocked)
-		-- core.SetShown(self.testFrame, false and not unlocked)
-
-		self:SetLight(unpack(LIGHT[unlocked and "default" or "locked"]))
-	end
-
 	
-	
-		
-	m.sequence = 15 -- Standing Still Animation
-	m.sequenceTime = 0
-	m.sequenceSpeed = 1000
-	
-	m.SetAnimation = function(self, sequenceID, sequenceTime, sequenceSpeed)
-		core.am("Set Model Animation to "..sequenceID..".")
-		self.sequence = sequenceID
-		self.sequenceTime = sequenceTime or 0
-		self.sequenceSpeed = sequenceSpeed or 1000
-	end
-	
-	m.onUpdateNormal = function(self, elapsed) -- this lets us use different model animation (some will be glitchy). without setting this in OnUpdate, it will show the default standing animation
-		if self.sequence < 0 or self.sequence > 506 then return end -- Sequence must be in the range 0, 506
-
-		self.sequenceTime = self.sequenceTime + elapsed * self.sequenceSpeed
-		self:SetSequenceTime(self.sequence, self.sequenceTime)
-	end	
-	m:SetScript("OnUpdate", m.onUpdateNormal)
-
-
-	m.ShowTooltip = function(self)
-		-- local iid = list[8*(page-1)+tonumber(m:GetName())]
-		
-		-- if selectedSlot == "MainHandEnchantSlot" or selectedSlot == "SecondaryHandEnchantSlot" then
-		-- 	local enchantID, spellID, mogEnchantName
-		-- 	_, enchantID = iid:match("item:(%d+):(%d+)")
-		-- 	enchantID = tonumber(enchantID)				
-		-- 	visualID = myadd.enchantInfo["visualID"][enchantID]
-			
-		-- 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")		
-		-- 	GameTooltip:ClearLines()
-		-- 	for k, v in pairs(myadd.enchants[visualID]["enchantIDs"]) do
-		-- 		spellID = myadd.enchantInfo["spellID"][v]
-		-- 		mogEnchantName = GetSpellInfo(spellID)		
-		-- 		GameTooltip:AddLine(mogEnchantName, 1, 1, 1)
-		-- 	end
-		-- 	GameTooltip:Show()
-		-- 	return
-		-- end
-		
-		-- local dispID = myadd.itemInfo["displayID"][iid]
-		-- local itemNames = {}
-		-- local itemNameColors = {}
-		-- for k, v in pairs(myadd.displayIDs[dispID]) do
-		-- 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")		
-		-- 	GameTooltip:SetHyperlink("item:"..v)
-		-- 	local mytext =_G["GameTooltipTextLeft"..1]
-		-- 	--am( mytext:GetText())
-		-- 	tinsert(itemNames, mytext:GetText())--.." - "..v)
-		-- 	tinsert(itemNameColors, { mytext:GetTextColor() })
-		-- end
-		-- --am(itemNames)
-		-- GameTooltip:SetOwner(self, "ANCHOR_RIGHT")		
-		-- GameTooltip:ClearLines()
-		-- for i=1,length(itemNames) do
-		-- 	GameTooltip:AddLine(itemNames[i], itemNameColors[i][1], itemNameColors[i][2], itemNameColors[i][3])
-		-- end
-		-- GameTooltip:Show()
-	end
-	
-	-- m:SetScript("OnMouseDown", function()
-	-- 	local iid = list[8*(page-1)+tonumber(m:GetName())] --TODO: weniger scuffed lösung finden?
-
-	-- 	if iid then
-	-- 		am("")
-	-- 		if selectedSlot == "MainHandEnchantSlot" or selectedSlot == "SecondaryHandEnchantSlot" then
-	-- 			local itemID, enchantID = iid:match("item:(%d+):(%d+)")
-	-- 			iid = tonumber(enchantID)
-	-- 			am("Enchant: "..iid)
-	-- 		else
-	-- 			if IsControlKeyDown() then
-	-- 				local dispID = myadd.itemInfo["displayID"][iid]
-					
-	-- 				--am("DisplayID: "..dispID)
-	-- 				--am(myadd.displayIDs[dispID])
-	-- 				for k, v in pairs(myadd.displayIDs[dispID]) do
-	-- 					FunctionOnItemInfo(v, function()
-	-- 						am(v .. " - "..select(1, GetItemInfo(v)))--..", displayID: "..myadd.itemInfo["displayID"][v])
-	-- 					end)
-	-- 				end
-	-- 			else
-	-- 				FunctionOnItemInfo(v, function()
-	-- 					am(iid .. " - "..select(1, GetItemInfo(iid)))--..", displayID: "..myadd.itemInfo["displayID"][iid])
-	-- 				end)
-	-- 			end
-	-- 		end
-	-- 		TryOn(model, iid, selectedSlot)
-	-- 	end
-	-- end)
-	-- m:SetScript("OnEnter", m.ShowTooltip)
-	-- m:SetScript("OnLeave", function(self)
-	-- 	GameTooltip:Hide()
-	-- end)
-	-- m:SetScript("OnMouseWheel", function(self, delta)
-	-- 	if delta < 1 then
-	-- 		SetPage(page+1)
-	-- 	else
-	-- 		SetPage(page-1)
-	-- 	end
-	-- 	if m:IsShown() then
-	-- 		m.ShowTooltip(self)
-	-- 	end
-	-- 	--[[local x, y, z = m:GetPosition()
-	-- 	local a = m:GetFacing()
-	-- 	if IsShiftKeyDown() then		
-	-- 		m:SetPosition(x, y, z+0.03*delta)
-	-- 	elseif IsControlKeyDown() then
-	-- 		m:SetFacing(a+0.03*delta)
-	-- 	else
-	-- 		m:SetPosition(x+0.1*delta, y, z)
-	-- 	end		
-	-- 	x, y, z = m:GetPosition()
-	-- 	a = m:GetFacing()
-	-- 	am(x, y, z, a)]]
-	-- end)
-	m:SetScript("OnHide", function(self)
-		self:SetPosition(0, 0, 0)
-		self:UnregisterEvent("OnKeyDown")
-	end)
-	m:SetScript("OnShow", function(self)
-		--[[
-		if not m.item then return end
-		local _, race = UnitRace("player")
-		if not core.mannequinPositions[race] then race = "Human" end
-		local pos = core.mannequinPositions[race][selectedSlot] or {0, 0, 0, 0}
-		m:Undress()
-		m:TryOn(m.item)
-		m:SetPosition(pos[1], pos[2], pos[3])
-		m:SetFacing(pos[4])
-		]]
-		self:SetUnit("player")
-		self:Undress()
-		if self.itemID then self:TryOn(self.itemID) end
-		self:RegisterEvent("OnKeyDown")
-	end)
-
-	m:SetScript("OnEvent", function(self, event, ...)
-		print(self:GetID(), event, ...)
-	end)
+	m:SetScript("OnUpdate", Model_OnUpdate)
+	m:SetScript("OnHide", Model_OnHide)
+	m:SetScript("OnShow", Model_OnShow)
 
 	m:Hide()
 	return m

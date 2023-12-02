@@ -10,10 +10,9 @@ local START_SEQUENCE = 21
 -- Possible Poses to display MH held by offhand: 133, 199
 -- nice MH pose 181, scale 1.2, new 2.98, far 3.12
 -- another good pose 21
-core.CreateWardrobeModelFrame = function(self, parent)
+core.CreateWardrobeModelFrame = function(parent)
     local model = CreateFrame("DressUpModel", folder.."WardrobeModel", parent)
     model:SetSize(200, 300)
-    model:SetPoint("TOPLEFT", parent, "TOPRIGHT")
     model:EnableMouse()
 
 	model.SetUnitOld = model.SetUnit
@@ -245,6 +244,8 @@ core.CreateWardrobeModelFrame = function(self, parent)
 	model.saveButton:Show()
     model.saveButton:SetScript("OnClick", function()
         print("uwu")
+        local model = core.itemCollectionFrame.mannequins[1]
+
         local x, y, z = model:GetPosition()
         local facing = model:GetFacing()
         local near = model:GetFogNear()
@@ -254,14 +255,49 @@ core.CreateWardrobeModelFrame = function(self, parent)
         local speed = model.speed
         
         local _, race = UnitRace("player")
-        local inventorySlot = select(2, core:GetTransmogLocationInfo(core.itemCollectionFrame.location))
+        -- local inventorySlot = select(2, core:GetTransmogLocationInfo(core.itemCollectionFrame.location))
+        local slot = core.itemCollectionFrame.selectedSlot
+        local category = core.itemCollectionFrame.selectedCategory or "Default"
         
-        MyAddonDB.newPositions = MyAddonDB.newPositions or {}
-        MyAddonDB.newPositions[race] = MyAddonDB.newPositions[race] or {}
-        MyAddonDB.newPositions[race][inventorySlot] = {
-            x, y, z, facing, near, far, seq, time, 0
-        }
-        print(x, y, z, facing, near, far, seq, time)
+        -- MyAddonDB.newPositions = MyAddonDB.newPositions or {}
+        -- MyAddonDB.newPositions[race] = MyAddonDB.newPositions[race] or {}
+        -- MyAddonDB.newPositions[race][inventorySlot] = {
+        --     x, y, z, facing, near, far, seq, time, 0
+        -- }
+        --print(x, y, z, facing, near, far, seq, time)
+
+        local _, race = UnitRace("player")
+        local sex = UnitSex("player")
+        local id = core.sexRaceToID[sex][race]
+        print(race, sex)
+        print(core.sexRaceToID[sex][race])
+
+        -- MyAddonDB.modelPositionData = MyAddonDB.modelPositionData or {
+        --     x = {},
+        --     y = {},
+        --     z = {},
+        --     facing = {},
+        --     near = {},
+        --     far = {},
+        --     seq = {},
+        --     time = {},
+        -- }
+
+        -- MyAddonDB.modelPositionData.x[id] = x
+        -- MyAddonDB.modelPositionData.y[id] = y
+        -- MyAddonDB.modelPositionData.z[id] = z
+        -- MyAddonDB.modelPositionData.facing[id] = facing
+        -- MyAddonDB.modelPositionData.near[id] = near
+        -- MyAddonDB.modelPositionData.far[id] = far
+        -- MyAddonDB.modelPositionData.time[id] = time
+        
+        MyAddonDB.positionData = MyAddonDB.positionData or {}
+        MyAddonDB.positionData[id] = MyAddonDB.positionData[id] or {}
+        MyAddonDB.positionData[id][slot] = MyAddonDB.positionData[id][slot] or {}
+        MyAddonDB.positionData[id][slot][category] = { x, y, z, facing, near, far, seq, time }
+        AM(MyAddonDB.positionData[id][slot])
+
+        -- MyAddonDB.positionData = nil
 
         -- for _, m in pairs(core.itemCollectionFrame.mannequins) do
         --     DEB(m)
@@ -313,3 +349,18 @@ DEB = function(model)
     model:TryOnOld(9998) -- Black West
     model:TryOnOld(model.item)
 end
+
+
+
+
+-- local races = { "Human", "Orc", "Dwarf", "Night Elf", "Undead", "Tauren", "Gnome", "Troll", "Blood Elf", "Draenei" }
+-- local sexes = { "Diverse", "Male", "Female" }
+local raceIDs = { Human = 1, Orc = 2, Dwarf = 3, ["Night Elf"] = 4, Undead = 5, Tauren = 6, Gnome = 7, Troll = 8, ["Blood Elf"] = 9, Draenei = 10}
+core.sexRaceToID = {}
+for i = 2, 3 do -- male, female
+    core.sexRaceToID[i] = {}
+    for race, id in pairs(raceIDs) do -- races
+        core.sexRaceToID[i][race] = 10 * (i - 2) + id
+    end
+end
+AM(core.sexRaceToID)

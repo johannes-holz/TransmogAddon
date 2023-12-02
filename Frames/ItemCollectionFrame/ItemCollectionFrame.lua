@@ -93,31 +93,30 @@ itemCollectionFrame.SetSlotAndCategory = function(self, slot, category, update)
 	-- 	category = core.slotCategories[1] -- TODO: why no worky?
 	-- end
 
-	itemCollectionFrame.selectedSlot = slot
-	itemCollectionFrame.selectedCategory = category
+	self.selectedSlot = slot
+	self.selectedCategory = category
 	
 	-- highlight current slot button in wardrobe
 	if not core.IsAtTransmogrifier() then
 		for _, button in pairs(self.slotButtons) do
 			core.SetShown(button.selectedTexture, button.itemSlot == slot)
 		end
+		core.SetShown(self.enchantSlotButton.selectedTexture, self.enchantSlotButton.itemSlot == slot)
 	end
 
 	-- TODO: setshown all the other shit: shown = not (atNpc and not slot)
-	core.SetShown(itemCollectionFrame.noSlotSelectedText, not slot)
-	core.SetShown(itemCollectionFrame.searchBox, slot)
-	core.SetShown(itemCollectionFrame.itemTypeDDM, slot)
-	core.SetShown(itemCollectionFrame.pageDownButton, slot)
-	core.SetShown(itemCollectionFrame.pageUpButton, slot)
-	core.SetShown(itemCollectionFrame.pageText, slot)
-
-	print("cat:", category)
+	core.SetShown(self.noSlotSelectedText, not slot)
+	core.SetShown(self.searchBox, slot)
+	core.SetShown(self.itemTypeDDM, slot)
+	core.SetShown(self.pageDownButton, slot)
+	core.SetShown(self.pageUpButton, slot)
+	core.SetShown(self.pageText, slot)
 	
-	UIDropDownMenu_SetText(itemCollectionFrame.itemTypeDDM, category and (core.CATEGORY_DISPLAY_NAME[category] or core.RemoveFirstWordInString(category)) or core.SELECT_ITEM_TYPE)
-	if UIDropDownMenu_GetCurrentDropDown() == itemCollectionFrame.itemTypeDDM then CloseDropDownMenus() end
-	core.UIDropDownMenu_SetEnabled(itemCollectionFrame.itemTypeDDM, slot and core.slotCategories[slot] and core.Length(core.slotCategories[slot]) > 1)
+	UIDropDownMenu_SetText(self.itemTypeDDM, category and (core.CATEGORY_DISPLAY_NAME[category] or core.RemoveFirstWordInString(category)) or core.SELECT_ITEM_TYPE)
+	if UIDropDownMenu_GetCurrentDropDown() == self.itemTypeDDM then CloseDropDownMenus() end
+	core.UIDropDownMenu_SetEnabled(self.itemTypeDDM, slot and core.slotCategories[slot] and core.Length(core.slotCategories[slot]) > 1)
 
-	itemCollectionFrame:UpdateDisplayList()
+	self:UpdateDisplayList()
 end
 
 
@@ -132,7 +131,7 @@ local order = {"Head", "Shoulders", "Back", "Chest", "Body", "Tabard", "Wrists",
 
 itemCollectionFrame.slotButtons = {}
 for i, name in pairs(order) do
-	itemCollectionFrame.slotButtons[name] = core:CreateSlotButtonFrame(itemCollectionFrame, name, BUTTON_WIDTH)
+	itemCollectionFrame.slotButtons[name] = core.CreateSlotButtonFrame(itemCollectionFrame, name, BUTTON_WIDTH)
 	if name == "Head" then
 		itemCollectionFrame.slotButtons[name]:SetPoint("TOPLEFT", SIDE_PADDING, -10)
 	elseif name == "MainHand" then
@@ -142,6 +141,12 @@ for i, name in pairs(order) do
 	end
 end
 
+
+--- TEST
+
+-- enchantSlots = { "MainHandEnchantSlot", "OffHandEnchantSlot" }
+itemCollectionFrame.enchantSlotButton = core.CreateEnchantSlotButton(itemCollectionFrame.slotButtons["MainHand"], core.enchantSlots[1], BUTTON_WIDTH * 0.6)
+itemCollectionFrame.enchantSlotButton:SetPoint("CENTER", itemCollectionFrame.slotButtons["MainHand"], "BOTTOMRIGHT")
 
 ----------- ItemType DropDownMenu -----------
 
@@ -191,12 +196,17 @@ for i = 1, mannequinCount do
 end
 
 itemCollectionFrame.ChangeMannequinCount = function(self, row, col)
-	MANNEQUIN_ROWCOUNT = row > MANNEQUIN_MAX_ROWCOUNT and MANNEQUIN_MAX_ROWCOUNT or (row < 1 and 1 or row)
-	MANNEQUIN_COLCOUNT = col > MANNEQUIN_MAX_COLCOUNT and MANNEQUIN_MAX_COLCOUNT or (col < 1 and 1 or col)
+	local oldCount = mannequinCount
+	MANNEQUIN_ROWCOUNT = row > MANNEQUIN_MAX_ROWCOUNT and MANNEQUIN_MAX_ROWCOUNT or row < 1 and 1 or row
+	MANNEQUIN_COLCOUNT = col > MANNEQUIN_MAX_COLCOUNT and MANNEQUIN_MAX_COLCOUNT or col < 1 and 1 or col
 
 	mannequinCount = MANNEQUIN_ROWCOUNT * MANNEQUIN_COLCOUNT
 
-	for i = 1, MANNEQUIN_MAX_COUNT do
+	for i = 1, math.max(oldCount, mannequinCount) do
+		if not itemCollectionFrame.mannequins[i] then
+			itemCollectionFrame.mannequins[i] = core:CreateMannequinFrame(displayFrame, i, (WIDTH - IN_BETWEEN_PADDING * (MANNEQUIN_COLCOUNT + 1)) / MANNEQUIN_COLCOUNT,
+																							(HEIGHT - IN_BETWEEN_PADDING * (MANNEQUIN_ROWCOUNT + 1)) / MANNEQUIN_ROWCOUNT)
+		end
 		itemCollectionFrame.mannequins[i]:SetSize((WIDTH - IN_BETWEEN_PADDING * (MANNEQUIN_COLCOUNT + 1)) / MANNEQUIN_COLCOUNT, (HEIGHT - IN_BETWEEN_PADDING * (MANNEQUIN_ROWCOUNT + 1)) / MANNEQUIN_ROWCOUNT);
 		core.SetShown(itemCollectionFrame.mannequins[i], i <= mannequinCount)
 
@@ -251,18 +261,6 @@ itemCollectionFrame.noSlotSelectedText:SetText(core.NO_SLOT_SELECTED_TEXT)
 
 ------------------------------------------------------
 
-itemCollectionFrame.model = core:CreateWardrobeModelFrame(itemCollectionFrame)
-itemCollectionFrame.model:Hide()
-------------------------------------------------------
-
-local SlotButton_OnClick = function(self, button)
-	itemCollectionFrame:SetSlotAndCategory(self.itemSlot, nil)
-end
-
-for i, button in pairs(itemCollectionFrame.slotButtons) do
-	button:SetScript("OnClick", SlotButton_OnClick)
-end
-
 itemCollectionFrame.UpdateMannequins = function(self)
 	local _, race = UnitRace("player")
 	if not core.mannequinPositions[race] then race = "Human" end
@@ -270,6 +268,18 @@ itemCollectionFrame.UpdateMannequins = function(self)
 	local slot, category = self.selectedSlot, self.selectedCategory
 	local pos = (slot and race) and core.mannequinPositions[race][slot] or {0, 0, 0, 0}
 	local list = self.displayList-- core:GetItemsToDisplay()
+	
+	local sequenceID, sequenceTime = 15, 100
+
+	local sex = UnitSex("player")
+	local id = core.sexRaceToID[sex][race]
+	local posCat = category or "Default"
+	if MyAddonDB.positionData and MyAddonDB.positionData[id] and MyAddonDB.positionData[id][slot] and MyAddonDB.positionData[id][slot][posCat] then
+		local x, y, z, facing, near, far, seq, time = unpack(MyAddonDB.positionData[id][slot][posCat])
+		pos = { x, y, z, facing }
+		sequenceID, sequenceTime = seq, time
+		-- pos = MyAddonDB.positionData[id][slot]
+	end
 
 	--local enchantID = 3789
 
@@ -281,18 +291,21 @@ itemCollectionFrame.UpdateMannequins = function(self)
 			mannequin:SetPosition(0, 0, 0)
 			mannequin:Hide()
 		else
-			mannequin:Show()
 			mannequin:SetDisplayMode(self.visualUnlocked[itemID] == 1)
 
 			mannequin:SetPosition(pos[1], pos[2], pos[3])
 			mannequin:SetFacing(pos[4])
-			local _, _, _, class, subClass = core.GetItemData(itemID)
-			if class == 2 and subClass == 2 then mannequin:SetFacing(-pos[4]) end -- Bows
-
+			if sequenceID then
+				mannequin:SetAnimation(sequenceID, sequenceTime)
+			end
+			if not core.IsEnchantSlot(slot) then
+				local _, _, _, class, subClass = core.GetItemData(itemID)
+				if class == 2 and subClass == 2 then mannequin:SetFacing(-pos[4]) end -- Bows
+			end
 			mannequin:Undress()			
 			mannequin:TryOn(itemID, slot) --"item:"..itemID..":"..enchantID -- MannequinFrame displays chosen enchant itself
+			mannequin:Show()
 		end
-
 		-- if slot == "MainHandSlot" then DEB(mannequin) end -- Was used for tests showing weapons with greyed out model
 	end
 end
@@ -316,39 +329,45 @@ local Mannequin_OnMouseDown = function(self, button)
 	end
 
 	local itemID = itemCollectionFrame.displayList[mannequinCount * (itemCollectionFrame.page - 1) + self:GetID()] --core:GetItemsToDisplay()[mannequinCount * (itemCollectionFrame.page - 1) + self:GetID()]
-	local _, displayGroup = core.GetItemData(itemID)
-	if itemCollectionFrame.displayGroups[displayGroup] then
-		itemID = itemCollectionFrame.displayGroups[displayGroup][selected]
-	end
+	local isEnchantSlot = core.IsEnchantSlot(itemCollectionFrame.selectedSlot)
 
-	if itemID and GetItemInfo(itemID) then
-		local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
-		local itemName, itemLink = GetItemInfo(itemID)
-
-		if IsModifiedClick("CHATLINK") then
-			if ChatEdit_InsertLink(itemLink) then
-				return true
-			end
-			-- print(itemID, GetItemInfo(itemID)) -- TODO: Debug, remove at some point. We secure ItemInfo for Mannequin items anyway already
-			return
+	if isEnchantSlot then
+		if not itemID then print("Error: expected enchantVisualID in mannequin's OnClick") end
+		itemCollectionFrame:SetPreviewEnchant(itemID ~= 0 and core.enchants[itemID].enchantIDs[1] or nil)  -- TODO: make enchant choosable and hide this data specific stuff
+	else
+		local _, displayGroup = core.GetItemData(itemID)
+		if itemCollectionFrame.displayGroups[displayGroup] then
+			itemID = itemCollectionFrame.displayGroups[displayGroup][selected]
 		end
-		
-		if core.IsAtTransmogrifier() then
-			core.SetPending(core.GetSelectedSlot(), itemID)
-		else
-			-- DressUpItemLink(itemCollectionFrame.enchant and ("item:" .. itemID .. ":" .. itemCollectionFrame.enchant) or itemID)
-			link = itemCollectionFrame.enchant and ("item:" .. itemID .. ":" .. itemCollectionFrame.enchant) or itemID
-			if not DressUpFrame:IsShown() then
-				ShowUIPanel(DressUpFrame)
-				DressUpModel:SetUnit("player")
+
+		if itemID and GetItemInfo(itemID) then
+			local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
+			local itemName, itemLink = GetItemInfo(itemID)
+
+			if IsModifiedClick("CHATLINK") then
+				if ChatEdit_InsertLink(itemLink) then
+					return true
+				end
+				return
 			end
-			print("Call DressUpModel TryOn with", link, itemCollectionFrame.selectedSlot)
-			DressUpModel:TryOn(link, itemCollectionFrame.selectedSlot)
-			-- if itemCollectionFrame.model then
-			-- 	itemCollectionFrame.model:Undress()
-			-- 	itemCollectionFrame.model:Preview(itemID)
-			-- 	itemCollectionFrame.model:TryOn("item:"..itemID..":3789")
-			-- end
+			
+			if core.IsAtTransmogrifier() then
+				core.SetPending(core.GetSelectedSlot(), itemID)
+			else
+				-- DressUpItemLink(itemCollectionFrame.enchant and ("item:" .. itemID .. ":" .. itemCollectionFrame.enchant) or itemID)
+				link = itemCollectionFrame.enchant and ("item:" .. itemID .. ":" .. itemCollectionFrame.enchant) or itemID
+				if not DressUpFrame:IsShown() then
+					ShowUIPanel(DressUpFrame)
+					DressUpModel:SetUnit("player")
+				end
+				print("Call DressUpModel TryOn with", link, itemCollectionFrame.selectedSlot)
+				DressUpModel:TryOn(link, itemCollectionFrame.selectedSlot)
+				-- if itemCollectionFrame.model then
+				-- 	itemCollectionFrame.model:Undress()
+				-- 	itemCollectionFrame.model:Preview(itemID)
+				-- 	itemCollectionFrame.model:TryOn("item:"..itemID..":3789")
+				-- end
+			end
 		end
 	end
 end
@@ -391,6 +410,7 @@ local Mannequin_OnEnter = function(self)
 	lastMannequinEntered = self
 
 	local atTransmogrifier = core.IsAtTransmogrifier()
+	local isEnchantSlot = core.IsEnchantSlot(itemCollectionFrame.selectedSlot)
 
 	local itemID = itemCollectionFrame.displayList[mannequinCount * (itemCollectionFrame.page - 1) + self:GetID()] --core:GetItemsToDisplay()[mannequinCount * (itemCollectionFrame.page - 1) + self:GetID()]
 	if itemID ~= lastItem then
@@ -408,8 +428,16 @@ local Mannequin_OnEnter = function(self)
 		GameTooltip:AddLine(" ")
 		
 		local _, displayGroup = core.GetItemData(itemID)
-
-		if itemCollectionFrame.displayGroups[displayGroup] then
+		if isEnchantSlot then
+			if itemID == 0 then
+				GameTooltip:AddLine("Hidden Enchant yoyoyoyo")
+			else
+				for _, id in pairs(core.enchants[itemID].enchantIDs) do
+					local name, _, tex = core.GetEnchantInfo(id)
+					GameTooltip:AddLine(core.GetTextureString(tex) .. " " .. name)
+				end
+			end
+		elseif itemCollectionFrame.displayGroups[displayGroup] then
 			for _, alternativeItemID in pairs(itemCollectionFrame.displayGroups[displayGroup]) do
 				TooltipAddItemLineHelper(self, alternativeItemID)
 			end
@@ -421,7 +449,11 @@ local Mannequin_OnEnter = function(self)
 			TooltipAddItemLineHelper(self, itemID)
 		end
 		GameTooltip:Show()
-		core.SetExtraItemTooltip(displayGroup and itemCollectionFrame.displayGroups[displayGroup] and itemCollectionFrame.displayGroups[displayGroup][selected] or itemID, "RIGHT")
+		if isEnchantSlot then
+			-- TODO: maybe: ExtraTooltip Enchant Spell Tooltip?
+		else
+			core.SetExtraItemTooltip(displayGroup and itemCollectionFrame.displayGroups[displayGroup] and itemCollectionFrame.displayGroups[displayGroup][selected] or itemID, "RIGHT")
+		end
 	end
 end
 
@@ -530,26 +562,6 @@ itemCollectionFrame.SetUnlockedFilter = function(self, filterStatus)
 	self:UpdateDisplayList()
 end
 
-
-
--- local locationItemTypes = { -- IDK
--- 	Head = {1},
--- 	Shoulders = {3},
--- 	Back = {16},
--- 	Chest = {5, 20}, -- chest, robe
--- 	Body = {4},
--- 	Tabard = {19},
--- 	Wrists = {9},
--- 	Hands = {10},
--- 	Waist = {6},
--- 	Legs = {7},
--- 	Feet = {8},
--- 	MainHand = {13, 21, 17}, --1h, mh, 2h
--- 	ShieldHandWeapon = {13, 22, 17}, -- 1h, oh, 2h
--- 	OffHand = {14, 23}, -- shields, holdable/tomes
--- 	Ranged = {15, 25, 26}, -- bow, thrown, ranged right(gun, wands, crossbow)
--- }
-
 -- Mappings to match slots/categories with our item data. Probably should change item data at some point, to hide/optimize some of this
 -- e.g. there is no reason we have to use 3 bytes in our itemData for equipLoc (MH, 2H, ROBE etc), class (ARMOR, WEAPON) and subclass (CLOTH, DAGGER)
 -- At the least class+subclass could easily me replaced by a single ID
@@ -561,24 +573,7 @@ end
 -- TODO: if we touch/rework our item data to include more data (class, faction, color?), implement these changes?
 
 -- These are IDs for itemTypes (2H, 1H, MH, OH, etc) in the item data. Not to be confused with inventorySlotIDs
-local slotItemTypes = {
-	["HeadSlot"] = {[1] = true},
-	["ShoulderSlot"] = {[3] = true},
-	["BackSlot"] = {[16] = true},
-	["ChestSlot"] = {[5] = true, [20] = true}, -- chest, robe
-	["ShirtSlot"] = {[4] = true},
-	["TabardSlot"] = {[19] = true},
-	["WristSlot"] = {[9] = true},
-	["HandsSlot"] = {[10] = true},
-	["WaistSlot"] = {[6] = true},
-	["LegsSlot"] = {[7] = true},
-	["FeetSlot"] = {[8] = true},
-	["MainHandSlot"] = {[13] = true, [21] = true, [17] = true}, --1h, mh, 2h
-	["SecondaryHandSlot"] = {[13] = true, [22] = true, [17] = true, [14] = true, [23] = true}, --1h, oh, 2h, shields, holdable/tomes --myadd.Contains twohand for warris?
-	["ShieldHandWeaponSlot"] = {[13] = true, [22] = true, [17] = true}, -- 1H, OH, 2H
-	["OffHandSlot"] = {[14] = true, [23] = true}, -- shields, holdables
-	["RangedSlot"] = {[15] = true, [25] = true, [26] = true}, --bow, thrown, ranged right(gun, wands, crossbow)
-}
+local slotItemTypes = core.slotItemTypes -- gets defined in dataUtils now and is also not needed here anymore. dataUtils provides slot iterators now
 
 local typeToClassSubclass = {
 	[core.CATEGORIES.ARMOR_CLOTH] = {4, 1},
@@ -614,6 +609,7 @@ local typeToClassSubclass = {
 	--["Rüstung Totems"] = {4, 9},
 	--["Rüstung Siegel"] = {4, 10},
 }
+core.typeToClassSubclass = typeToClassSubclass
 
 core.classSubclassToType = {
 	[4] = { -- Armor
@@ -670,14 +666,14 @@ end
 itemCollectionFrame.ClearData = function(self)
 	if self.displayList then
 		wipe(self.displayList)
-		wipe(self.displayGroups) -- TODO: needed atm as long as we dont fix our static displayGroupData to not have groups with differing item types. if we change that, we can remove these groupings
+		wipe(self.displayGroups)
 		wipe(self.itemUnlocked)
 		wipe(self.visualUnlocked)
 		--wipe(self.displayGroup)
 		--collectgarbage() -- any point in doing this manually?
 	else
 		self.displayList = {}
-		self.displayGroups = {}
+		self.displayGroups = {}  -- filtered according to selection (item types, unlock status, etc.)
 		self.itemUnlocked = {}
 		self.visualUnlocked = {}
 		--self.displayGroup = {}
@@ -718,8 +714,25 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 	local slotCats = slotHasCategory[slot]
 
 	local memCount = collectgarbage("count")
-	if slot and slotTypes and slotCats then
-		for itemID in core.itemIterator() do
+	if slot and core.IsEnchantSlot(slot) then
+		table.insert(self.displayList, 0) -- Hidden/No enchant
+		for enchantVisualID, enchantInfo in pairs(core.enchants) do
+			if searchTerm then
+				for _, enchantID in pairs(enchantInfo.enchantIDs) do					
+                    local name = core.GetEnchantInfo(enchantID)
+					if enchantID == searchTerm or (name and strfind(name, searchTerm)) then
+						table.insert(self.displayList, enchantVisualID)
+						break
+					end
+				end
+			else
+				table.insert(self.displayList, enchantVisualID)
+			end
+		end
+	
+	elseif slot and slotTypes and slotCats then
+		local withNames = searchTerm and not searchByID
+		for itemID, itemName in core.ItemIterator(slot, category, withNames) do
 			itemCount = itemCount + 1
 			local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
 			local itemCategory = core.classSubclassToType[class][subClass]
@@ -731,8 +744,8 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 					and ((atTransmogrifier and core.IsAvailableSourceItem(itemID, slot)) or
 							(not atTransmogrifier and (not self.filter.unlocked or unlocked == self.filter.unlocked))) then
 					
-				local name = (searchTerm and not searchByID and GetItemInfo(itemID) or core.names[itemID]) or nil
-				if not searchTerm or itemID == searchTerm or (name and strfind(name, searchTerm)) then --strfind(strlower(name), strlower(searchTerm))) then --[[strfind(name, searchTerm)) then]] --strfind(name, searchTerm)) then
+				-- local itemName = (searchTerm and not searchByID and (GetItemInfo(itemID) or core.names[itemID])) or nil
+				if not searchTerm or itemID == searchTerm or (itemName and strfind(itemName, searchTerm)) then --strfind(strlower(itemName), strlower(searchTerm))) then --[[strfind(itemName, searchTerm)) then]] --strfind(name, searchTerm)) then
 					
 					self.itemUnlocked[itemID] = unlocked
 					self.visualUnlocked[itemID] = unlocked
@@ -758,7 +771,7 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 
 		print("TYPE COUNT", DEBUG_TYPE_COUNT)
 
-		print("itemCount:", itemCount, "compare:", core.count)
+		print("itemCount:", itemCount, "total item count, hardcoded atm:", 22420)
 
 		for displayID, items in pairs(self.displayGroups) do
 			local visualUnlocked = 0
@@ -797,9 +810,10 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 
 		local t3 = GetTime()
 
-		print("Time for BuildList:", t2 - t1, "Time for Sort:", t3 - t2)
 		print("garbage:", collectgarbage("count") - memCount)
 		collectgarbage("collect")
+		local t4 = GetTime()
+		print("Time for BuildList:", t2 - t1, "Time for Sort:", t3 - t2, "Time for collect:", t4 - t3)
 	end
 
 	itemCollectionFrame.unlockedStatusBar:SetMinMaxValues(0, table.getn(self.displayList))
@@ -872,3 +886,6 @@ itemCollectionFrame.searchBox:Show()
 itemCollectionFrame.optionsDDM = core.CreateOptionsDDM(itemCollectionFrame)
 itemCollectionFrame.optionsDDM:SetPoint("LEFT", itemCollectionFrame.searchBox, "RIGHT", -10, -3)
 itemCollectionFrame.optionsDDM:Show()
+
+local model = core.CreateWardrobeModelFrame(core.itemCollectionFrame)
+model:SetPoint("TOPLEFT", model:GetParent(), "TOPRIGHT")

@@ -1,28 +1,65 @@
 local folder, core = ...
 
--- UPDOOTS --
+--[[
+	I went through multiple iterations how the data gets stored so that it takes up as little space as possible while keeping access and iteration times fast and unnoticeable.
+
+	Storing everything in tables is obviously the fastest, but takes up a lot of ram, even when grouping data by field instead of itemID
+	(other AddOns like e.g. DressMe that store less Data and are overall much smaller need ~7MB).
+
+	Bit operations are very slow in Lua, so packing our data in bits of numbers or strings makes item iteration very noticeable (.1 - .2 seconds or something like that).
+
+	What does save a lot of space compared to table data while only being slightly slower is using byte strings to store our data.
+	Each item gets its data converted to a string of certain length and for numbers that are not in our data we add a string of equal length that contains all '\0's.
+	Like this we can still index data by using `strbyte()` and we only need bit operations when we need to store or read values that do not fit into one byte.
+
+	First I used one big byte string to store all item information (unlocked, displayGroup, invType, class, subclass).
+	This approach works well enough and indexing is simple. But with this we need to iterate over all items every time and we can't utilize, that we only need about 1/15 of all items per slot.
+	Furthermore, if we want to store more information like class, race or level requirements etc., we need to fill a lot of empty entries (55kB per extra date byte).
+
+	In the current version we still save data to byte strings, but now order them into tables by inventoryType and category (= class + subclass).
+	These substrings also do not contain empty filler data anymore, because we do not index them directly. Instead we add itemIDs to the data.
+	With this we can write iterators, that only look at the selection of the data that we need instead of iterating over the whole itemID range (~[1, 55000]).
+	In order to still be able to look up item data directly by index, we additionally need one byte string that stores inventoryType, category and index in the corresponding substring.
+	
+	Uncached names also get stored in byte strings. Here we obviously don't want to assign a static number of bytes per entry.
+	Instead we use a delimiter '#' between entries. With this we can still iterate somewhat quickly, but since this is slightly slower and creates a lot of temporary names	as garbage,
+	we only use the iterator with itemnames, when we need it (there is an non-numerical search term).
+	GetItemName offers the option to get a name by itemID, but this goes over the whole name substring each time, so this should not be used in a loop.
+	We could store additional name indices in our data to get constant time access instead, but the only place where we need names at the moment is when generating a filtered item list, so there we can just use our iterator.
+
+	Display groups are now also encoded by having items link to their displayGroupID as well as the next item in their group.
+	The first gets used to create temporary groupings in the item list. The latter gets used like a linked list to be able to iterate over a group for `IsVisualUnlocked()`.
+
+	Overall item data currently takes up about 1mb when there are no items cached by the client.
+
+	Enchant and Recipe data is small enough, that we can just use tables.
+
+	TODO:
+		-Decide whether it is worth compressing name strings with LibDeflate.
+			- Would save up to 440kB, but increases iteration time per slot by up to 0.04s on my laptop and creates like 2-4mB of extra garbage per slot search
+			- Maybe implement with boolean for now, but idk. its fast enough imo but that is a lot of garbage on every iteration with search term
+			- When we click through e.g. all armmor slots with a search term to equip a certain set we would create like 40mB of garbage
+		
+		- Can save another 55kB in the index byte string at the cost of another bit operation (or at almost no cost if we instead encode all possible invType + category combinations in one byte)
+
+		- Lots of hardcoded magic numbers in the new version atm. (e.g. byte lengths per date), fix at some point!
+			- Also the delimiter and its byte value is hardcoded atm. should fix this and also be sure to use a symbol, that does not occur in any name string
+
+		- When happy with solution write/load strings directly from file so they don't have to be generated every time?
+]]
+
+local LibDeflate = LibStub and LibStub:GetLibrary("LibDeflate")
+
+-- UPDOOTS (here they are justified for once) --
 local rshift = bit.rshift
 local lshift = bit.lshift
 local mod = bit.mod
 
 local strbyte = strbyte
+local strchar  = strchar
+local strsub = strsub
 
-
--- Becomes neccessary when we need more than 32 bits per item!!! (obsolete, since we encode in byte string now)
--- local rShiftOld = bit.rshift
--- local pot = {}
--- for i = 0, 63 do
--- 	pot[i] = 2 ^ i
--- end
--- rshift = function(num, bits)
--- 	if num >= pot[32] or bits > 31 then
--- 		return math.floor(num / pot[bits])
--- 	else
--- 		return rshiftOld(num, bits)
--- 	end
--- end
-
-
+local GetItemInfo = GetItemInfo
 
 core.inventoryTypes = { -- These IDs are used in our original item Data
 	[1] = "INVTYPE_HEAD",
@@ -48,10 +85,47 @@ core.inventoryTypes = { -- These IDs are used in our original item Data
 	[26] = "INVTYPE_RANGEDRIGHT",
 }
 
+local slotItemTypes = {
+	["HeadSlot"] = {[1] = true},
+	["ShoulderSlot"] = {[3] = true},
+	["BackSlot"] = {[16] = true},
+	["ChestSlot"] = {[5] = true, [20] = true}, -- chest, robe
+	["ShirtSlot"] = {[4] = true},
+	["TabardSlot"] = {[19] = true},
+	["WristSlot"] = {[9] = true},
+	["HandsSlot"] = {[10] = true},
+	["WaistSlot"] = {[6] = true},
+	["LegsSlot"] = {[7] = true},
+	["FeetSlot"] = {[8] = true},
+	["MainHandSlot"] = {[13] = true, [21] = true, [17] = true}, --1h, mh, 2h
+	["SecondaryHandSlot"] = {[13] = true, [22] = true, [17] = true, [14] = true, [23] = true}, --1h, oh, 2h, shields, holdable/tomes --myadd.Contains twohand for warris?
+	["ShieldHandWeaponSlot"] = {[13] = true, [22] = true, [17] = true}, -- 1H, OH, 2H
+	["OffHandSlot"] = {[14] = true, [23] = true}, -- shields, holdables
+	["RangedSlot"] = {[15] = true, [25] = true, [26] = true}, --bow, thrown, ranged right(gun, wands, crossbow)
+}
+core.slotItemTypes = slotItemTypes
 
--- These are are called in the loading process and afterwards the generated data gets converted to a more compressed data format. Calling these later on would not influence our compressed data atm
--- Want to change the way our data is stored in file at some point (thousands AddItem calls -> table), so we dont generate so much garbage at load (and loading should also be quicker?)
+-- Utility functions to efficiently build large strings (from PIL: https://www.lua.org/pil/11.6.html)
+local function newStack()
+	return {""}
+end
+  
+local function addString(stack, s)
+	table.insert(stack, s)
+	for i = table.getn(stack) - 1, 1, -1 do
+		if string.len(stack[i]) > string.len(stack[i + 1]) then
+			break
+		end
+		stack[i] = stack[i] .. table.remove(stack)
+	end
+end
 
+ReplaceChar = function(s, pos, c)
+    return s:sub(1, pos - 1) .. c .. s:sub(pos + 1)
+end
+
+-- These `Add...()` functions are used to load in the item/enchant data. Afterwards the generated tables get converted to a more compact data format.
+-- They can not be used to add new items later on after the loading process!
 core.AddEnchant = function(visualID, enchantID, spellID)
 	if not (visualID and enchantID) then return false end
 	--core.am(visualID..", "..enchantID)
@@ -69,7 +143,6 @@ core.AddEnchant = function(visualID, enchantID, spellID)
 	core.enchantInfo["spellID"][enchantID] = spellID
 end
 
--- /run for _, id in pairs(Addy.enchants[29].enchantIDs) do print(Addy.GetEnchantInfo(id)) end
 core.GetEnchantInfo = function(enchantID)
 	local spellID = core.enchantInfo.spellID[enchantID]
 	if spellID then
@@ -77,134 +150,41 @@ core.GetEnchantInfo = function(enchantID)
 	end
 end
 
-core.AddColor = function(color, itemID)
-	--core.am(itemID.." is "..color)
-	--FunctionOnItemInfo(itemID, function()
-		core.colors = core.colors or {}
-		core.colors[color] = core.colors[color] or {}
-		core.colors[color][itemID] = true
-	--end)
-end
-
+core.itemInfo = {
+	displayID = {},
+	class = {},
+	subClass = {},
+	inventoryType = {},
+	-- quality = {},
+	-- requiredLevel = {},
+	-- allowableClass = {},
+	-- allowableFaction = {},
+	-- allowableRace = {},
+}
+core.displayIDs = {}
 core.AddItem = function(displayID,itemID,class,subClass,inventoryType,quality,requiredLevel,allowableRace,allowableClass,allowableFaction)
-	if not core.inventoryTypes[inventoryType] then return end
-	core.displayIDs = core.displayIDs or {}
-	if core.displayIDs[displayID] and core.Contains(core.displayIDs[displayID], itemID) then return end
+	if not core.inventoryTypes[inventoryType] then return end -- only want transmogable item types
+
 	if core.displayIDs[displayID] then
+		if core.Contains(core.displayIDs[displayID], itemID) then return end
 		table.insert(core.displayIDs[displayID], itemID)
 	else 
 		core.displayIDs[displayID] = { itemID }
 	end
-	core.itemInfo = core.itemInfo or {} --TODO: den krma nicht tausendmal aufrufen? oder wird das eh rauscompiliert
-	core.itemInfo["displayID"] = core.itemInfo["displayID"] or {}
-	core.itemInfo["class"] = core.itemInfo["class"] or {}
-	core.itemInfo["subClass"] = core.itemInfo["subClass"] or {}
-	core.itemInfo["inventoryType"] = core.itemInfo["inventoryType"] or {}
-	--core.itemInfo["quality"] = core.itemInfo["quality"] or {}
-	--core.itemInfo["requiredLevel"] = core.itemInfo["requiredLevel"] or {}
-	--core.itemInfo["allowableRace"] = core.itemInfo["allowableRace"] or {}
-	--core.itemInfo["allowableClass"] = core.itemInfo["allowableClass"] or {}
-	--core.itemInfo["allowableFaction"] = core.itemInfo["allowableFaction"] or {}
 		
 	core.itemInfo["displayID"][itemID] = displayID
 	core.itemInfo["class"][itemID] = class
 	core.itemInfo["subClass"][itemID] = subClass
 	core.itemInfo["inventoryType"][itemID] = inventoryType
-	--core.itemInfo["quality"][itemID] = quality
-	--core.itemInfo["requiredLevel"][itemID] = requiredLevel
-	--core.itemInfo["allowableRace"][itemID] = allowableRace
-	--core.itemInfo["allowableClass"][itemID] = allowableClass
-	--core.itemInfo["allowableFaction"][itemID] = allowableFaction
+	-- core.itemInfo["quality"][itemID] = quality
+	-- core.itemInfo["requiredLevel"][itemID] = requiredLevel
+	-- core.itemInfo["allowableRace"][itemID] = allowableRace
+	-- core.itemInfo["allowableClass"][itemID] = allowableClass
+	-- core.itemInfo["allowableFaction"][itemID] = allowableFaction
 end
 
-core.recipeData = { recipes = {}, spells = {} }
-core.LoadRecipe = function(recipeID, spellID, itemID)
-	core.recipeData.recipes[recipeID] = itemID
-	core.recipeData.recipes[spellID] = itemID
-end
-
-core.GetRecipeInfo = function(recipe)
-	recipe = core.GetItemIDFromLink(recipe)
-	return recipe and core.recipeData.recipes[recipe]
-end
-
-core.GetSpellRecipeInfo = function(spell)
-	spell = core.GetSpellIDFromLink(spell)
-	return spell and core.recipeData.recipes[spell]
-end
-
-
--- LUA 5.1 stores all numbers as doubles and is only precise up to 2^53?
--- Also the default rshift does not work for numbers >= 2^32
-
--- Start/Attempt at building more compressed item Data, see "TODO BuildList Thoughts.txt". Maybe give option to use uncompressed data, if people with bad pcs struggle with the increased workload on item iteration
--- Would need restart and then we just dont compress, dont drop our original tables and change GetItemData to just return their values
-
--- TODO: inventoryType, class, subclass can be further compressed by using a single field in data that can be mapped to the three values and class is mostly  redundant information anyway (there is weapon misc and armor misc tho..)
--- grouping these together would also mean speeding up the iteration
--- currently we return numerical values for everything (unlocked = 1, locked = 0). change so getitemdata returns proper values, boolean etc?
-
--- TODO: make it possible to add new items to data? i.e. we receive unlocked item, that is not in itemData. itemType, class and subclass can be retrieved with oniteminfo. there is no way to receive visual ID ingame,
--- but then we will just assume no visual group, which is fine imo. class restrictions could be parsed from tooltip, but not factions. kinda w/e tho for items, that we have unlocked. could also make the faction filtering to assume unlocked = own faction
-
-
-local encodings = {"unlocked", "displayID", "inventoryType", "class", "subClass"}
-local encodingLength = {
-	unlocked = 1,
-	displayID = 13, -- not the original displayID, but the groupID we generated
-	inventoryType = 5, -- could save 8 bit combining this with class and subclass, also speedup
-	class = 4,
-	subClass = 5,
-}
-local encodingStart = {}
-local c = 0
-for i, key in pairs(encodings) do
-	encodingStart[key] = c
-	c = c + encodingLength[key]
-end
--- for key, pos in pairs(core.encodingStart) do
--- 	print("key", key, "start", pos)
--- end
-for key, pos in pairs(encodingLength) do
-	encodingLength[key] = lshift(1, pos)
-end
-
-local encoded = {}
-for key, start in pairs(encodingStart) do
-    encoded[key] = 2 ^ start
-end
-
- -- Not in use. I put this directly into GetItemData to avoid the extra function call (GetItemData has to be fast when iterating over all items)
-local Decode = function(data, key)
-	local tmp = rshift(data, encodingStart[key])
-	return mod(tmp, encodingLength[key])
-	
-	-- if key == "itemType" then
-	-- 	return unpack(myItemTypes[tmp])
-	-- else
-	-- 	return tmp
-	-- end
-end
-
-local GetItemData
-GetItemData = function(itemID, i)
-	i = i or 1
-
-	if not core.itemData[itemID] or not encodings[i] then return nil end
-
-    local key = encodings[i]
-    local tmp = rshift(core.itemData[itemID], encodingStart[key])
-	return mod(tmp, encodingLength[key]), GetItemData(itemID, i + 1)  -- tested recursion vs filling/unpacking a table: recursion was much faster and also creates no garbage!
-end
-
-core.GenerateCompressedItemData = function()
-	assert(core.itemData == nil, "GenerateCompressedItemData should only be called once at the start of the loading process!")
-
-	-- core.itemData = MyAddonDB.itemData
-	-- core.groupData = MyAddonDB.groupData
-	-- if true then return end
-
-	-- print("Memory before displayGroup Table:", collectgarbage("count"))
+core.GenerateDisplayGroups = function()
+	assert(core.groupData == nil, "GenerateDisplayGroups should only be called once after all items have been loaded!")
 
 	core.groupData = {}
 
@@ -222,91 +202,60 @@ core.GenerateCompressedItemData = function()
 		end
 	end
 	
-	-- print("Memory after displayGroup Table:", collectgarbage("count"))
-	-- print("Display group count:", groupCount)
-
-	core.itemData = {} -- [itemID] = data. Data is 64 bit number, which contains 1 bit unlocked, 11 bit displayGroup, x bit itemType etc
-
-	-- for i = 1, 19000 do -- filling itemData with enough consecutive dummy entries causes lua to put all entries into the array part of the table, which saves us ~250KB memory size, but increases iteration times slightly
-	-- 	core.itemData[i] = 0
-	-- end
-
-	local count = 0
-	for itemID, displayID in pairs(core.itemInfo.displayID) do		
-		local data = 0
-
-        data = data + (displayGroups[displayID] or 0) * encoded.displayID
-        
-		local inventoryType = core.itemInfo.inventoryType[itemID] -- TODO: make a mapping: class, subclass, inventoryType? <-> itemType
-		data = data + inventoryType * encoded.inventoryType
-		
-		local class = core.itemInfo.class[itemID] -- TODO: make a mapping: class, subclass, inventoryType? <-> itemType
-		data = data + class * encoded.class
-		
-		local subClass = core.itemInfo.subClass[itemID] -- TODO: make a mapping: class, subclass, inventoryType? <-> itemType
-		data = data + subClass * encoded.subClass
-
-		core.itemData[itemID] = data
-		count = count + 1
+	core.itemInfo["displayGroup"] = {}
+	for itemID, displayID in pairs(core.itemInfo.displayID) do
+		core.itemInfo["displayGroup"][itemID] = displayGroups[displayID] or 0
 	end
-	core.count = count
 
-	-- core.itemNames = {} 
-	-- for itemID, _ in pairs(core.itemData) do
-	-- 	core.itemNames[itemID] = "AABBCCDD" .. (GetItemInfo(itemID) or "GroßerHelmdesKuhlenDoods" .. itemID)
-	-- end
-
-	core.itemInfo = nil
 	core.displayIDs = nil
-	collectgarbage("collect")
-	
-	-- 
-	-- core.names = core.names or {} -- If we cache all itemnames, we would another ~3MB memory. Could maybe save 1mb from itemData by combining the two, but probably increases itemData iteration time by a lot, since we have to do expensive string operations?
-	-- for itemID, _ in pairs(core.itemData) do
-	-- 	core.names[itemID] = "Schuppengamaschen des zornerfüllten Gladiators" .. itemID
-	-- end
-
-
-	--MyAddonDB.itemData = core.itemData
-	--MyAddonDB.groupData = core.groupData
-
-
-	-- for itemID, _ in pairs(core.itemData) do
-	-- 	local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
-
-	-- 	local group = displayGroups[core.itemInfo.displayID[itemID]] or 0
-
-	-- 	if displayGroup ~= group then core.am("displayGroup Bug!", displayGroup, group) end
-	-- 	if inventoryType ~= core.itemInfo.inventoryType[itemID] then core.am("invType Bug!", itemID, inventoryType, core.itemInfo.inventoryType[itemID]) end
-	-- 	if class ~= core.itemInfo.class[itemID] then core.am("class Bug!", itemID, class, core.itemInfo.class[itemID]) end
-	-- 	if subClass ~= core.itemInfo.subClass[itemID] then core.am("subClass Bug!", itemID, subClass, core.itemInfo.subClass[itemID]) end
-		
-	-- end
 end
 
-core.GetItemData = GetItemData --function(itemID, i) -- TODO: allow access to i? 
-   -- return GetItemData(itemID, i)
---end
-
-core.SetUnlocked = function(self, itemID)
-    local unlocked = GetItemData(itemID)
-    if unlocked ~= 1 then
-        core.itemData[itemID] = (core.itemData[itemID] or 0) + encoded.unlocked
-    end
+core.recipeData = { recipes = {}, spells = {} }
+core.LoadRecipe = function(recipeID, spellID, itemID)
+	core.recipeData.recipes[recipeID] = itemID
+	core.recipeData.spells[spellID] = itemID
 end
 
+-- maps itemID of recipes to the crafted (wearable) item
+core.GetRecipeInfo = function(recipe)
+	local recipe = core.GetItemIDFromLink(recipe)
+	return recipe and core.recipeData.recipes[recipe]
+end
+
+-- maps spellID of a spell to the (wearable) item it produces
+core.GetSpellRecipeInfo = function(spell)
+	local spell = core.GetSpellIDFromLink(spell)
+	return spell and core.recipeData.spells[spell]
+end
+
+local GetItemData = function(itemID)
+	if not itemID or itemID < 1 or itemID > 55000 then return end
+	local s = 4 * (itemID - 1) + 1
+	local inventoryType, b, c, d = strbyte(core.stringDataPos, s, s + 3)
+	local category = core.IDToCategory[b]
+	if not category then return end
+	local index = lshift(c, 8) + d
+
+	local unlocked = strbyte(core.stringData[inventoryType][category].unlockedStates, index)
+	local a, b = strbyte(core.stringData[inventoryType][category].displayGroups, index * 2 - 1, index * 2)
+	local displayGroup = lshift(a, 8) + b
+	local class = core.typeToClassSubclass[category][1]
+	local subclass = core.typeToClassSubclass[category][2]
+
+	return unlocked, displayGroup, inventoryType, class, subclass  -- class, subclass should be retired and replaced by category or better yet category IDs
+end
+core.GetItemData = GetItemData
 
 -- TODO: As long as visualGroups contain items of different types (MH + OH, cloth + leather, etc) this information is not that useful imo
--- Leaning towards splitting up these groups so that they only contain one type of item
--- Alternatively, if we don't want to do that, we could return 2, if itemID and unlocked alternativevItemID have different item types
-core.IsVisualUnlocked = function(self, itemID)
+	-- Should probably either split up visual groups by item type or indicate whether the unlocked item shares the same item type
+core.IsVisualUnlocked = function(itemID)
 	local unlocked, visualGroup = core.GetItemData(itemID)
-
+	
 	if not visualGroup or visualGroup == 0 then
 		return unlocked
 	end
 
-	for _, alternativeItemID in pairs(core.groupData[visualGroup]) do
+	for alternativeItemID in core.DisplayGroupIterator(itemID) do
 		local unlocked = core.GetItemData(alternativeItemID)
 		if unlocked == 1 then return 1 end
 	end
@@ -320,169 +269,260 @@ core.IsItemUnlocked = function(itemID)
 	return unlocked
 end
 
-
------------- Experimenting with Compressing Data into big String -----------------------------------
-
-local function newStack ()
-	return {""}   -- starts with an empty string
-  end
-  
-local function addString (stack, s)
-	table.insert(stack, s)    -- push 's' into the the stack
-	for i = table.getn(stack) - 1, 1, -1 do
-		if string.len(stack[i]) > string.len(stack[i+1]) then
-			break
-		end
-		stack[i] = stack[i] .. table.remove(stack)
-	end
-end
-
--- shift operations only work as intended for 32 bit numbers, can modify them, but numbers are not precise above 2^53
--- local byteCount = 4
--- local maxByte = byteCount - 1
--- local numToByteString = function(num)
--- 	local t = {}
--- 	for i = 0, maxByte do
--- 		t[byteCount - i] = string.char(bit.band(rshift(num, i * 8), 0xFF))
--- 	end
--- 	return table.concat(t)
--- end
--- NTBS = numToByteString
-
-
-
-
--- DecodeData = function(num, i)
--- 	i = i or 1
-
--- 	if not num or not encodings[i] then return nil end
-
---     local key = encodings[i]
---     local tmp = rshift(num, encodingStart[key])
--- 	return mod(tmp, encodingLength[key]), DecodeData(num, i + 1)
--- end
-
--- local facA, facB, facC, facD, facE, facF, facG, facH = 2 ^ 56, 2 ^ 48, 2 ^ 40, 2 ^ 32, 2 ^ 24, 2 ^ 16, 2 ^ 8, 2 ^ 0
--- byteStringToNum = function(s, i)
--- 	i = i or 1
--- 	local e, f, g, h = strbyte(s, i, i + maxByte)
--- 	return --[[a * facA + b * facB + c * facC + d * facD +]] e * facE + f * facF + g * facG + h * facH
--- end
-
--- core.GetItemData2 = function(itemID)
--- 	local num = byteStringToNum(core.uwu, (itemID - 1) * byteCount + 1)
-
--- 	return DecodeData(num)
--- end
-
--- local encodings = {"unlocked", "displayID", "inventoryType", "class", "subClass"}
--- local encodingLength = {
--- 	unlocked = 1,
--- 	displayID = 13, -- not the original displayID, but the groupID we generated
--- 	inventoryType = 5, -- could save 8 bit combining this with class and subclass, also speedup
--- 	class = 4,
--- 	subClass = 5,
--- }
--- core.GetItemData3 = function(itemID)
--- 	local a, b, c, d, e, f = strbyte(core.awa, (itemID - 1) * 6 + 1, itemID * 6)
-
--- 	local displayID = lshift(b, 8) + c
-
--- 	return a, displayID, d, e, f
--- end
-
--- Iterating like this is super fast and pog, what about setting unlocked tho?? lua strings are immutable, so to change a char, we have to copy whole string
--- could keep string in smaller chunks so we dont have to copy whole string every time
--- splitting by invType does not synergize with our method at all sadly
-
--- should really combine invType, class and subclass into a single key, that we either decode back to the 3 fields here in GetItemData or work everywhere with that key
--- saves 100KB and iteration time
-
--- Not sure if that doesn't get too scuffed, but technically we could save a "next Item in VisualGroup"-ID instead of the visualGroup itself
--- Would also take 2 Byte, still allows iterating over visualgroup, so we could save on another 365KB, that is needed for visualGroup table atm, but do we really need that?
--- would need full iteration over those tho, to check during collection list build, whether we already added a visual, idk
-
--- Example of custom iterator from https://stackoverflow.com/questions/46006462/lua-custom-iterator-proper-way-to-define
-
-
-local ToByteString = function(itemID)
-	local unlocked, displayGroup, inventoryType, class, subClass = GetItemData(itemID)
-
-	local a = strchar(unlocked)
-	local b = strchar(rshift(displayGroup, 8))
-	local c = strchar(bit.band(displayGroup, 0xFF))
-	local d = strchar(inventoryType)
-	local e = strchar(class)
-	local f = strchar(subClass)
-
-	return a .. b .. c .. d .. e .. f
-end
-
--- TODO: Change format from one big string to maybe 1k long or shorter strings, so when we set unlock, we dont copy whole string but only a small part
-core.GenerateStringData = function()	
-	local data = newStack()
-	for i = 1, 55000 do
-		addString(data, core.itemData[i] and ToByteString(i) or "\0\0\0\0\0\0")
-		if GetItemInfo(i) then core.names[i] = nil end
-	end
-	local tmp = {}
-	for itemID, itemName in pairs(core.names) do
-		tmp[itemID] = itemName
-	end
-	core.names = tmp
-
-	core.awa = table.concat(data)
-	core.itemData = nil
-	collectgarbage("collect")
-end
-
-core.GetItemData = function(itemID)
-	if not core.awa or not itemID or itemID < 1 or itemID > 55000 then return end
-	local a, b, c, d, e, f = strbyte(core.awa, (itemID - 1) * 6 + 1, itemID * 6)
-
-	if (d == 0) then return end
-
-	local displayID = lshift(b, 8) + c
-
-	return a, displayID, d, e, f
-end
-
-local ReplaceChar = function(s, pos, c)
-    return s:sub(1, pos - 1) .. c .. s:sub(pos + 1)
-end
-
-
 core.SetUnlocked = function(itemID)
-	if core.awa then
-		local unlocked = core.GetItemData(itemID)
-		print("Before:", itemID, unlocked)
-		if unlocked ~= 1 then
-			core.awa = ReplaceChar(core.awa, (itemID - 1) * 6 + 1, strchar(1))
+	assert(itemID and type(itemID) == "number" and itemID > 0 and itemID < 55000)
+
+	if core.stringDataPos then
+		local s = 4 * (itemID - 1) + 1
+		local inventoryType, b, c, d = strbyte(core.stringDataPos, s, s + 3)
+		local category = core.IDToCategory[b]
+		if not category then return end
+		local index = lshift(c, 8) + d
+
+		core.stringData[inventoryType][category].unlockedStates = ReplaceChar(core.stringData[inventoryType][category].unlockedStates, index, strchar(1))
+	elseif core.itemInfo then
+		if not core.itemInfo["unlocked"] then
+			core.itemInfo["unlocked"] = {}
 		end
-		unlocked = core.GetItemData(itemID)
-		print("After:", itemID, unlocked)
-	elseif core.itemData then
-		local unlocked = GetItemData(itemID)
-		if unlocked ~= 1 then
-			core.itemData[itemID] = (core.itemData[itemID] or 0) + encoded.unlocked
-		end
+		core.itemInfo["unlocked"][itemID] = 1
 	else
-		print("ERROR in SetUnlocked: Neither string, nor table data exists to write to")
+		print("ERROR in SetUnlocked: Neither string, nor table data exists to write to!")
 	end
 end
 
--- called like this: for itemID in core.itemIterator() do print(itemID) end
--- (could just use a for loop atm, but planning to split data string into smaller bits, and then we want to hide the exact implementation to the outside)
--- should also split data by invType or smth to drastically reduce iteration time for free, can let the iterator take optional slot param to then only iterate over invtypes of that slot e.g.
-core.itemIterator = function()
-	local i = 1
-	return function()
-		repeat
-			if i > 55000 then return nil end
-			i = i + 1
-		until
-			strbyte(core.awa, (i - 2) * 6 + 4) ~= 0
+local ToByteString2 = function(itemID)
+	local a = strchar(rshift(itemID, 8))
+	local b = strchar(bit.band(itemID, 0xFF))
 
-		return i - 1
+	return a .. b
+end
+
+local ToByteString3 = function(inventoryType, category, index)
+	local a = strchar(inventoryType)
+	local b = strchar(core.categoryToID[category])	 -- needs 5 bit
+	local c = strchar(rshift(index, 8))				 -- biggest index is 950, so we could save another byte (x55k) at the cost of adding another bit operation here and combining byte b and c
+	local d = strchar(bit.band(index, 0xFF))
+
+	return a .. b .. c .. d
+end
+
+core.GenerateStringData = function()
+	-- sort itemIDs into tables indexed by invType and category
+	local itemData = {}
+	for invTypeID, invTypeName in pairs(core.inventoryTypes) do
+		itemData[invTypeID] = {}
+	end
+	
+	core.IDToCategory, core.categoryToID = {}, {}
+	for key, category in pairs(core.CATEGORIES) do
+		tinsert(core.IDToCategory, category)
+	end
+	for id, category in ipairs(core.IDToCategory) do
+		core.categoryToID[category] = id
+	end
+
+	local tmp = {}	-- temporarily store info about what item comes after a certain item in their displayGroup. add to stringData so that we can reconstruct displayGroup from these chained links
+	for groupID, tab in pairs(core.groupData) do
+		for i, itemID in ipairs(tab) do
+			tmp[itemID] = tab[i % #tab + 1] -- link item to the next item in its displayGroup
+		end
+	end
+
+	local dataPositions = newStack()
+	for i = 1, 55000 do
+		if core.itemInfo["class"][i] then
+			local inventoryType, class, subclass = core.itemInfo["inventoryType"][i], core.itemInfo["class"][i], core.itemInfo["subClass"][i]
+			local category = core.classSubclassToType[class][subclass]
+
+			if not itemData[inventoryType][category] then
+				itemData[inventoryType][category] = {}
+			end
+
+			tinsert(itemData[inventoryType][category], i)
+
+			addString(dataPositions, ToByteString3(inventoryType, category, #itemData[inventoryType][category]))
+			
+			if GetItemInfo(i) then core.names[i] = nil end -- item is cached, do not need to save the name
+		else
+			addString(dataPositions, "\0\0\0\0")
+		end
+	end
+	core.stringDataPos = table.concat(dataPositions) -- save where we put our item data
+
+	-- iterate over all subtables and generate the byte strings
+	local stringData = {}
+	for inventoryType, tab1 in pairs(itemData) do
+		stringData[inventoryType] = {}
+		for category, tab2 in pairs(tab1) do
+			local itemIDs = newStack()
+			local displayGroups = newStack()
+			local nextInGroups = newStack()
+			local unlockedStates = newStack()
+			local names = newStack()
+			for i, itemID in ipairs(tab2) do
+				local displayGroup = core.itemInfo["displayGroup"][itemID]
+				local unlocked = core.itemInfo["unlocked"][itemID] or 0
+				local nxt = tmp[itemID] or itemID
+				addString(itemIDs, ToByteString2(itemID))
+				addString(displayGroups, ToByteString2(displayGroup))
+				addString(nextInGroups, ToByteString2(nxt))
+				addString(unlockedStates, strchar(unlocked))
+				addString(names, (core.names[itemID] or "") .. "#")
+			end
+			stringData[inventoryType][category] = {}
+			stringData[inventoryType][category].itemIDs = table.concat(itemIDs)
+			stringData[inventoryType][category].displayGroups = table.concat(displayGroups)
+			stringData[inventoryType][category].nextInGroup = table.concat(nextInGroups)
+			stringData[inventoryType][category].unlockedStates = table.concat(unlockedStates)
+			stringData[inventoryType][category].names = table.concat(names)
+		end
+	end
+	core.stringData = stringData
+
+	core.itemInfo = nil
+	core.groupData = nil
+	core.names = nil
+
+	collectgarbage("collect")
+	print(folder, "Succesfully encoded string data.")
+end
+
+-- Do not use in a loop unless you want quadratic runtime! Use iterator below with withNames=True instead
+core.GetItemName = function(itemID)
+	if not itemID or itemID < 1 or itemID > 55000 then return end
+	local name = GetItemInfo(itemID)
+	if name then return name end
+
+	local s = 4 * (itemID - 1) + 1
+	local inventoryType, b, c, d = strbyte(core.stringDataPos, s, s + 3)
+	local category = core.IDToCategory[b]
+	if not category then return end
+	local index = lshift(c, 8) + d
+
+	local count = 1
+	local names = core.stringData[inventoryType][category].names
+	for i = 1, #names do
+		local c = strbyte(names, i)
+		if c == 35 then
+			count = count + 1
+			if count == index then
+				index = i + 1
+				break
+			end
+		end
+	end
+	if index > #names then
+		print(itemID, inventoryType, category, index, #names, names)
+	end
+
+	return strsub(names, index, index + strfind(strsub(names, index, math.min(index + 100, #names)), "#") - 2)
+end
+
+local GetNextGroupItem = function(itemID)	
+	if not itemID or itemID < 1 or itemID > 55000 then return end
+	local s = 4 * (itemID - 1) + 1
+	local inventoryType, b, c, d = strbyte(core.stringDataPos, s, s + 3)
+	local category = core.IDToCategory[b]
+	if not category then return end
+	local index = lshift(c, 8) + d
+
+	local a, b = strbyte(core.stringData[inventoryType][category].nextInGroup, index * 2 - 1, index * 2)
+	local nxt = lshift(a, 8) + b
+	return nxt
+end
+
+-- Nice explanations of Lua custom iterators:
+	-- https://www.lua.org/pil/7.1.html
+	-- https://stackoverflow.com/questions/46006462/lua-custom-iterator-proper-way-to-define
+-- Called like this: for alternativeItemID in core.DisplayGroupIterator(itemID) do print(alternativeItemID) end
+core.DisplayGroupIterator = function(itemID)
+	local cur = itemID
+	local done
+	return function()
+		if done then return end
+		local tmp = cur
+		cur = GetNextGroupItem(cur)	
+		if cur == itemID then
+			done = true -- next iteration would return start item again, so break after this
+		end
+		return tmp
+	end
+end
+
+-- Example usage:
+	-- local c = 0; for itemID in core.ItemIterator() do c = c + 1 end print("Our data contains", c, "items.")
+	-- for itemID in core.ItemIterator("HeadSlot", core.CATEGORIES.ARMOR_CLOTH) do print(itemID) end
+	-- for itemID, itemName in core.ItemIterator("ChestSlot", nil, true) do print(itemID, itemName) end
+-- Currently does not offer the option to iterate over all items with names. We never have to iterate over all items anyway and with names it would be pretty slow
+-- If really neccessary, one could just iterate all slots with names
+core.ItemIterator = function(slot, category, withNames)
+	-- iterates over all items:
+	if not slot then
+		local i = 0
+		return function()
+			repeat
+				if i > 55000 then return nil end
+				i = i + 1
+			until
+				strbyte(core.stringDataPos, (i - 1) * 4 + 1) ~= 0
+
+			return i
+		end
+	end
+
+	-- slot (+ category) retricted iterators:
+	local idStrings = {}
+	for inventoryType, _ in pairs(slotItemTypes[slot]) do
+		for cat, stringData in pairs(core.stringData[inventoryType]) do
+			if not category or category == cat then
+				tinsert(idStrings, stringData.itemIDs) -- strings are unique in lua, this does not copy the string  
+			end
+		end
+	end
+	if #idStrings == 0 then return nil end
+
+	local i, j, k = 0, 1, 0
+	if withNames then -- slot iterator with names. slightly slower and creates a lot of temporary strings, so use only when u need item names
+		local nameStrings = {}
+		for inventoryType, _ in pairs(slotItemTypes[slot]) do
+			for cat, stringData in pairs(core.stringData[inventoryType]) do
+				if not category or category == cat then
+					tinsert(nameStrings, stringData.names) 
+				end
+			end
+		end
+		return function()
+			i = i + 2
+			k = k + 1
+			if i > #idStrings[j] then
+				j = j + 1
+				i = 2
+				k = 1
+			end
+			if j > #idStrings then return nil end
+			
+			local l = k
+			while --[==[k <= #nameStrings[j] and]==] strbyte(nameStrings[j], k) ~= 35 do -- TODO: should we use safety condition?
+				k = k + 1
+			end
+			
+			local a, b = strbyte(idStrings[j], i - 1, i)
+			local id = lshift(a, 8) + b
+			local name = (l == k) and GetItemInfo(id) or strsub(nameStrings[j], l, k - 1)
+			
+			return id, name
+		end
+	else -- slot iterator without nameData
+		return function()
+			i = i + 2
+			if i > #idStrings[j] then
+				j = j + 1
+				i = 2
+			end
+			if j > #idStrings then return nil end
+			
+			local a, b = strbyte(idStrings[j], i - 1, i)
+			return lshift(a, 8) + b
+		end
 	end
 end
