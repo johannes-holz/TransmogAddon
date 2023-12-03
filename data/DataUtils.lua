@@ -160,6 +160,7 @@ core.itemInfo = {
 	-- allowableClass = {},
 	-- allowableFaction = {},
 	-- allowableRace = {},
+	unlocked = {},
 }
 core.displayIDs = {}
 core.AddItem = function(displayID,itemID,class,subClass,inventoryType,quality,requiredLevel,allowableRace,allowableClass,allowableFaction)
@@ -281,9 +282,6 @@ core.SetUnlocked = function(itemID)
 
 		core.stringData[inventoryType][category].unlockedStates = ReplaceChar(core.stringData[inventoryType][category].unlockedStates, index, strchar(1))
 	elseif core.itemInfo then
-		if not core.itemInfo["unlocked"] then
-			core.itemInfo["unlocked"] = {}
-		end
 		core.itemInfo["unlocked"][itemID] = 1
 	else
 		print("ERROR in SetUnlocked: Neither string, nor table data exists to write to!")

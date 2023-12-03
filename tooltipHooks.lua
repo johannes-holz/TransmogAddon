@@ -292,6 +292,24 @@ f:RegisterEvent("UNIT_STATS")
 f:RegisterEvent("UNIT_PORTRAIT_UPDATE")
 f:RegisterEvent("UNIT_MODEL_CHANGED")
 
+
+local blockingActive = false
+core.NotifyInspectOld = _G.NotifyInspect
+_G.NotifyInspect = function(unit, key)	
+    local str = debugstack(2)
+    --print(str)
+    local addon = string.match(str,'[%s%c]+([^:%s%c]*)\\[^\\:%s%c]+:')
+    addon = string.gsub(addon or "unknown",'I?n?t?e?r?f?a?c?e\\AddOns\\',"")
+
+	if blockingActive and not strfind(addon, "Blizzard_InspectUI") then
+		print("blocked notify from", addon)
+		return
+	end
+
+	print(addon, "yo u can come in")
+	core.NotifyInspectOld(unit)
+end
+
 f:SetScript("OnEvent", function(self, event, ...)
 	--print(event, ...)
 	local name = ...
@@ -302,25 +320,38 @@ f:SetScript("OnEvent", function(self, event, ...)
 			f.buttons[id] = _G["Inspect" .. slot]
 		end
 		f:SetScript("OnUpdate", f.onUpdate)		
+
 		hooksecurefunc("InspectPaperDollItemSlotButton_Update", function(self)
 			if self == GetMouseFocus() then
 				InspectPaperDollItemSlotButton_OnEnter(self)
 			end
 		end)
 		
-		local dummyFunction = function() end
+		-- hooksecurefunc(InspectFrame_UnitChanged, function(self)
+		-- 	print("Unit changed!")
+		-- 	-- core.NotifyInspectOld()
+		-- 	_G.NotifyInspect("hihi")
+		-- end)
+
+		-- hooksecurefunc(NotifyInspect, function()
+		-- 	print("Notify")
+		-- end)
+		
+		-- local dummyFunction = function() end
+		
 		InspectFrame:HookScript("OnShow", function(self)
-			core.NotifyInspectOld = NotifyInspect
-			NotifyInspect = dummyFunction
-			print("NO NOtifyrino")
+			-- _G.NotifyInspect = dummyFunction
+			-- print("NO NOtifyrino")
+			blockingActive = true
 		end)
 		InspectFrame:HookScript("OnHide", function(self)
-			NodifyInspect = core.NotifyInspectOld
+			-- _G.NotifyInspect = core.NotifyInspectOld
+			blockingActive = false
 		end)
 	end
 end)
 
-f.UPDATE_INTERVAL = 1
+f.UPDATE_INTERVAL = 0.2
 f.lastScan = {}
 f.buttons = {}
 f.onUpdate = function(self, e)
