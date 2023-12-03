@@ -272,6 +272,8 @@ GetInventoryItemTexture = function(unit, slotID)
 	end
 end
 
+-- [=====[
+
 -- PaperDollFrame Skin Fix
 -- UNIT_INVENTORY_CHANGED does not fire when using a skin, so we call update to PaperDollItemSlot on PLAYER_EQUIPMENT_CHANGED
 local f = CreateFrame("Frame", nil, PaperDollFrame) -- only needed while PaperDollFrame is shown
@@ -378,6 +380,7 @@ f.onUpdate = function(self, e)
 	end
 end
 
+-- ]=====]
 
 -- Setboni display fix for player. Scans hidden tooltip and copies setboni lines over to GameTooltip, when GameTooltip is set to an inventory item
 local SetInventoryItem_SetFix = function(self, unit, slot, nameOnly)

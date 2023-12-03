@@ -8,12 +8,12 @@ Keeping note of changes in Blizzard API behaviour caused by transmog implementat
 	 GetInventoryItemLink contains no suffix/unique ID for other players, so we can't read out the visualID from there. Even if this gets fixed, it would not contain the visible skin item.
 	 The original item's ID can still be retrieved from GetInventoryItemLink, see core.GetInventoryItemID in Utilities.lua.)
 	 
-- UNIT_INVENTORY_CHANGED event does not fire for units, that have a skin enabled.
+- GetInventoryItemLink: During the first few frames a new unit returns the visual item's link, which is why gear score registers the wrong items initially for a new unit
+
+- UNIT_INVENTORY_CHANGED event does not fire for a unit's slots, that are set by a skin.
 	(this is the reason why item slots in the PaperDoll (and Inspect frame) don't update anymore, when a skin is enabled. probably gonna fix for player by calling an update on PLAYER_EQUIPMENT_CHANGED.
 	 For InspectFrame it is more complicated, see next point.)
 	
-- GetInventoryItemLink: if the inspect target has a skin enabled, the information returned from GetInventoryItemLink does not get updated without a new NotifyInspect call
+- GetInventoryItemLink: if the inspect target has a skin enabled, the information returned from GetInventoryItemLink does not get updated (for slots where the skin is active) without a new NotifyInspect call
 	Unsure how to fix this one. Maybe just periodically call NotifyInspect while the InspectFrame is open or try to find events like UNIT_STATS to hook to, while InspectFrame is shown.
 	Call itemslotbutton_update on this, might need delay?
-
-- GetInventoryItemLink: During the first few frames a new unit returns the visual item's link, which is why gear score registers the wrong items initially for a new unit
