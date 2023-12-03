@@ -222,10 +222,10 @@ end
 
 -- Fix for Tooltip Bug, see: https://wowwiki-archive.fandom.com/wiki/UIOBJECT_GameTooltip#Blizzard's_GameTooltip
 -- For some reason, GameTooltipTextLeft9 and GameTooltipTextRight9 are called GameTooltipTextLeft1 and GameTooltipTextRight1
--- Most of the time, that causes no problems, but when an item has exactly 9 lines, SetTooltipMoney fails and throws an error for example
--- TODO: Still bugged after relog, until one hovers 32479 again o.O
+-- Most of the time, that causes no problems, but when an item has exactly 9 lines, e.g. SetTooltipMoney fails and throws an error
+-- TODO: Still bugged sometimes, until one hovers 32479 again -.-
 core.FixTooltip = function(tooltip)
-	local initItem = 32479 -- item with enough lines to trigger tooltip to generate the problematic line 9
+	local initItem = core.DUMMY_WEAPONS.TOOLTIP_FIX_ITEM -- e.g. 32479 - item with enough lines to trigger tooltip to generate the problematic line 9
 	if not GetItemInfo(initItem) then
 		core.FunctionOnItemInfo(initItem, core.FixTooltip, tooltip)
 		return
@@ -345,17 +345,7 @@ core.MyWaitFunction = function(delay, func, ...)
 end
 
 
--- TODO: do we want to make certain transmog related utilities global or not?
-
--- using API provided function
--- GetVisualFromItemLink = function(link)
--- 	if not link then return end
-
--- 	local uniqueID = select(9, strsplit(":", link))
-
--- 	return uniqueID and bit.rshift(uniqueID, 16) or nil
--- end
-
+-- TODO: do we want to make certain transmog related utilities and fixes global or not?
 core.GetInventoryItemID = function(unit, slotID)
 	local link = GetInventoryItemLink(unit, slotID)
 
@@ -366,7 +356,7 @@ core.GetInventoryItemID = function(unit, slotID)
 	return tonumber(itemID)
 end
 
--- We can't read out the visualID from item links from other players' inventories because of a bug, that causes the uniqueID to always be 0
+-- We can't read out the visualID from item links from other players' inventories because of a RG bug, that causes the uniqueID to always be 0 for other players
 -- We can still get the visualID from GetInventoryItemID and compare it to GetInventoryItemLink to know if it is transmogrified or not
 core.GetInventoryVisualID = function(unit, slotID)
 	if not unit or not slotID then return end
@@ -427,7 +417,6 @@ core.GetEnchantIDFromLink = function(itemLink)
     return itemLink and tonumber(itemLink) or nil
 end
 
-
 core.BACKDROP_BORDER_12_12 = {
 	edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",	
 	tileEdge = true,
@@ -450,7 +439,7 @@ core.BACKDROP_TOAST_ONLY_BORDER_12_12 = {
 	insets = { left = 5, right = 5, top = 5, bottom = 5 },
 }
 
-
+-- TODO: remove unused ones and make not global
 BACKDROP_ACHIEVEMENTS_0_64 = {
 	edgeFile = "Interface\\AchievementFrame\\UI-Achievement-WoodBorder",
 	edgeSize = 64,

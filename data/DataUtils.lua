@@ -436,10 +436,13 @@ end
 core.DisplayGroupIterator = function(itemID)
 	local cur = itemID
 	local done
+	local i = 0
 	return function()
+		assert(i < 100) -- safety measure to avoid possibility of perma loop (even tho it should never happen)
 		if done then return end
 		local tmp = cur
-		cur = GetNextGroupItem(cur)	
+		cur = GetNextGroupItem(cur)
+		i = i + 1
 		if cur == itemID then
 			done = true -- next iteration would return start item again, so break after this
 		end
@@ -477,7 +480,7 @@ core.ItemIterator = function(slot, category, withNames)
 			end
 		end
 	end
-	if #idStrings == 0 then return nil end
+	if #idStrings == 0 then return function() return nil end end -- return empty iterator incase our selection is empty
 
 	local i, j, k = 0, 1, 0
 	if withNames then -- slot iterator with names. slightly slower and creates a lot of temporary strings, so use only when u need item names
@@ -500,7 +503,8 @@ core.ItemIterator = function(slot, category, withNames)
 			if j > #idStrings then return nil end
 			
 			local l = k
-			while --[==[k <= #nameStrings[j] and]==] strbyte(nameStrings[j], k) ~= 35 do -- TODO: should we use safety condition?
+			while strbyte(nameStrings[j], k) ~= 35 do
+				assert(k <= #nameStrings[j]) -- TODO: safety condition like this needed, even tho this should not happen?
 				k = k + 1
 			end
 			

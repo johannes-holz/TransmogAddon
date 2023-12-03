@@ -88,7 +88,7 @@ DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
     end
     assert(itemID == nil or itemID == 1 or core.GetItemData(itemID) ~= nil, "Invalid itemID in DressUpModel.SetSlot")
 
-    print("Set Slot:", itemSlot, itemID)
+    -- print("Set Slot:", itemSlot, itemID)
 
     if itemID then
         -- Only allow Offhand or ShieldHandWeapon?

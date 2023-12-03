@@ -421,6 +421,7 @@ core.DUMMY_WEAPONS = {
 	POLEARM = 1485,
 	INVISIBLE_1H = 25194, 			-- 45630 should be "Invisible Axe", but it shows as the debug cube model instead. 25194 is smallest knuckle duster
 	ENCHANT_PREVIEW_WEAPON = 2000, 	-- 2000: Archeus, basic 2H sword
+	TOOLTIP_FIX_ITEM = 32479,		-- needed for tooltip line fix
 }
 
 for name, itemID in pairs(core.DUMMY_WEAPONS) do
@@ -1377,12 +1378,14 @@ end
 -- The EquipToOffhand trick relies on weaponslots being cleared, which breaks the way previewmodel uses this function, so i removed it for now in the only offhand part.
 -- still has the problem for no titangrip chars that we cant put 2h into offhand there and either have to do another error message or try to do something with animations or both... should work on this later
 
-
 -- Displays weapons mainHand and offHand on DressUpModel mod as well as possible (i.e. can't display dualwielding weapons, if the player can't dualwield (and wasn't logged into a dualwielding char earlier in the session))
 -- the "logged in on dualwielder before" thing is just another DressUpModel weirdness, since it would be confusing and we can't track it anyway, we don't try to use that feature
 -- requires an undress of the weapons before usage, now that we use that EquipToOffhand trick sometimes instead of always using an "invisible" weapon in MH
-core.ShowMeleeWeapons = function(mod, mainHand, offHand)
-	if not (mainHand or offHand) or not mod then return end
+local currentID = {}
+core.ShowMeleeWeapons = function(mod, mainHand, offHand, callID)
+	if not (mainHand or offHand) or not mod then return end	
+	if callID and currentID[mod] and callID < currentID[mod] then return end 	-- OnItemInfo called ShowMeleeWeapons, but another ShowMeleeWeapons call was made for this model in the meantime
+	currentID[mod] = currentID[mod] and (currentID[mod] + 1) or 0				-- increase counter for this model
 
 	local mainHandID = core.GetItemIDFromLink(mainHand)
 	local offHandID = core.GetItemIDFromLink(offHand)
@@ -1392,13 +1395,15 @@ core.ShowMeleeWeapons = function(mod, mainHand, offHand)
 	
 	local _, _, _, _, _, _, mhSubType, _, mhInvType = GetItemInfo(mainHand or 0)
 	local _, _, _, _, _, _, ohSubType, _, ohInvType = GetItemInfo(offHand or 0)
-	if mainHand and not mhSubType or offHand and not ohSubType then -- could also check if the items are weapons here
-		print(folder, "- Error/wrong usage of ShowMeleeWeapons. Please assure the weapons are cached before using ShowMeleeWeapons!")
+	if mainHand and not mhSubType or offHand and not ohSubType then
+		-- print(folder, "- Error/wrong usage of ShowMeleeWeapons. Please assure the weapons are cached before using ShowMeleeWeapons!") -- should be fine now
 		if mainHand then core.QueryItem(mainHandID) end
 		if offHand then core.QueryItem(offHandID) end
+		local uncached = (mainHand and not mhSubType) and mainHand or offHand
+		core.FunctionOnItemInfo(uncached, core.ShowMeleeWeapons, mod, mainHand, offHand, currentID[mod]) -- Retry after item info got retrieved for a missing item
 	end
 	
-	local TryOn = mod.TryOnOld or mod.TryOn -- Incase our model has modified TryOn. Hacky as fuck I know, maybe better to take the correct TryOn method as optional parameter?
+	local TryOn = mod.TryOnOld or mod.TryOn -- Incase our model has modified TryOn. Hacky as fuck, probably better to take the correct TryOn method as optional parameter?
 	local hasTitanGrip = core.HasTitanGrip()
 	local canDualWield = core.CanDualWield()
 
@@ -1563,6 +1568,8 @@ a:SetScript("OnEvent", function(self, event, ...)
 
 		core.PreHook_ModifiedItemClick()
 		--BackgroundItemInfoWorker.Start()		
+
+		-- /run core.CreateSlotButtonFrame = nil; core.CreateMannequinFrame = nil
 
 	elseif event == "PLAYER_EQUIPMENT_CHANGED" then
 		-- print(event, ...)

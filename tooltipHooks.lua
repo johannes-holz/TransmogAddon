@@ -1,8 +1,11 @@
 local folder, core = ...
 
 -- TODOs:
--- (low prio) fremde setboni fixen mithilfe der erhaltenen daten. dafür erstmal überlegen, wie wir daten einpflegen. vermutlich ein feld in getitemdata mit link auf die (reduzierte?) setid?
--- dann eine tabelle von setID = encodedBoniRequirements. wie mapped man jetzt noch inventory item auf das richtige setitem? bräuchte eigentlich ein weiteres feld in itemData, aber das würde fast alle verbleibenden bits kosten?
+-- (low prio) fix set boni display for other players
+	-- Need to think about how to encode and use setdata. we would probably need 2 more item info: id of the set and id of the item under which name the item gets shown in the set boni
+	-- maybe we can just use an extra table for this if set data is small enough
+	-- Then scan all inventory slots and count items that belong to the set. if they belong to our set, look up their display items name and add them to table {name = true}
+	-- then fix relevant tooltip lines
 
 local GetInventoryVisualID = core.GetInventoryVisualID
 

@@ -71,14 +71,7 @@ itemCollectionFrame:SetScript("OnHide", function(self)
 		PlaySound("igCharacterInfoClose")
 	end
 
-	-- when slot is nil, update list does not iterate over items, so using setters here, does not cause a reapeted item iteration
-	-- probably still better to give setters "silent" option, so they don't trigger updates
-	self:SetSlotAndCategory(nil, nil)
-	-- self.enchant = nil
-	-- self.filter = {}
-	-- self:ClearData()
-	-- self.selectedSlot = nil
-	-- self.selectedCategory = nil
+	self:SetSlotAndCategory(nil, nil) -- clear slot first, so list updates cause no further item iterations
 	self:SetPreviewEnchant(nil)
 	self:SetUnlockedFilter(nil)
 	self.searchBox:SetText("")
@@ -663,21 +656,11 @@ for _, slot in pairs(core.itemSlots) do
 	end
 end
 
-itemCollectionFrame.ClearData = function(self)
-	if self.displayList then
-		wipe(self.displayList)
-		wipe(self.displayGroups)
-		wipe(self.itemUnlocked)
-		wipe(self.visualUnlocked)
-		--wipe(self.displayGroup)
-		--collectgarbage() -- any point in doing this manually?
-	else
-		self.displayList = {}
-		self.displayGroups = {}  -- filtered according to selection (item types, unlock status, etc.)
-		self.itemUnlocked = {}
-		self.visualUnlocked = {}
-		--self.displayGroup = {}
-	end
+itemCollectionFrame.ClearData = function(self)	
+	self.displayList = {}
+	self.displayGroups = {}
+	self.itemUnlocked = {}
+	self.visualUnlocked = {}
 end
 
 itemCollectionFrame.UpdateDisplayList = function(self)
@@ -713,7 +696,7 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 	local slotTypes = slotItemTypes[slot]
 	local slotCats = slotHasCategory[slot]
 
-	local memCount = collectgarbage("count")
+	-- local memCount = collectgarbage("count")
 	if slot and core.IsEnchantSlot(slot) then
 		table.insert(self.displayList, 0) -- Hidden/No enchant
 		for enchantVisualID, enchantInfo in pairs(core.enchants) do
@@ -754,7 +737,7 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 						table.insert(self.displayList, itemID)
 						
 						if displayGroup == 0 and unlocked == 1 then
-							unlockedCount = unlockedCount + 1 -- here counting just the visuals without display group
+							unlockedCount = unlockedCount + 1 -- counting the unlocked visuals without display group
 						end
 						
 						if displayGroup ~= 0 then
@@ -784,7 +767,7 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 				self.visualUnlocked[itemID] = visualUnlocked
 			end
 			if visualUnlocked == 1 then
-				unlockedCount = unlockedCount + 1 -- and here count the unlocked visuals with display group
+				unlockedCount = unlockedCount + 1 -- count the unlocked visuals with display group
 			end
 		end
 		
@@ -810,7 +793,7 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 
 		local t3 = GetTime()
 
-		print("garbage:", collectgarbage("count") - memCount)
+		-- print("garbage:", collectgarbage("count") - memCount)
 		collectgarbage("collect")
 		local t4 = GetTime()
 		print("Time for BuildList:", t2 - t1, "Time for Sort:", t3 - t2, "Time for collect:", t4 - t3)

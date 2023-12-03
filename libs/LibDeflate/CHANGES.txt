@@ -1,0 +1,2 @@
+Original version from https://github.com/SafeteeWoW/LibDeflate
+Removed all files, that are not needed for the purpose of using LibDeflate as a WoW AddOn library.

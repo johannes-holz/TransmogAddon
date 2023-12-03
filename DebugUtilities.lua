@@ -116,3 +116,16 @@ COMPRI = function(withCompress)
 	print("Compress:", t2 - t1, "Uncompress:", t3 - t2)
 	print("normalLenght", lengthNormal, "compressed", lengthCompressed)
 end
+
+TESTI = function()
+	local L = LibStub:GetLibrary("LibDeflate")
+	for _, slot in pairs(core.itemSlots) do
+		for inventoryType, _ in pairs(core.slotItemTypes[slot]) do
+			for cat, stringData in pairs(core.stringData[inventoryType]) do
+				if not category or category == cat then
+					stringData.names = L:CompressDeflate(stringData.names)
+				end
+			end
+		end
+	end
+end
