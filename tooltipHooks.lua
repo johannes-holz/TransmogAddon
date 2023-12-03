@@ -295,18 +295,19 @@ f:RegisterEvent("UNIT_MODEL_CHANGED")
 
 local blockingActive = false
 core.NotifyInspectOld = _G.NotifyInspect
-_G.NotifyInspect = function(unit, key)	
+_G.NotifyInspect = function(unit)
+	-- Credit to InspectFix AddOn by oscarucb, https://www.curseforge.com/wow/addons/inspectfix
+	-- Should not be used together tho
     local str = debugstack(2)
-    --print(str)
     local addon = string.match(str,'[%s%c]+([^:%s%c]*)\\[^\\:%s%c]+:')
     addon = string.gsub(addon or "unknown",'I?n?t?e?r?f?a?c?e\\AddOns\\',"")
 
 	if blockingActive and not strfind(addon, "Blizzard_InspectUI") then
-		print("blocked notify from", addon)
+		-- print("blocked notify from", addon)
 		return
 	end
 
-	print(addon, "yo u can come in")
+	-- print(addon, "yo u can come in")
 	core.NotifyInspectOld(unit)
 end
 
@@ -360,7 +361,7 @@ f.onUpdate = function(self, e)
 		self.e = self.e - self.UPDATE_INTERVAL
 		self.toggle = (self.toggle or 0) + 1
 		if self.toggle % 4 == 0 and InspectFrame.unit and InspectFrame.unit ~= "player" then
-			print("Notified!", InspectFrame.unit)
+			-- print("Notified!", InspectFrame.unit)
 			core.NotifyInspectOld(InspectFrame.unit)
 		end		
 		for id, slot in pairs(core.idToSlot) do
