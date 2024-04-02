@@ -1,19 +1,13 @@
 ## Interface: 30300
 ## Title: AAAMoggies
+## Version: 1.0
 ## Notes: Transmog, Outfits and Wardrobe Features for WotLK
 ## Author: Qhoernchen
-## SavedVariables: MyAddonDB
+## SavedVariables: TransmoggyDB
 
+# libs
 #@no-lib-strip@
-libs\LibStub\LibStub.lua
-libs\CallbackHandler-1.0\CallbackHandler-1.0\CallbackHandler-1.0.xml
-
-libs\LibDataBroker-1.1\LibDataBroker-1.1.lua
-libs\LibDBIcon-1.0\LibDBIcon-1.0.lua
-
-libs\LibDeflate\lib.xml
-
-libs\RisingAPI\index.xml
+libs\embeds.xml
 #@end-no-lib-strip@
 
 Localization.lua
@@ -21,12 +15,13 @@ Utilities.lua
 DebugUtilities.lua
 LDB.lua
 API_Extensions.lua
+Options.lua
 
 # FrameTemplates
 Frames\FrameTemplates.lua
 
 ItemQuery.lua
-_myaddon.lua
+Core.lua
 TooltipHooks.lua
 
 # Enchant and item data
@@ -36,6 +31,7 @@ data\items.lua
 data\ItemNamesEnglish.lua
 data\ItemNamesGerman.lua
 data\Recipes.lua
+#data\StringData.lua
 
 # ItemCollectionFrame
 Frames\ItemCollectionFrame\CollectionSlotButton.lua
@@ -44,6 +40,7 @@ Frames\ItemCollectionFrame\OptionsDDM.lua
 Frames\ItemCollectionFrame\MannequinFrame.lua
 Frames\ItemCollectionFrame\WardrobeModelFrame.lua
 Frames\ItemCollectionFrame\ItemCollectionFrame.lua
+Frames\ItemCollectionFrame\UnlockedBar.lua
 
 # TransmogFrame
 Frames\TransmogFrame\PreviewModel.lua
@@ -65,4 +62,5 @@ Frames\OutfitFrame\OutfitFrame.lua
 Frames\OutfitFrame\DressUpFrame.lua
 Frames\OutfitFrame\OutfitTooltip.lua
 
+# Hooks and stuff to make shards displayable like tokens
 BalanceDisplay.lua

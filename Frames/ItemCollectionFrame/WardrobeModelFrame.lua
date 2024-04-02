@@ -191,7 +191,8 @@ core.CreateWardrobeModelFrame = function(parent)
     model.modelSliderNear:SetValueStep(0.02)
     model.modelSliderNear:SetScript("OnValueChanged", function(self, value)
         print(value)
-        
+        model.sequenceSpeed = value * 100
+        model.speed = value * 200
         for _, m in pairs(core.itemCollectionFrame.mannequins) do
             m.sequenceSpeed = value * 100
         end
@@ -259,9 +260,9 @@ core.CreateWardrobeModelFrame = function(parent)
         local slot = core.itemCollectionFrame.selectedSlot
         local category = core.itemCollectionFrame.selectedCategory or "Default"
         
-        -- MyAddonDB.newPositions = MyAddonDB.newPositions or {}
-        -- MyAddonDB.newPositions[race] = MyAddonDB.newPositions[race] or {}
-        -- MyAddonDB.newPositions[race][inventorySlot] = {
+        -- TransmoggyDB.newPositions = TransmoggyDB.newPositions or {}
+        -- TransmoggyDB.newPositions[race] = TransmoggyDB.newPositions[race] or {}
+        -- TransmoggyDB.newPositions[race][inventorySlot] = {
         --     x, y, z, facing, near, far, seq, time, 0
         -- }
         --print(x, y, z, facing, near, far, seq, time)
@@ -272,7 +273,7 @@ core.CreateWardrobeModelFrame = function(parent)
         print(race, sex)
         print(core.sexRaceToID[sex][race])
 
-        -- MyAddonDB.modelPositionData = MyAddonDB.modelPositionData or {
+        -- TransmoggyDB.modelPositionData = TransmoggyDB.modelPositionData or {
         --     x = {},
         --     y = {},
         --     z = {},
@@ -283,21 +284,21 @@ core.CreateWardrobeModelFrame = function(parent)
         --     time = {},
         -- }
 
-        -- MyAddonDB.modelPositionData.x[id] = x
-        -- MyAddonDB.modelPositionData.y[id] = y
-        -- MyAddonDB.modelPositionData.z[id] = z
-        -- MyAddonDB.modelPositionData.facing[id] = facing
-        -- MyAddonDB.modelPositionData.near[id] = near
-        -- MyAddonDB.modelPositionData.far[id] = far
-        -- MyAddonDB.modelPositionData.time[id] = time
+        -- TransmoggyDB.modelPositionData.x[id] = x
+        -- TransmoggyDB.modelPositionData.y[id] = y
+        -- TransmoggyDB.modelPositionData.z[id] = z
+        -- TransmoggyDB.modelPositionData.facing[id] = facing
+        -- TransmoggyDB.modelPositionData.near[id] = near
+        -- TransmoggyDB.modelPositionData.far[id] = far
+        -- TransmoggyDB.modelPositionData.time[id] = time
         
-        MyAddonDB.positionData = MyAddonDB.positionData or {}
-        MyAddonDB.positionData[id] = MyAddonDB.positionData[id] or {}
-        MyAddonDB.positionData[id][slot] = MyAddonDB.positionData[id][slot] or {}
-        MyAddonDB.positionData[id][slot][category] = { x, y, z, facing, near, far, seq, time }
-        AM(MyAddonDB.positionData[id][slot])
+        TransmoggyDB.positionData = TransmoggyDB.positionData or {}
+        TransmoggyDB.positionData[id] = TransmoggyDB.positionData[id] or {}
+        TransmoggyDB.positionData[id][slot] = TransmoggyDB.positionData[id][slot] or {}
+        TransmoggyDB.positionData[id][slot][category] = { x, y, z, facing, near, far, seq, time }
+        AM(TransmoggyDB.positionData[id][slot])
 
-        -- MyAddonDB.positionData = nil
+        -- TransmoggyDB.positionData = nil
 
         -- for _, m in pairs(core.itemCollectionFrame.mannequins) do
         --     DEB(m)
@@ -325,10 +326,10 @@ DEB = function(model)
     local _, race = UnitRace("player")
     local inventorySlot = select(2, core:GetTransmogLocationInfo(core.itemCollectionFrame.location))
 
-    if not MyAddonDB.newPositions or not MyAddonDB.newPositions[race] or not MyAddonDB.newPositions[race][inventorySlot] then return end
+    if not TransmoggyDB.newPositions or not TransmoggyDB.newPositions[race] or not TransmoggyDB.newPositions[race][inventorySlot] then return end
 
-    local x, y, z, facing, near, far, seq, time = unpack(MyAddonDB.newPositions[race][inventorySlot])
-    print(unpack(MyAddonDB.newPositions[race][inventorySlot]))
+    local x, y, z, facing, near, far, seq, time = unpack(TransmoggyDB.newPositions[race][inventorySlot])
+    print(unpack(TransmoggyDB.newPositions[race][inventorySlot]))
 
     --model:SetUnit("player")
     local r, g, b = 0.1, 0.1, 0.1

@@ -22422,26 +22422,3 @@ a(66549,53890,2,13,21,4,70,nil,nil,nil)
 a(66551,53891,4,6,14,4,1,nil,nil,nil)
 a(46788,53924,2,7,13,4,1,nil,nil,nil)
 a(65224,54592,4,3,9,4,80,nil,nil,nil)
-
--- local tmp = {}
--- local max = 0
--- for itemID, displayID in pairs(myadd.itemInfo["displayID"]) do
--- 	tmp[itemID] = true
--- 	max = math.max(max, itemID)
--- end
-
--- print("max itemid is", max)
-
--- local gapMax, gap, gapStart, gapMaxStart = 0, 0, 0, 0
--- for i = 1, max do
--- 	if tmp[i] then
--- 		gap = i - gapStart
--- 		if gap > gapMax then
--- 			gapMax = gap
--- 			gapMaxStart = gapStart
--- 		end
--- 		gapStart = i
--- 	end
--- end
-
--- print("biggest gap in item ids is", gapMax, "start from id", gapMaxStart)

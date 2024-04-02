@@ -34,8 +34,8 @@
 -- }
 --
 -- function MyAddon:OnInitialize()
---   -- Assuming the .toc says ## SavedVariables: MyAddonDB
---   self.db = LibStub("AceDB-3.0"):New("MyAddonDB", defaults, true)
+--   -- Assuming the .toc says ## SavedVariables: TransmoggyDB
+--   self.db = LibStub("AceDB-3.0"):New("TransmoggyDB", defaults, true)
 -- end
 -- @class file
 -- @name AceDB-3.0.lua
@@ -686,10 +686,10 @@ end
 -- You can also pass //true// to use a shared global profile called "Default".
 -- @usage
 -- -- Create an empty DB using a character-specific default profile.
--- self.db = LibStub("AceDB-3.0"):New("MyAddonDB")
+-- self.db = LibStub("AceDB-3.0"):New("TransmoggyDB")
 -- @usage
 -- -- Create a DB using defaults and using a shared default profile
--- self.db = LibStub("AceDB-3.0"):New("MyAddonDB", defaults, true)
+-- self.db = LibStub("AceDB-3.0"):New("TransmoggyDB", defaults, true)
 function AceDB:New(tbl, defaults, defaultProfile)
 	if type(tbl) == "string" then
 		local name = tbl

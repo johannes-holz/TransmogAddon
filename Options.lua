@@ -1,5 +1,36 @@
 local folder, core = ...
 
+--[[
+Possible options:
+	- Automaticly open transmog frame at npc?
+	- Outfit features:
+		- enable
+		- Dont reset on close, in options or in frame?
+		- Maybe not as options but in general:
+			Remember visibility of list? Show Cloak/Helmet according to interface setting like default DressUpFrame? Allow OH-only weapons for non-dualwield?
+	- Extra tooltip for transmogification source:
+		- enable, used modifier?
+	- Active Skin Dropdown:
+		- enable, position?
+	- Tooltip modifications:
+		- enable
+	- Option for Data Compression?
+	- Balance display/hooks?
+	- Show Minimap Icon? Look at how other AddOns do this?
+
+]]
+
+local FullAlign = {
+	TOPLEFT = "TOPLEFT",
+	TOP = "TOP",
+	TOPRIGHT = "TOPRIGHT",
+	LEFT = "LEFT",
+	CENTER = "CENTER",
+	RIGHT = "RIGHT",
+	BOTTOMLEFT = "BOTTOMLEFT",
+	BOTTOM = "BOTTOM",
+	BOTTOMRIGHT = "BOTTOMRIGHT",
+}
 
 local GetWidgetValue = function(info)
 	local caller = info[1]

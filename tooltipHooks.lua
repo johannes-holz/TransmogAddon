@@ -81,22 +81,16 @@ local function TooltipAddMogLine(tooltip)
 
 	local text = ""
 	if visualID and visualID > 0 then
-		text = "\124c" .. core.mogTooltipTextColor.hex .. core.ITEM_TOOLTIP_TRANSMOGRIFIED_TO .. "\n"
-		if visualID == 1 then	
-			text = text .. core.HIDDEN .. "\124r"
-		else
-			local mogName = GetItemInfo(visualID)
-			if mogName then			
-				text = text .. mogName .. "\124r" -- .. (visualUnlocked == 1 and core.GetTextureString("Interface/Buttons/UI-CheckBox-Check", 12) or "") 
-			else
-				text = text .. core.ITEM_TOOLTIP_FETCHING_NAME .. visualID .. "\124r" --.. (visualUnlocked == 1 and core.GetTextureString("Interface/Buttons/UI-CheckBox-Check", 12) or "") 
-				core.FunctionOnItemInfo(visualID, TooltipAddMogLine, tooltip, link) -- player transmog items seem to be cached anyway, but probably needed for Hyperlinks from chat
-			end
+		text = "\124c" .. core.mogTooltipTextColor.hex .. core.ITEM_TOOLTIP_TRANSMOGRIFIED_TO .. "\n"		
+		local mogName = visualID == 1 and core.HIDDEN or core.GetItemName(visualID) -- Do we want guaranteed up to date server info (GetItemInfo) or avoid flickering tooltip for uncached items (core.GetItemData)?
+		text = text .. (mogName or (core.ITEM_TOOLTIP_FETCHING_NAME .. visualID)) .. "\124r" -- .. (visualUnlocked == 1 and core.GetTextureString("Interface/Buttons/UI-CheckBox-Check", 12) or "")
+		if not mogName then
+			core.FunctionOnItemInfo(visualID, TooltipAddMogLine, tooltip) -- player transmog items seem to be cached anyway, but probably needed for Hyperlinks from chat
 		end
 		if skinVisualID then text = text .. "\n" end
 	end	
 	if skinVisualID then
-		local skinName = skinVisualID == 1 and core.HIDDEN or GetItemInfo(skinVisualID)
+		local skinName = skinVisualID == 1 and core.HIDDEN or core.GetItemName(skinVisualID) -- GetItemInfo(skinVisualID)
 		text = text .. "\124c" .. core.skinTextColor.hex .. core.ITEM_TOOLTIP_ACTIVE_SKIN .. "\n" .. (skinName or skinVisualID) .. "\124r"
 	end
 		
@@ -237,7 +231,7 @@ core.PreHook_ModifiedItemClick = function()
 				link = core.HIDDEN
 			end
 		end
-		HandleModifiedItemClickOrig(link, ...)
+		return HandleModifiedItemClickOrig(link, ...)
 
 		-- if IsModifiedClick("DRESSUP") then	
 		-- 	if IsShiftKeyDown() then -- options for disable or reversed behaviour (show tmog as default and show base item with shift). use modifiers directly or use IsModifiedClick("DRESSUP")?

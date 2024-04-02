@@ -66,14 +66,14 @@ core.InitLDB = function()
 		})
 
 
-		MyAddonDB["minimapIcon"] = MyAddonDB["minimapIcon"] or
+		TransmoggyDB["minimapIcon"] = TransmoggyDB["minimapIcon"] or
 		{
 			["minimapPos"] = 260,
 			["hide"] = false
 		}
 		
 		if LDBIcon then
-			LDBIcon:Register(folder, LDBObj, MyAddonDB.minimapIcon)
+			LDBIcon:Register(folder, LDBObj, TransmoggyDB.minimapIcon)
 		end
 	end
 	core.InitLDB = nil

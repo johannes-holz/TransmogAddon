@@ -66,6 +66,12 @@ do
     end
 end
 
+---- Attempt at PortraitFrameTemplate -----
+do
+
+
+end
+
 
 ----- Some Scuffed Button utils -----
 local function CreateMeAButton(parent, width, height, text,

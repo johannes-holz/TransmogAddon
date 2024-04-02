@@ -120,18 +120,18 @@ end
 
 local SavePosition = function()
 	local point, _, relativePoint, xOfs, yOfs = core.transmogFrame:GetPoint()
-	if not MyAddonDB.Position then 
-		MyAddonDB.Position = {}
+	if not TransmoggyDB.Position then 
+		TransmoggyDB.Position = {}
 	end
-	MyAddonDB.Position.point = point
-	MyAddonDB.Position.relativePoint = relativePoint
-	MyAddonDB.Position.xOfs = xOfs
-	MyAddonDB.Position.yOfs = yOfs	
+	TransmoggyDB.Position.point = point
+	TransmoggyDB.Position.relativePoint = relativePoint
+	TransmoggyDB.Position.xOfs = xOfs
+	TransmoggyDB.Position.yOfs = yOfs	
 end
 
 local LoadPosition = function()
-	if MyAddonDB.Position then
-		core.transmogFrame:SetPoint(MyAddonDB.Position.point,UIParent,MyAddonDB.Position.relativePoint,MyAddonDB.Position.xOfs,MyAddonDB.Position.yOfs)
+	if TransmoggyDB.Position then
+		core.transmogFrame:SetPoint(TransmoggyDB.Position.point,UIParent,TransmoggyDB.Position.relativePoint,TransmoggyDB.Position.xOfs,TransmoggyDB.Position.yOfs)
 	else
 		core.transmogFrame:SetPoint("CENTER", UIParent, "CENTER")
 	end
@@ -202,6 +202,7 @@ core.InitializeFrame = function()
 
 	f.SelectItemTab = function(self)
 		core.itemCollectionFrame:SetParent(self)
+		core.itemCollectionFrame:ClearAllPoints()
 		core.itemCollectionFrame:SetPoint("TOPLEFT", model, "TOPRIGHT", 0, 4)
 		core.itemCollectionFrame:Show()
 		core.itemCollectionFrame:SetSlotAndCategory(core.GetSelectedSlot(), core.GetSelectedCategory(), true)

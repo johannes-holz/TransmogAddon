@@ -94,7 +94,7 @@ DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
         -- Only allow Offhand or ShieldHandWeapon?
         if itemSlot == "OffHandSlot" then
             items["ShieldHandWeaponSlot"] = nil
-        elseif itemSlot == "ShieldHandWeaponSlot" then
+        elseif itemSlot == "ShieldHandWeaponSlot" then -- TODO: or only clear when we can preview it?
             items["OffHandSlot"] = nil
         end
         -- Only allow melee or ranged Weapons?        
@@ -110,12 +110,14 @@ DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
             local _, _, _, _, _, _, itemSubType, _, itemEquipLoc = GetItemInfo(itemID)
             if not itemSubType then -- TODO: Hide this scuffness in data function
                 local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
-                itemSubType = core.classSubclassToType[class][subClass] -- contains categories (type + subtype) now, but CanBeTitanGripped accepts either
-                itemEquipLoc = core.inventoryTypes[inventoryType]
+                itemSubType = class and core.classSubclassToType[class][subClass] -- contains categories (type + subtype) now, but CanBeTitanGripped accepts either
+                itemEquipLoc = inventoryType and core.inventoryTypes[inventoryType]
             end
-            if not core.CanDualWield() or (itemEquipLoc == "INVTYPE_2HWEAPON" and not (core.HasTitanGrip() and core.CanBeTitanGripped(itemSubType))) then
+            if not itemSubType or (not core.CanDualWield() or (itemEquipLoc == "INVTYPE_2HWEAPON" and not (core.HasTitanGrip() and core.CanBeTitanGripped(itemSubType)))) then
                 itemID = items[itemSlot]
-                UIErrorsFrame:AddMessage(core.CAN_NOT_DRESS_OFFHAND, 1.0, 0.1, 0.1, 1.0)
+                UIErrorsFrame:AddMessage(core.CAN_NOT_DRESS_OFFHAND, 1.0, 0.1, 0.1, 1.0) -- We could preview offhand weapons in OH without dualwielding in certain cases, but that would be too confusing imo?
+                -- Should we allow setting these freely instead and then check in Dress instead what we can display + indicate somehow if we cant display offhand?
+                -- Otherwise kinda cringe behaviour for especially enhas and furies with different dual spec?
             end
         end
     end

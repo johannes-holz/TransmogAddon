@@ -1,6 +1,6 @@
 local folder, core = ...
 
---------------- Globals for easier debugging ------------------------
+--------------- Globals for easier debugging and testing ------------------------
 
 AM = core.am
 -- TODO: REMOVE! just used for debug
@@ -61,9 +61,6 @@ CountRec = function(tab)
 	return count
 end
 
-
-
--- Globals used to test and compare stuff
 STABLESIZE = function(tab)
 	local c = 40
 	for k, v in pairs(tab) do
@@ -119,13 +116,110 @@ end
 
 TESTI = function()
 	local L = LibStub:GetLibrary("LibDeflate")
+	local done = {}
 	for _, slot in pairs(core.itemSlots) do
-		for inventoryType, _ in pairs(core.slotItemTypes[slot]) do
-			for cat, stringData in pairs(core.stringData[inventoryType]) do
-				if not category or category == cat then
-					stringData.names = L:CompressDeflate(stringData.names)
+		for inventoryType, _ in pairs(core.slotItemTypes[slot]) do			
+			if not done[inventoryType] then
+				for cat, stringData in pairs(core.stringData[inventoryType]) do
+					if not category or category == cat then
+						stringData.names = L:CompressDeflate(stringData.names)
+					end
+				end
+			end
+			done[inventoryType] = true
+		end
+	end
+	core.isCompressed = true
+end
+
+
+LONGI = function()
+	local L = LibStub:GetLibrary("LibDeflate")
+	local done = {}
+	local maxLen = 0
+	for _, slot in pairs(core.itemSlots) do
+		for inventoryType, _ in pairs(core.slotItemTypes[slot]) do			
+			if not done[inventoryType] then
+				for cat, stringData in pairs(core.stringData[inventoryType]) do
+					local names = TransmoggyDB.stringDataIsCompressed and L:CompressDeflate(stringData.names) or stringData.names
+					maxLen = math.max(maxLen, #names)
+					print(#names)
+					if #names < 100 then
+						print(slot, inventoryType, cat)
+					end
+				end
+			end
+			done[inventoryType] = true
+		end
+	end
+	print("maxLen:", maxLen)
+
+end
+
+
+NAMECHECK = function()
+	local done = {}
+	local c = 0
+	local d = 0
+	for _, slot in pairs(core.itemSlots) do
+		for itemID, itemName in core.ItemIterator(slot, nil, true) do
+			if not done[itemName] then
+				done[itemName] = true
+				c = c + 1
+				if itemName ~= core.names[itemID] then
+					print(itemID, itemName, core.names[itemID], slot, GetItemInfo(itemID))
+					d = d + 1
 				end
 			end
 		end
 	end
+
+	print("checked", c, "items. found ", d, "bugged items.")
+end
+
+local lshift = bit.lshift
+
+TESTOO = function()
+	local t1 = GetTime()
+	local maxIter = 1000000
+
+	local a, b = 13, 180
+	local testorino = {[170] = 10}
+	local cat = {[170] = 20}
+
+	local s = 0
+	for i = 1, maxIter do
+		s = s + 1
+	end
+
+	local t2 = GetTime()
+
+	for i = 1, maxIter do
+		s = s + testorino[170]
+	end
+
+	print("shift time:", t2 - t1, "lookup time", GetTime() - t2)
+end
+
+
+PrintCurrentChanges = function()
+	core.am(TransmoggyDB.currentChanges)
+end
+
+PrintSkins = function()
+	core.am(skins)
+end
+
+GetSkins = function()
+	return skins
+end
+
+PrintAllCosts = function()
+	for _, slot in pairs(itemSlots) do
+		print(slot, slotCostsCopper[slot], slotCostsShards[slot], slotReason[itemSlot])
+	end
+end
+
+PrintBalance = function()
+	am(balance)
 end

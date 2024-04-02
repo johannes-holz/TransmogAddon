@@ -1,11 +1,8 @@
--- Folder, SharedTable
+-- Created by Qhoernchen - qhoernchen@gmail.com
+
 local folder, core = ...
 
--- ("(\\(\\         Made              (\\_/)")
--- ("( -.-)          by           =(´o.o`)=")
--- ("o_(\")(\")      Qhoernchen (\")_(\")")	
-
-MyAddonDB = MyAddonDB or {}
+TransmoggyDB = TransmoggyDB or {}
 
 local risingAPI = "RisingAPI"
 local rAPI = LibStub(risingAPI, true)
@@ -14,6 +11,38 @@ rAPI:debug(false)
 
 if not rAPI.Transmog then error(folder .. " missing RisingAPI transmog module."); return end
 core.API = rAPI.Transmog
+
+-- Attempt at options implementation --
+core.title = "Transmoggy"
+core.titleFull = "Transmoggy V.1.0"
+core.addonDir = "Interface\\AddOns\\"..folder.."\\"
+
+core.InitializeAce = function(self)	
+	self.db = LibStub('AceDB-3.0'):New('TransmoggyDB', self.defaults, true)
+	self.db.RegisterCallback(self, "OnProfileChanged", "OnProfileChanged")
+	self.db.RegisterCallback(self, "OnProfileCopied", "OnProfileChanged")
+	self.db.RegisterCallback(self, "OnProfileReset", "OnProfileChanged")
+	self.db.RegisterCallback(self, "OnProfileDeleted", "OnProfileChanged")
+	
+	local profile = LibStub('AceDBOptions-3.0'):GetOptionsTable(self.db)
+	local registry = LibStub('AceConfigRegistry-3.0')
+	local dialog = LibStub('AceConfigDialog-3.0')
+
+	registry:RegisterOptionsTable(self.title, self.options)
+	registry:RegisterOptionsTable("Transmoggy-Profiles", profile)
+	
+	self.optionsFrame = LibStub('AceConfigDialog-3.0'):AddToBlizOptions(self.title, self.title)
+	--LibStub('AceConfigDialog-3.0'):AddToBlizOptions("HPE-CCTracker", 'CCTracker', "self.ccOptions")
+	LibStub('AceConfigDialog-3.0'):AddToBlizOptions("Transmoggy-Profiles", 'Profiles', self.title)
+	
+	--self:RegisterChatCommand("HPE", function () InterfaceOptionsFrame_OpenToCategory(self.optionsFrame) end)
+	LibStub('AceConsole-3.0'):RegisterChatCommand("transmoggy", function () InterfaceOptionsFrame_OpenToCategory(self.optionsFrame) end)
+end
+
+core.OnProfileChanged = function(self, ...)
+	print("OnProfileChanged", ...)
+end
+---------------------------------------
 
 core.TMOG_NPC_ID = 1010969
 
@@ -203,7 +232,7 @@ local SetCosts, SetSlotCostsAndReason, SetSkinCosts, SetCurrentChanges, SetCurre
 
 ------------------- Data we modify through Setters, that cause frames registered with RegisterListener to call their .update function -----------------------------------
 
--- MyAddonDB.currentChanges = MyAddonDB.currentChanges or {} -- Get reset on Login and all the time atm., so no point in saving it in DB. Would have to save per character anyways
+-- TransmoggyDB.currentChanges = TransmoggyDB.currentChanges or {} -- Get reset on Login and all the time atm., so no point in saving it in DB. Would have to save per character anyways
 local balance = {}
 local costs = {} -- copper = 0, points = 0, 
 local skinCosts = {}
@@ -215,9 +244,9 @@ local slotReason = {}
 local config = nil
 
 
-local atTransmogrifier -- used in e.g. itemCollectionFrame to get different behaviour depending on wether we are using it in TransmogFrame or WardrobeFrame
+local atTransmogrifier -- used in e.g. itemCollectionFrame to get different behaviour depending on whether we are using it in the TransmogFrame or the WardrobeFrame
 
-------------------- Updoots (for speed and better readability) ------------------------
+------------------- Updoots (for speed and readability) ------------------------
 local GetCoinTextureStringFull = core.GetCoinTextureStringFull
 local API = core.API
 local Length = core.Length
@@ -237,29 +266,7 @@ local GetInventoryVisualID = core.GetInventoryVisualID
 local GetContainerVisualID = core.GetContainerVisualID
 
 ------------------------------------------------------------------------------------------
-
--- Even tho we save the collection status of every item, we still need to ask the server what items are available for a specific slot
-core.availableMogs = {
-	["HeadSlot"] = {},
-	["ShoulderSlot"] = {},
-	["BackSlot"] = {},
-	["ChestSlot"] = {},
-	["ShirtSlot"] = {},
-	["TabardSlot"] = {},
-	["WristSlot"] = {},
-	["HandsSlot"] = {},
-	["WaistSlot"] = {},
-	["LegsSlot"] = {},
-	["FeetSlot"] = {},
-	["MainHandSlot"] = {},
-	["MainHandEnchantSlot"] = {},
-	["SecondaryHandSlot"] = {},
-	["SecondaryHandEnchantSlot"] = {},
-	["RangedSlot"] = {},
-}
-
-core.availableMogsUpdateNeeded = {}
-
+-- maps Transmog API locations to game inventory slots
 core.locationToInventorySlot = {
 	Head = "HeadSlot",
 	Shoulders = "ShoulderSlot",
@@ -278,6 +285,7 @@ core.locationToInventorySlot = {
 	Tabard = "TabardSlot",
 }
 
+-- transmog location names that the addon uses
 local itemSlots = {
 	"HeadSlot",
 	"ShoulderSlot",
@@ -300,18 +308,48 @@ local itemSlots = {
 }
 core.itemSlots = itemSlots
 
+-- extra table for enchants. need different behaviour and are not really supported so far
 core.enchantSlots = {
 	"MainHandEnchantSlot",
 	"OffHandEnchantSlot",
 }
 
--- local isEnchant = {}
--- for k, slot in ipairs(core.enchantSlots) do
--- 	isEnchant[slot] = true
--- end
 core.IsEnchantSlot = function(slot)
 	return slot and (slot == core.enchantSlots[0] or slot == core.enchantSlots[1])
 end
+
+local isWeaponSlot = {
+	"MainHandSlot",
+	"SecondaryHandSlot",
+	"ShieldHandWeaponSlot",
+	"OffHandSlot",
+	"RangedSlot",
+}
+core.IsWeaponSlot = function(slot)
+	return slot and isWeaponSlot[slot]
+end
+
+-- Although we save the collection status of every item, we still need to ask the server what items are available for a specific slot (for the currently equipped item)
+core.availableMogs = {
+	["HeadSlot"] = {},
+	["ShoulderSlot"] = {},
+	["BackSlot"] = {},
+	["ChestSlot"] = {},
+	["ShirtSlot"] = {},
+	["TabardSlot"] = {},
+	["WristSlot"] = {},
+	["HandsSlot"] = {},
+	["WaistSlot"] = {},
+	["LegsSlot"] = {},
+	["FeetSlot"] = {},
+	["MainHandSlot"] = {},
+	["MainHandEnchantSlot"] = {},
+	["SecondaryHandSlot"] = {},
+	["SecondaryHandEnchantSlot"] = {},
+	["RangedSlot"] = {},
+}
+
+core.availableMogsUpdateNeeded = {}
 
 for k, v in pairs(itemSlots) do
 	if v ~= "MainHandEnchantSlot" and v ~= "SecondaryHandEnchantSlot" then
@@ -319,6 +357,7 @@ for k, v in pairs(itemSlots) do
 	end
 end
 
+-- itemSlots to game inventorySlot IDs
 local slotToID = {
 	["HeadSlot"] = 1,
 	["ShoulderSlot"] = 3,
@@ -390,12 +429,12 @@ core.slotCategories = {
 	["SecondaryHandEnchantSlot"] = {},
 }
 
--- what follows are additional slot categories for items that are in the game, but are either quest items (-> not transmogable) or weird bugged test items, that can't be unlocked by normal means
-if true then -- TODO: Option
+-- the following inserts are additional slot categories for items that are in the game, but are either quest items (-> not transmogable) or weird bugged test items, that can't be unlocked by normal means
+if true then -- TODO: Options to en-/disable these?
 	tinsert(core.slotCategories.MainHandSlot, core.CATEGORIES.WEAPON_1H_EXOTICA)
 end
 
-if true then -- TODO: Option to enable these?
+if true then 
 	tinsert(core.slotCategories.HeadSlot, core.CATEGORIES.QUEST_QUEST)
 	tinsert(core.slotCategories.BackSlot, core.CATEGORIES.QUEST_QUEST)
 	tinsert(core.slotCategories.BackSlot, core.CATEGORIES.ARMOR_MISC) -- one quest cloak has armor type misc., even gets unlocked when added, but quest is deactivated
@@ -415,6 +454,15 @@ if true then -- completely bugged items, that should probably not be included?
 	-- INVTYPE_2HWEAPON: armor misc (obtainable quest item),
 	-- INVTYPE_WEAPONMAINHAND: 2hswords,
 	-- INVTYPE_RANGEDRIGHT: 1haxes, 
+end
+
+-- dict format of slotCategories for faster lookup
+core.slotHasCategory = {}
+for _, slot in pairs(core.itemSlots) do
+	core.slotHasCategory[slot] = {}
+	for _, category in pairs(core.slotCategories[slot]) do
+		core.slotHasCategory[slot][category] = true
+	end
 end
 
 core.DUMMY_WEAPONS = {
@@ -525,7 +573,7 @@ core.TransmogGetSlotInfo = function(itemSlot, skinID)
 	local itemID = core.GetInventoryItemID("player", inventorySlotID)
 	local visualID = core.GetInventoryVisualID("player", inventorySlotID)
 	local skinVisualID = core.GetSkinSlotVisualID(skinID, locationID)
-	local pendingID = MyAddonDB.currentChanges[itemSlot]
+	local pendingID = TransmoggyDB.currentChanges[itemSlot]
 	local pendingCostsShards = slotCostsShards[itemSlot]
 	local pendingCostsCopper = slotCostsCopper[itemSlot]
 	local canTransmogrify = slotValid[itemSlot]
@@ -553,7 +601,7 @@ core.GetDefaultCategory = function(itemSlot)
 		itemCategory = class and (class .. " " .. subclass) or nil
 	end
 
-	-- TODO: Shouldnt some of these rely on player class? clothies with wands, people who cant wear daggers ...
+	-- TODO: Would be better if these also rely on player class? Clothies with wands, people who cant wear daggers etc. ...
 	if itemSlot == "MainHandSlot" then
 		return itemCategory or core.CATEGORIES.WEAPON_DAGGERS
 	elseif itemSlot == "SecondaryHandSlot" then
@@ -726,7 +774,7 @@ SetCurrentChanges = function(set)
 		assert(type(id) == "number" or (type(id) == "boolean" and not id))
 	end
 
-	-- MyAddonDB.currentChanges = {}
+	-- TransmoggyDB.currentChanges = {}
 	-- wipe(slotCostsCopper)
 	-- wipe(slotCostsShards)
 	-- wipe(slotReason)
@@ -747,13 +795,13 @@ end
 core.SetCurrentChanges = SetCurrentChanges
 
 core.GetCurrentChanges = function()
-	return MyAddonDB.currentChanges
+	return TransmoggyDB.currentChanges
 end
 
 SetCurrentChangesSlot = function(slot, id, silent)
 	assert(core.Contains(itemSlots, slot))
 	assert(id == nil or type(id) == "number") -- and GetItemData(id) or even GetItemInfo(id) to secure that id is valid item (that is cached?) and maybe even check slot?
-	if not MyAddonDB.currentChanges then MyAddonDB.currentChanges = {} end
+	if not TransmoggyDB.currentChanges then TransmoggyDB.currentChanges = {} end
 	--core.am("SetCurrentChangesSlot:", slot, "to", id)	
 
 	local itemID, visualID, skinVisualID = core.TransmogGetSlotInfo(slot)
@@ -774,9 +822,9 @@ SetCurrentChangesSlot = function(slot, id, silent)
 		id = nil
 	end
 	
-	if MyAddonDB.currentChanges[slot] == id then return end
+	if TransmoggyDB.currentChanges[slot] == id then return end
 
-	MyAddonDB.currentChanges[slot] = id -- Or let change only go through, after we get an answer to RequestPriceSlot?
+	TransmoggyDB.currentChanges[slot] = id -- Or let change only go through, after we get an answer to RequestPriceSlot?
 	slotCostsCopper[slot] = nil
 	slotCostsShards[slot] = nil
 	slotReason[slot] = nil
@@ -873,23 +921,6 @@ core.IsAvailableSourceItem = function(item, slot)
 	return core.availableMogs[slot] and core.availableMogs[slot][item]
 end
 
---[[
-		Head                = 1,
-	Shoulders           = 3,
-	Body                = 4, -- shirt
-	Chest               = 5,
-	Waist               = 6,
-	Legs                = 7,
-	Feet                = 8,
-	Wrists              = 9,
-	Hands               = 10,
-	MainHand            = 12,
-	ShieldHandWeapon    = 13,
-	OffHand             = 14,
-	Ranged              = 15,
-	Back                = 16,
-	Tabard              = 19,
-]]
 local transmogIDToInventorySlot = {
 	[1] = "HeadSlot",
 	[3] = "ShoulderSlot",
@@ -1198,14 +1229,11 @@ core.RequestUnlocksAll = function(slot)
 			-- for itemID, data in pairs(core.itemData) do
 			--	core.SetUnlocked(itemID, 0) (option for second param not implemented atm)
 			-- end
-
-			for _, itemID in pairs(items) do
-				core.SetUnlocked(itemID)
-			end
-			core.GenerateStringData()
+			core.MyWaitFunction(0.1, core.SetUnlocks, items) -- just want to see errors -.-
 		end
 	end):catch(function(err)
-		core.GenerateStringData() -- TODO: better way to do this?
+		core.MyWaitFunction(0.1, core.SetUnlocks, {}) -- -.-
+		-- core.SetUnlocks({})
 		print("RequestUnlocksAll: An error occured:", err.message)
 	end)
 end
@@ -1214,7 +1242,7 @@ local requestCounterACC = 0
 core.RequestApplyCurrentChanges = function()
 	requestCounterACC = requestCounterACC + 1
 	local requestID = requestCounterACC
-	API.ApplyAll(ToApiSet(MyAddonDB.currentChanges), core.GetSelectedSkin()):next(function(answer)
+	API.ApplyAll(ToApiSet(TransmoggyDB.currentChanges), core.GetSelectedSkin()):next(function(answer)
 		if requestID == requestCounterACC then
 			PlaySound(6555) -- 888
 			core.PlayApplyAnimations()
@@ -1248,10 +1276,10 @@ core.RequestPriceTotal = function()
 	requestCounterPOA = requestCounterPOA + 1
 	SetCosts() -- Setting costs to nil disables apply button and cost display while we are waiting for an answer
 
-	if core.Length(MyAddonDB.currentChanges) == 0 then return end -- No changes, so nothing to apply and no costs to display
+	if core.Length(TransmoggyDB.currentChanges) == 0 then return end -- No changes, so nothing to apply and no costs to display
 
 	local requestID = requestCounterPOA
-	API.GetPriceAll(ToApiSet(MyAddonDB.currentChanges), core.GetSelectedSkin()):next(function(price)
+	API.GetPriceAll(ToApiSet(TransmoggyDB.currentChanges), core.GetSelectedSkin()):next(function(price)
 		if requestID == requestCounterPOA then
 			SetCosts(price.copper, price.shards)
 		end
@@ -1339,7 +1367,7 @@ end
 core.CanReceiveTransmog = canReceiveTransmog
 
 -- local function canBeEnchanted(itemSlot)
--- 	local itemID = MyAddonDB.currentChanges[itemSlot]
+-- 	local itemID = TransmoggyDB.currentChanges[itemSlot]
 -- 	--local itemID = GetInventoryItemID("player", GetInventorySlotInfo(itemSlot))
 -- 	if not itemID then return false end
 -- 	local itemSubType = select(7, GetItemInfo(itemID))
@@ -1374,9 +1402,9 @@ core.EquipOffhandNext = function(model)
 	core.DUMMY_MODEL:Hide()
 end
 
--- Should probably do a full rework of this at some point with all the new Tricks Ive found
--- The EquipToOffhand trick relies on weaponslots being cleared, which breaks the way previewmodel uses this function, so i removed it for now in the only offhand part.
--- still has the problem for no titangrip chars that we cant put 2h into offhand there and either have to do another error message or try to do something with animations or both... should work on this later
+-- Should probably do a full rework of this at some point with all the newfound tricks
+-- The EquipToOffhand trick relies on weaponslots being cleared, which breaks the way previewmodel uses this function, so I removed it for now in case where only an offHand is equipped.
+-- still has the problem for chars without titangrip that we cant put 2h into offhand there and either have to do another error message or try to do something with animations or both... should work on this later
 
 -- Displays weapons mainHand and offHand on DressUpModel mod as well as possible (i.e. can't display dualwielding weapons, if the player can't dualwield (and wasn't logged into a dualwielding char earlier in the session))
 -- the "logged in on dualwielder before" thing is just another DressUpModel weirdness, since it would be confusing and we can't track it anyway, we don't try to use that feature
@@ -1490,17 +1518,6 @@ core.IsOffHandItemType = function(itemType)
 	return itemType == "INVTYPE_SHIELD" or itemType == "INVTYPE_HOLDABLE"
 end
 
-local isWeaponSlot = {
-	"MainHandSlot",
-	"SecondaryHandSlot",
-	"ShieldHandWeaponSlot",
-	"OffHandSlot",
-	"RangedSlot",
-}
-core.IsWeaponSlot = function(slot)
-	return isWeaponSlot[slot]
-end
-
 core.OpenTransmogWindow = function()
 	core.wardrobeFrame:Hide()	
 	core.SetIsAtTransmogrifier(true)
@@ -1557,7 +1574,9 @@ a:SetScript("OnEvent", function(self, event, ...)
 		
 		core.InitLDB()
 
-		core.GenerateDisplayGroups()
+		core:InitializeAce()
+
+		core.GenerateStringData() -- TODO: or do all this on AddOn Loaded event?
 
 		core.RequestSkins()
 		core.RequestActiveSkin()
@@ -1569,7 +1588,7 @@ a:SetScript("OnEvent", function(self, event, ...)
 		core.PreHook_ModifiedItemClick()
 		--BackgroundItemInfoWorker.Start()		
 
-		-- /run core.CreateSlotButtonFrame = nil; core.CreateMannequinFrame = nil
+		-- /run core.CreateSlotButtonFrame = nil; core.CreateMannequinFrame = nil ...
 
 	elseif event == "PLAYER_EQUIPMENT_CHANGED" then
 		-- print(event, ...)
@@ -1588,8 +1607,6 @@ a:SetScript("OnEvent", function(self, event, ...)
 		end
 
 	elseif event == "GOSSIP_SHOW" then --TODO: Alternatively could hook gossipframe stuff and check the button names or smth to see if its the tmog npc
-		if not UnitGUID("target") then return end
-		
 		local npcID = core.GetNPCID(UnitGUID("target"))
 		core.SetShown(core.gossipOpenTransmogButton, npcID == core.TMOG_NPC_ID)
 		core.replaceGossipFrame = false
@@ -1650,28 +1667,6 @@ end)]]
 
 -- DEBUG
 
-
-PrintCurrentChanges = function()
-	core.am(MyAddonDB.currentChanges)
-end
-
-PrintSkins = function()
-	core.am(skins)
-end
-
-GetSkins = function()
-	return skins
-end
-
-PrintAllCosts = function()
-	for _, slot in pairs(itemSlots) do
-		print(slot, slotCostsCopper[slot], slotCostsShards[slot], slotReason[itemSlot])
-	end
-end
-
-PrintBalance = function()
-	am(balance)
-end
 
 
 

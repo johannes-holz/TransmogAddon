@@ -2,8 +2,8 @@ local folder, core = ...
 
 -- TODO: Make these settings save per character instead of account. planning to revisit this when making options
 
-MyAddonDB.isExpanded = MyAddonDB.isExpanded or true
-MyAddonDB.isWatched = MyAddonDB.isWatched or false
+TransmoggyDB.isExpanded = TransmoggyDB.isExpanded or true
+TransmoggyDB.isWatched = TransmoggyDB.isWatched or false
 
 local GetCurrencyListSizeOld = GetCurrencyListSize
 GetCurrencyListSize = function()
@@ -22,9 +22,9 @@ GetCurrencyListInfo = function(index)
     end
 
     if index == normalListSize + 1 then
-        return core.TRANSMOG_NAME, true, MyAddonDB.isExpanded, false, false, 0, 0, nil, 0
-    elseif MyAddonDB.isExpanded and index == normalListSize + 2 then
-        return core.CURRENCY_NAME, false, true, false, MyAddonDB.isWatched, core.GetBalance().shards or 0, 0, core.CURRENCY_ICON, core.CURRENCY_FAKE_ITEMID
+        return core.TRANSMOG_NAME, true, TransmoggyDB.isExpanded, false, false, 0, 0, nil, 0
+    elseif TransmoggyDB.isExpanded and index == normalListSize + 2 then
+        return core.CURRENCY_NAME, false, true, false, TransmoggyDB.isWatched, core.GetBalance().shards or 0, 0, core.CURRENCY_ICON, core.CURRENCY_FAKE_ITEMID
     end
     
     return nil
@@ -39,7 +39,7 @@ ExpandCurrencyList = function(index, expanded)
     end
 
     if index == normalListSize + 1 then
-        MyAddonDB.isExpanded = (expanded == 1)
+        TransmoggyDB.isExpanded = (expanded == 1)
     end
 end
 
@@ -52,7 +52,7 @@ SetCurrencyBackpack = function(index, backpack)
     end
 
     if index == normalListSize + 2 then
-        MyAddonDB.isWatched = (backpack == 1)
+        TransmoggyDB.isWatched = (backpack == 1)
     end
 end
 
@@ -64,7 +64,7 @@ GetBackpackCurrencyInfo = function(id)
         return GetBackpackCurrencyInfoOld(id)
     end
 
-    if (id == 1 or GetBackpackCurrencyInfoOld(id - 1)) and MyAddonDB.isWatched then
+    if (id == 1 or GetBackpackCurrencyInfoOld(id - 1)) and TransmoggyDB.isWatched then
         return core.CURRENCY_NAME, core.GetBalance().shards or 0, 0, core.CURRENCY_ICON, core.CURRENCY_FAKE_ITEMID
     end
 end
@@ -120,7 +120,7 @@ f:SetScript("OnEvent", function(self, event, ...)
     end
 
     if count > MAX_WATCHED_TOKENS then -- 3 normal tokens are already being watched (maybe set, when addon was disabled), so no room for our token
-        MyAddonDB.isWatched = false
+        TransmoggyDB.isWatched = false
     end
 end)
 

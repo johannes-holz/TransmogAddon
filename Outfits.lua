@@ -1,12 +1,12 @@
 local folder, core = ...
 
--- MyAddonDB.outfits = MyAddonDB.outfits or {}
+-- TransmoggyDB.outfits = TransmoggyDB.outfits or {}
 -- Save per char or account?
 
 core.GetOutfits = function()
-    if not MyAddonDB then return end
-    MyAddonDB.outfits = MyAddonDB.outfits or {}
-    return MyAddonDB.outfits
+    if not TransmoggyDB then return end
+    TransmoggyDB.outfits = TransmoggyDB.outfits or {}
+    return TransmoggyDB.outfits
 end
 
 core.IsInvalidOutfitName = function(name)    
@@ -31,21 +31,21 @@ core.CreateOutfit = function(name, set)
         return
     end
     
-    MyAddonDB.outfits = MyAddonDB.outfits or {}
-    MyAddonDB.outfits[name] = core.DeepCopy(set)
+    TransmoggyDB.outfits = TransmoggyDB.outfits or {}
+    TransmoggyDB.outfits[name] = core.DeepCopy(set)
     core.UpdateListeners("outfits")
     return true
 end
 
 core.DeleteOutfit = function(name)
-    assert(name and MyAddonDB.outfits[name])
+    assert(name and TransmoggyDB.outfits[name])
 
-    MyAddonDB.outfits[name] = nil
+    TransmoggyDB.outfits[name] = nil
     core.UpdateListeners("outfits")
 end
 
 core.RenameOutfit = function(oldName, newName)
-    assert(oldName and MyAddonDB.outfits[oldName] and newName)
+    assert(oldName and TransmoggyDB.outfits[oldName] and newName)
 
     local invalidReason = core.IsInvalidOutfitName(newName)
     if invalidReason then
@@ -53,19 +53,19 @@ core.RenameOutfit = function(oldName, newName)
         return
     end
 
-    MyAddonDB.outfits = MyAddonDB.outfits or {}
-    local set = MyAddonDB.outfits[oldName]
-    MyAddonDB.outfits[oldName] = nil
-    MyAddonDB.outfits[newName] = set 
+    TransmoggyDB.outfits = TransmoggyDB.outfits or {}
+    local set = TransmoggyDB.outfits[oldName]
+    TransmoggyDB.outfits[oldName] = nil
+    TransmoggyDB.outfits[newName] = set 
     
     core.UpdateListeners("outfits")
     return true
 end
 
 core.SaveOutfit = function(name, set)
-    assert(name and set and MyAddonDB.outfits[name])
+    assert(name and set and TransmoggyDB.outfits[name])
     --AM("save", name, set)
-    MyAddonDB.outfits[name] = set
+    TransmoggyDB.outfits[name] = set
     core.UpdateListeners("outfits")
     return true
 end

@@ -15,18 +15,6 @@ local HEADER_HEIGHT, BOTTOM_HEIGHT, SIDE_PADDING = 40, 30, 12
 
 core.itemCollectionFrame = CreateFrame("Frame", folder .. "ItemCollectionFrame", UIParent)
 local itemCollectionFrame = core.itemCollectionFrame
-
--- itemCollectionFrame.backgroundTexture = itemCollectionFrame:CreateTexture(nil, "BACKGROUND")
--- itemCollectionFrame.backgroundTexture:SetAllPoints()
--- itemCollectionFrame.backgroundTexture:SetTexture(0.3, 0.3, 0.3)
-
--- itemCollectionFrame:SetBackdrop({
--- 	bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background", 
---   	edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
---   	tile = 1, tileSize = 12, edgeSize = 12, 
---   	insets = {left = 4, right = 4, top = 4, bottom = 4},
--- })
-
 itemCollectionFrame:EnableMouse()
 itemCollectionFrame:Hide()
 
@@ -46,7 +34,9 @@ itemCollectionFrame:SetScript("OnShow", function(self)
 
 	self:SetScale(atTransmogrifier and core.transmogFrame.scale / 1.2 or 1)
 
-	self:SetBackdrop(not atTransmogrifier and BACKDROP_TOAST_12_12 or {})
+	self:SetBackdrop(not atTransmogrifier and BACKDROP_Test_1 or {})
+	self:SetBackdropBorderColor(0.675, 0.5, 0.125, 1)
+	self:SetBackdropColor(0.375, 0.375, 0.375, 1)
 
 	core.SetShown(self.optionsDDM, not atTransmogrifier)
 
@@ -58,7 +48,7 @@ itemCollectionFrame:SetScript("OnShow", function(self)
 		self.slotButtons["Head"]:Click()
 		self.unlockedStatusBar:SetPoint("BOTTOM", self, "TOP", 0, 10)
 		self.unlockedStatusBar:Show()
-		self.searchBox:SetPoint("LEFT", self.unlockedStatusBar, "RIGHT", 20, 1)
+		self.searchBox:SetPoint("LEFT", self.unlockedStatusBar, "RIGHT", 15, 1)
 		--self.searchBox:SetPoint("BOTTOMRIGHT", self.itemTypeDDM, "TOPLEFT", 3, 12)
 	else
 		self.searchBox:SetPoint("RIGHT", self.itemTypeDDM, "LEFT", 0, 3)
@@ -71,7 +61,7 @@ itemCollectionFrame:SetScript("OnHide", function(self)
 		PlaySound("igCharacterInfoClose")
 	end
 
-	self:SetSlotAndCategory(nil, nil) -- clear slot first, so list updates cause no further item iterations
+	self:SetSlotAndCategory(nil, nil) -- clear slot first, so clearing the other fields does not cause further item iterations
 	self:SetPreviewEnchant(nil)
 	self:SetUnlockedFilter(nil)
 	self.searchBox:SetText("")
@@ -267,11 +257,11 @@ itemCollectionFrame.UpdateMannequins = function(self)
 	local sex = UnitSex("player")
 	local id = core.sexRaceToID[sex][race]
 	local posCat = category or "Default"
-	if MyAddonDB.positionData and MyAddonDB.positionData[id] and MyAddonDB.positionData[id][slot] and MyAddonDB.positionData[id][slot][posCat] then
-		local x, y, z, facing, near, far, seq, time = unpack(MyAddonDB.positionData[id][slot][posCat])
+	if TransmoggyDB.positionData and TransmoggyDB.positionData[id] and TransmoggyDB.positionData[id][slot] and TransmoggyDB.positionData[id][slot][posCat] then
+		local x, y, z, facing, near, far, seq, time = unpack(TransmoggyDB.positionData[id][slot][posCat])
 		pos = { x, y, z, facing }
 		sequenceID, sequenceTime = seq, time
-		-- pos = MyAddonDB.positionData[id][slot]
+		-- pos = TransmoggyDB.positionData[id][slot]
 	end
 
 	--local enchantID = 3789
@@ -555,107 +545,6 @@ itemCollectionFrame.SetUnlockedFilter = function(self, filterStatus)
 	self:UpdateDisplayList()
 end
 
--- Mappings to match slots/categories with our item data. Probably should change item data at some point, to hide/optimize some of this
--- e.g. there is no reason we have to use 3 bytes in our itemData for equipLoc (MH, 2H, ROBE etc), class (ARMOR, WEAPON) and subclass (CLOTH, DAGGER)
--- At the least class+subclass could easily me replaced by a single ID
--- (Could also change our category identifiers to the same ID's on that occasion and only use localized names for display and when we have to find out the equipped weapon cat)
--- (Could get that items category from itemdata anyway tho, if we assume that our item data is complete)
--- There are 96 combinations of type, class and subclass in our data, so all 3 would fit into one byte (with one bit to spare, but bit operations are probably more expensive then they are worth)
--- When we can map these to slot + cat, before list iteration we could generate dict that says our current slot + cat selection allows certain ids
--- In iteration we only need one table lookup to know if an item fits selection
--- TODO: if we touch/rework our item data to include more data (class, faction, color?), implement these changes?
-
--- These are IDs for itemTypes (2H, 1H, MH, OH, etc) in the item data. Not to be confused with inventorySlotIDs
-local slotItemTypes = core.slotItemTypes -- gets defined in dataUtils now and is also not needed here anymore. dataUtils provides slot iterators now
-
-local typeToClassSubclass = {
-	[core.CATEGORIES.ARMOR_CLOTH] = {4, 1},
-	[core.CATEGORIES.ARMOR_LEATHER] = {4, 2},
-	[core.CATEGORIES.ARMOR_MAIL] = {4, 3},
-	[core.CATEGORIES.ARMOR_PLATE] = {4, 4},
-	[core.CATEGORIES.ARMOR_MISC] = {4, 0},
-	[core.CATEGORIES.ARMOR_SHIELDS] = {4, 6},
-	[core.CATEGORIES.WEAPON_DAGGERS] = {2, 15},
-	[core.CATEGORIES.WEAPON_FIST_WEAPONS] = {2, 13},
-	[core.CATEGORIES.WEAPON_1H_AXES] = {2, 0},
-	[core.CATEGORIES.WEAPON_1H_MACES] = {2, 4},
-	[core.CATEGORIES.WEAPON_1H_SWORDS] = {2, 7},
-	[core.CATEGORIES.WEAPON_POLEARMS] = {2, 6},
-	[core.CATEGORIES.WEAPON_STAVES] = {2, 10},
-	[core.CATEGORIES.WEAPON_2H_AXES] = {2, 1},
-	[core.CATEGORIES.WEAPON_2H_MACES] = {2, 5},
-	[core.CATEGORIES.WEAPON_2H_SWORDS] = {2, 8},
-	[core.CATEGORIES.WEAPON_FISHING_POLES] = {2, 20},
-	[core.CATEGORIES.WEAPON_MISC] = {2, 14},
-	[core.CATEGORIES.MISC_JUNK] = {15, 0},
-	[core.CATEGORIES.WEAPON_BOWS] = {2, 2},
-	[core.CATEGORIES.WEAPON_CROSSBOWS] = {2, 18},
-	[core.CATEGORIES.WEAPON_GUNS] = {2, 3},
-	[core.CATEGORIES.WEAPON_THROWN] = {2, 16},
-	[core.CATEGORIES.WEAPON_WANDS] = {2, 19},
-	[core.CATEGORIES.TRADE_GOODS_MEAT] = {7, 8},
-	[core.CATEGORIES.CONSUMABLE_CONSUMABLE] = {0, 0},
-	[core.CATEGORIES.QUEST_QUEST] = {12, 0},
-	[core.CATEGORIES.WEAPON_1H_EXOTICA] = {2, 11},
-	--["Rüstung Buchbände"] = {4, 7},
-	--["Rüstung Götzen"] = {4, 8},
-	--["Rüstung Totems"] = {4, 9},
-	--["Rüstung Siegel"] = {4, 10},
-}
-core.typeToClassSubclass = typeToClassSubclass
-
-core.classSubclassToType = {
-	[4] = { -- Armor
-		[0] = core.CATEGORIES.ARMOR_MISC,
-		[1] = core.CATEGORIES.ARMOR_CLOTH,
-		[2] = core.CATEGORIES.ARMOR_LEATHER,
-		[3] = core.CATEGORIES.ARMOR_MAIL,
-		[4] = core.CATEGORIES.ARMOR_PLATE,
-		[6] = core.CATEGORIES.ARMOR_SHIELDS,
-	},
-	[2] = { -- Weapon
-		[15] = core.CATEGORIES.WEAPON_DAGGERS,
-		[13] = core.CATEGORIES.WEAPON_FIST_WEAPONS,
-		[0] = core.CATEGORIES.WEAPON_1H_AXES,
-		[4] = core.CATEGORIES.WEAPON_1H_MACES,
-		[7] = core.CATEGORIES.WEAPON_1H_SWORDS,
-		[6] = core.CATEGORIES.WEAPON_POLEARMS,
-		[10] = core.CATEGORIES.WEAPON_STAVES,
-		[1] = core.CATEGORIES.WEAPON_2H_AXES,
-		[5] = core.CATEGORIES.WEAPON_2H_MACES,
-		[8] = core.CATEGORIES.WEAPON_2H_SWORDS,
-		[20] = core.CATEGORIES.WEAPON_FISHING_POLES,
-		[14] = core.CATEGORIES.WEAPON_MISC,
-		[2] = core.CATEGORIES.WEAPON_BOWS,
-		[18] = core.CATEGORIES.WEAPON_CROSSBOWS,
-		[3] = core.CATEGORIES.WEAPON_GUNS,
-		[16] = core.CATEGORIES.WEAPON_THROWN,
-		[19] = core.CATEGORIES.WEAPON_WANDS,
-		[11] = core.CATEGORIES.WEAPON_1H_EXOTICA, -- 1H_EXOTICA. There is exactly one item in our itemData of this type (32407 - "Creature - Maiev's Glaive"). Unlockable, but not obtainable through normal means
-	},
-	[15] = { -- Miscellaneous
-		[0] = core.CATEGORIES.MISC_JUNK, -- Mostly offhand fish. 2 test chests (34025, 37126)
-	},
-	[12] = { -- Questitem
-		[0] = core.CATEGORIES.QUEST_QUEST, -- Equipable quest items, can be a lot of different slots. Not unlockable anyway tho?
-	},
-	[0] = { -- Consumable
-		[0] = core.CATEGORIES.CONSUMABLE_CONSUMABLE, -- A single item has this type, unlockable and obtainable (22743 - "Bloosail Sash")
-	},
-	[7] = { -- Trade goods
-		[8] = core.CATEGORIES.TRADE_GOODS_MEAT, -- Two equippable offhand fish, unlockable and obtainable (27515, 27516)
-	},
-}
-
--- basically the same as core.slotCategories, but as dict for faster lookup
-local slotHasCategory = {}
-for _, slot in pairs(core.itemSlots) do
-	slotHasCategory[slot] = {}
-	for _, category in pairs(core.slotCategories[slot]) do
-		slotHasCategory[slot][category] = true
-	end
-end
-
 itemCollectionFrame.ClearData = function(self)	
 	self.displayList = {}
 	self.displayGroups = {}
@@ -670,11 +559,6 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 	local slot, category = self.selectedSlot, self.selectedCategory
 
 	print("atNPC:", atTransmogrifier, "slot:", slot, "cat:", category)
-
-	local classFilter = (category and typeToClassSubclass[category]) and typeToClassSubclass[category][1]
-	local subClassFilter = (category and typeToClassSubclass[category]) and typeToClassSubclass[category][2]
-
-	print("LIST:", slot, category, classFilter, subClassFilter)
 
 	local t1 = GetTime()
 
@@ -693,9 +577,6 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 	local unlockedCount = 0 -- TODO: Attempt at Unlocked StatusBar
 	local itemCount = 0 -- tmp for testing/debugging
 
-	local slotTypes = slotItemTypes[slot]
-	local slotCats = slotHasCategory[slot]
-
 	-- local memCount = collectgarbage("count")
 	if slot and core.IsEnchantSlot(slot) then
 		table.insert(self.displayList, 0) -- Hidden/No enchant
@@ -713,25 +594,19 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 			end
 		end
 	
-	elseif slot and slotTypes and slotCats then
+	elseif slot then
 		local withNames = searchTerm and not searchByID
 		for itemID, itemName in core.ItemIterator(slot, category, withNames) do
 			itemCount = itemCount + 1
 			local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
-			local itemCategory = core.classSubclassToType[class][subClass]
 			
-			if slotTypes[inventoryType] and slotCats[itemCategory]
-					-- and (not classFilter or (class == classFilter and subClass == subClassFilter))
-					and (not category or category == itemCategory)
-					-- and (not atTransmogrifier or core.IsAvailableSourceItem(itemID, slot)) then
-					and ((atTransmogrifier and core.IsAvailableSourceItem(itemID, slot)) or
-							(not atTransmogrifier and (not self.filter.unlocked or unlocked == self.filter.unlocked))) then
-					
-				-- local itemName = (searchTerm and not searchByID and (GetItemInfo(itemID) or core.names[itemID])) or nil
+			if (atTransmogrifier and core.IsAvailableSourceItem(itemID, slot)) or
+					(not atTransmogrifier and (not self.filter.unlocked or unlocked == self.filter.unlocked)) then
+
 				if not searchTerm or itemID == searchTerm or (itemName and strfind(itemName, searchTerm)) then --strfind(strlower(itemName), strlower(searchTerm))) then --[[strfind(itemName, searchTerm)) then]] --strfind(name, searchTerm)) then
 					
 					self.itemUnlocked[itemID] = unlocked
-					self.visualUnlocked[itemID] = unlocked
+					self.visualUnlocked[itemID] = unlocked	-- this will track whether the visual is unlocked by an item that fits the current selection
 
 					if displayGroup == 0 or not self.displayGroups[displayGroup] then
 						table.insert(self.displayList, itemID)
@@ -741,7 +616,7 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 						end
 						
 						if displayGroup ~= 0 then
-							self.displayGroups[displayGroup] = {} -- TODO: How to avoid this garbage generation
+							self.displayGroups[displayGroup] = {} -- temporary displayGroups that only contain items that fit the current selection
 						end
 					end
 
@@ -751,8 +626,6 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 				end
 			end
 		end
-
-		print("TYPE COUNT", DEBUG_TYPE_COUNT)
 
 		print("itemCount:", itemCount, "total item count, hardcoded atm:", 22420)
 
@@ -771,12 +644,12 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 			end
 		end
 		
-		-- table.insert(self.displayList, 1) -- hidden item at start of list
+		-- table.insert(self.displayList, 1) -- hidden item at start of list, would need special handling in mannequins and in almost all functions here?
 		-- self.visualUnlocked[1] = 1
 
 		local t2 = GetTime()
 
-		table.sort(self.displayList, function(a, b) -- TODO: sorting like this only compares the items we picked to represent a visual group
+		table.sort(self.displayList, function(a, b) -- TODO: sorting like this only compares the items we picked to represent a visual group, so sort by itemID is weird
 			-- Would need O(n log n) ? GetItemData calls per attribute. Better to cache relevant item data, even if it generates some garbage?
 			local unlockedA = self.visualUnlocked[a] --core.GetItemData(a) --
 			local unlockedB = self.visualUnlocked[b] --core.GetItemData(b) --
@@ -806,7 +679,7 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 end
 
 
------------- TEMP UnlockedStatusBar ---------------
+------------ UnlockedStatusBar ---------------
 
 itemCollectionFrame.unlockedStatusBar = CreateFrame("StatusBar", folder.."UnlockedStatusBar", itemCollectionFrame)
 itemCollectionFrame.unlockedStatusBar:SetSize(160, 12)
@@ -834,7 +707,7 @@ itemCollectionFrame.unlockedStatusBar:SetScript("OnValueChanged", function(self,
 end)
 
 itemCollectionFrame.unlockedStatusBar.SetMinMaxValuesOld = itemCollectionFrame.unlockedStatusBar.SetMinMaxValues
-itemCollectionFrame.unlockedStatusBar.SetMinMaxValues = function(self, min, max) -- why the fuck does this not trigger OnValue changed
+itemCollectionFrame.unlockedStatusBar.SetMinMaxValues = function(self, min, max) -- why does this not trigger OnValue changed!?
 	self:SetMinMaxValuesOld(min, max)
 	local value = self:GetValue()
 	self:GetScript("OnValueChanged")(self, value)
@@ -870,5 +743,9 @@ itemCollectionFrame.optionsDDM = core.CreateOptionsDDM(itemCollectionFrame)
 itemCollectionFrame.optionsDDM:SetPoint("LEFT", itemCollectionFrame.searchBox, "RIGHT", -10, -3)
 itemCollectionFrame.optionsDDM:Show()
 
+
+
+----- Test Position, Animation etc. model -----
 local model = core.CreateWardrobeModelFrame(core.itemCollectionFrame)
 model:SetPoint("TOPLEFT", model:GetParent(), "TOPRIGHT")
+model:Hide()

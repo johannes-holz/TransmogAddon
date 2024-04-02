@@ -14,7 +14,7 @@ M.GetPriceAndCheck = function(visualItemId, itemId, slotId, skinId)
     return deferred.All(futures):next(function(results) -- should probably use AllSettled, but rejection message from GetPrice is more helpful than message in Check ._.
         local answer = {}
 
-		-- core.am("uwu", results)
+		-- core.am("GetPriceAndCheck", results)
 
         for _, result in pairs(results) do
             for k, v in pairs(result) do
