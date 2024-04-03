@@ -1,6 +1,10 @@
 local folder, core = ...
 
 --[[
+	Current format:
+	stringDataPos = "string1string2string3 ...", where stringX is the encoded inventoryType, category and substring index of item with ID X if it exists in the data, otherwise "\0\0\0\0"
+	stringData = {inventoryType1 = {category1 = {itemIDs = "...", displayGroups = "...", nextInGroup = "...", unlockedStates = "...", names = "..."}, ...}, ...}
+	
 	I went through multiple iterations how the data gets stored so that it takes up as little space as possible while keeping access and iteration times fast and unnoticeable.
 
 	Storing everything in tables is obviously the fastest and simplest way, but takes up a lot of ram, even when grouping data by field instead of itemID
@@ -34,10 +38,6 @@ local folder, core = ...
 	Overall item data currently takes up about 600kB with compressed names and 1mB with uncompressed names.
 
 	Enchant and Recipe data is small enough, that we can just use tables.
-
-	Current format:
-	stringDataPos = "string1string2string3 ...", where stringX is the encoded inventoryType, category and substring index of item with ID X if it exists in the data, otherwise "\0\0\0\0"
-	stringData = {inventoryType1 = {category1 = {itemIDs = "...", displayGroups = "...", nextInGroup = "...", unlockedStates = "...", names = "..."}, ...}, ...}
 
 	TODO:		
 		- Can save another 55kB in the index byte string by encoding invType + category as one number
@@ -336,6 +336,10 @@ core.GenerateStringData = function()
 
 			tinsert(itemData[inventoryType][category], i)
 
+			if i == 19866 then
+				core.am(inventoryType, category, "index", core.Length(itemData[inventoryType][category]), itemData[inventoryType][category])
+			end
+
 			addString(dataPositions, ToByteString3(inventoryType, category, #itemData[inventoryType][category]))
 			
 			-- if GetItemInfo(i) then core.names[i] = nil end -- item is cached, do not need to save the name (not if we cache our strings in WTF. then they have to contain all names)
@@ -378,17 +382,9 @@ core.GenerateStringData = function()
 	local t2 = GetTime()
 	
 	if useCompression then
-		local done = {}
-		for _, slot in pairs(core.itemSlots) do
-			for inventoryType, _ in pairs(core.slotItemTypes[slot]) do			
-				if not done[inventoryType] then
-					for cat, stringData in pairs(core.stringData[inventoryType]) do
-						if not category or category == cat then
-							stringData.names = LibDeflate:CompressDeflate(stringData.names)
-						end
-					end
-				end
-				done[inventoryType] = true
+		for inventoryType, tab1 in pairs(core.stringData) do
+			for cat, stringData in pairs(tab1) do
+				stringData.names = LibDeflate:CompressDeflate(stringData.names)
 			end
 		end
 	end
@@ -442,23 +438,19 @@ core.SetUnlocks = function(unlocks)
 	for _, itemID in pairs(unlocks) do
 		isUnlocked[itemID] = true
 	end
+	
+	for inventoryType, tab1 in pairs(core.stringData) do
+		for cat, stringData in pairs(tab1) do
+			local unlockedStates = newStack()
 
-	local done = {}
-	for _, slot in pairs(core.itemSlots) do
-		for inventoryType, _ in pairs(core.slotItemTypes[slot]) do			
-			if not done[inventoryType] then
-				for cat, stringData in pairs(core.stringData[inventoryType]) do
-					local unlockedStates = newStack()
-					for itemID in core.ItemIterator(slot, cat) do
-						addString(unlockedStates, strchar(isUnlocked[itemID] and 1 or 0))
-					end
-					stringData.unlockedStates = table.concat(unlockedStates)
-				end
+			for itemID in core.InventoryTypeItemIterator(inventoryType, cat) do
+				addString(unlockedStates, strchar(isUnlocked[itemID] and 1 or 0))
 			end
-			done[inventoryType] = true
+
+			stringData.unlockedStates = table.concat(unlockedStates)
 		end
 	end
-
+	
 	print("set all unlocks!")
 	core.MyWaitFunction(3.0, collectgarbage, "collect")
 end
@@ -509,6 +501,8 @@ core.GetItemData = function(itemID)
 	local category = core.IDToCategory[b]
 	if not category then return end
 	local index = lshift(c, 8) + d
+
+	-- print(itemID, inventoryType, category, index)
 
 	local unlocked = strbyte(core.stringData[inventoryType][category].unlockedStates, index)
 	local a, b = strbyte(core.stringData[inventoryType][category].displayGroups, index * 2 - 1, index * 2)
@@ -692,5 +686,20 @@ core.ItemIterator = function(slot, category, withNames)
 			local a, b = strbyte(idStrings[j], i - 1, i)
 			return lshift(a, 8) + b
 		end
+	end
+end
+
+core.InventoryTypeItemIterator = function(inventoryType, category)
+	local idString = core.stringData[inventoryType][category].itemIDs
+	local i = 0
+
+	return function()
+		i = i + 2
+		if i > #idString then
+			return nil
+		end
+		
+		local a, b = strbyte(idString, i - 1, i)
+		return lshift(a, 8) + b
 	end
 end
