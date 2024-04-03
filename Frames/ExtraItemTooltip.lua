@@ -4,7 +4,6 @@ local folder, core = ...
 core.extraItemTooltip = CreateFrame("GameTooltip", folder .. "ExtraItemTooltip", GameTooltip, "GameTooltipTemplate")
 core.extraItemTooltip:AddFontStrings(core.extraItemTooltip:CreateFontString( "$parentTextLeft1", nil, "GameTooltipText" ),
 									 core.extraItemTooltip:CreateFontString( "$parentTextRight1", nil, "GameTooltipText" ))
-core.FixTooltip(core.extraItemTooltip)
 
 core.extraItemTooltip:RegisterEvent("MODIFIER_STATE_CHANGED")
 core.extraItemTooltip:SetScript("OnEvent", function(self, event, modifier, pressed, ...)

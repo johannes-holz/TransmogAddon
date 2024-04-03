@@ -70,8 +70,6 @@ end
 -- end)
 
 wardrobeFrame.SelectItemTab = function(self)
-    print("bind to wardrobe D:")
-    print(core.atTransmogrifier)
     -- core.wardrobeCollectionFrame:SetContainer(self)
     core.itemCollectionFrame:SetParent(self)
     -- core.itemCollectionFrame:SetPoint("TOPLEFT", 6, -HEADER_HEIGHT)

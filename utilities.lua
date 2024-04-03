@@ -221,8 +221,8 @@ core.UIDropDownMenu_SetEnabled = function(dropDown, enabled)
 end
 
 -- Fix for Tooltip Bug, see: https://wowwiki-archive.fandom.com/wiki/UIOBJECT_GameTooltip#Blizzard's_GameTooltip
--- For some reason, GameTooltipTextLeft9 and GameTooltipTextRight9 are incorrectly named GameTooltipTextLeft1 and GameTooltipTextRight1 instead
--- TODO: Still encountering the bug sometimes, problem with the fix or caused by item query client limit at login?
+-- GameTooltipTextLeft9 and GameTooltipTextRight9 are incorrectly named GameTooltipTextLeft1 and GameTooltipTextRight1 instead
+-- TODO: Still encountering the bug sometimes? Solved by calling this after PLAYER_ENTERING_WORLD?
 core.FixTooltip = function(tooltip)
 	local initItem = core.DUMMY_WEAPONS.TOOLTIP_FIX_ITEM -- i.e. 32479 (any item with enough lines to trigger tooltip to generate the problematic line 9)
 	if not GetItemInfo(initItem) then
@@ -230,7 +230,7 @@ core.FixTooltip = function(tooltip)
 		return
 	end
 
-	-- tooltip:SetOwner(UIParent)
+	tooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
 	tooltip:SetHyperlink("item:" .. initItem)
 
 	local regions = { tooltip:GetRegions() }
@@ -240,7 +240,7 @@ core.FixTooltip = function(tooltip)
 			local _, anchor = region:GetPoint(1)
 			if region:GetName() == region:GetParent():GetName() .. "TextLeft1" and anchor ~= region:GetParent() then
 				buggoLeft = region
-			elseif region:GetName() == region:GetParent():GetName() .. "TextRight1" and not anchor then
+			elseif region:GetName() == region:GetParent():GetName() .. "TextRight1" and not anchor or anchor == buggoLeft then
 				buggoRight = region
 			end
 		end
@@ -251,10 +251,15 @@ core.FixTooltip = function(tooltip)
 		_G[tooltip:GetName()  .. "TextRight9"] = buggoRight
 	end
 
-	-- print("text1left", _G[tooltip:GetName()  .. "TextLeft1"], _G[tooltip:GetName()  .. "TextLeft1"]:GetName(), _G[tooltip:GetName()  .. "TextLeft1"]:GetText())
-	-- print("text1right", _G[tooltip:GetName()  .. "TextRight1"], _G[tooltip:GetName()  .. "TextRight1"]:GetName(), _G[tooltip:GetName()  .. "TextRight1"]:GetText())
-	-- print("text9left", _G[tooltip:GetName()  .. "TextLeft9"], _G[tooltip:GetName()  .. "TextLeft9"]:GetName(), _G[tooltip:GetName()  .. "TextLeft9"]:GetText())
-	-- print("text9right", _G[tooltip:GetName()  .. "TextRight9"], _G[tooltip:GetName()  .. "TextRight9"]:GetName(), _G[tooltip:GetName()  .. "TextRight9"]:GetText())
+	-- print(buggoLeft, buggoRight)
+	-- for i = 1, 20 do
+	-- 	if _G[tooltip:GetName()  .. "TextLeft" .. i] then
+	-- 		print(i .. "left", _G[tooltip:GetName()  .. "TextLeft" .. i], _G[tooltip:GetName()  .. "TextLeft" .. i]:GetName(), _G[tooltip:GetName()  .. "TextLeft" .. i]:GetText())
+	-- 		print(i .. "right", _G[tooltip:GetName()  .. "TextRight" .. i], _G[tooltip:GetName()  .. "TextRight" .. i]:GetName(), _G[tooltip:GetName()  .. "TextRight" .. i]:GetText())
+	-- 	end
+	-- end
+
+	tooltip:Hide()
 end
 
 core.SetTooltip = function(frame, text, r, g, b, a, wrap)

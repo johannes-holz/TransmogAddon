@@ -1586,7 +1586,9 @@ a:SetScript("OnEvent", function(self, event, ...)
 		core.RequestGetConfig()
 
 		core.PreHook_ModifiedItemClick()
-		--BackgroundItemInfoWorker.Start()		
+		--BackgroundItemInfoWorker.Start()
+		
+		core.FixTooltip(core.extraItemTooltip)
 
 		-- /run core.CreateSlotButtonFrame = nil; core.CreateMannequinFrame = nil ...
 
@@ -1606,19 +1608,14 @@ a:SetScript("OnEvent", function(self, event, ...)
 			core.OnEquippedItemChange(itemSlot, itemEquipped)
 		end
 
-	elseif event == "GOSSIP_SHOW" then --TODO: Alternatively could hook gossipframe stuff and check the button names or smth to see if its the tmog npc
+	elseif event == "GOSSIP_SHOW" then --TODO: Alternatively could hook gossipframe stuff and check the button names or smth to see if its the tmog npc?
 		local npcID = core.GetNPCID(UnitGUID("target"))
 		core.SetShown(core.gossipOpenTransmogButton, npcID == core.TMOG_NPC_ID)
-		core.replaceGossipFrame = false
+		
+		local autoOpen = true
 
-		if core.replaceGossipFrame and npcID == core.TMOG_NPC_ID then
-		--if GossipFrameNpcNameText:GetText() == "Warpweaver" and not GameMenuFrame:IsShown() then
-			--gossipFrameWidthBackup = GossipFrame:GetWidth() --too thick, hide on characterwindow openinstead?
-			--GossipFrame:SetWidth(1000)--core.transmogFrame:GetWidth())
-			--GossipFrame:SetWidth(core.transmogFrame:GetWidth())
-			core.transmogFrame:Hide()
-			core.HideGossipFrame()
-			core.OpenTransmogWindow()	
+		if autoOpen and core.gossipOpenTransmogButton:IsShown() then
+			core.gossipOpenTransmogButton:Click()
 		end
 	elseif event == "GOSSIP_CLOSED" then
 		--GossipFrame:SetWidth(gossipFrameWidthBackup)
