@@ -40,6 +40,8 @@ Frames\ItemCollectionFrame\OptionsDDM.lua
 Frames\ItemCollectionFrame\MannequinFrame.lua
 Frames\ItemCollectionFrame\WardrobeModelFrame.lua
 Frames\ItemCollectionFrame\ItemCollectionFrame.lua
+
+# UnlocksOverviewFrame
 Frames\ItemCollectionFrame\UnlockedBar.lua
 
 # TransmogFrame

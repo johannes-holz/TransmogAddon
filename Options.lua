@@ -7,7 +7,7 @@ Possible options:
 		- enable
 		- Dont reset on close, in options or in frame?
 		- Maybe not as options but in general:
-			Remember visibility of list? Show Cloak/Helmet according to interface setting like default DressUpFrame? Allow OH-only weapons for non-dualwield?
+			Remember visibility of list frame? Show Cloak/Helmet according to interface setting like default DressUpFrame? Allow OH-only weapons for non-dualwield?
 	- Extra tooltip for transmogification source:
 		- enable, used modifier?
 	- Active Skin Dropdown:
@@ -16,7 +16,7 @@ Possible options:
 		- enable
 	- Option for Data Compression?
 	- Balance display/hooks?
-	- Show Minimap Icon? Look at how other AddOns do this?
+	- Show/Hide Minimap Icon? Look at how other AddOns do this?
 
 ]]
 

@@ -2,6 +2,7 @@ local folder, core = ...
 
 core.ItemRefTooltipTryOnButton = core.CreateMeATextButton(ItemRefTooltip, 90, 22, core.TRY_ON)
 core.ItemRefTooltipTryOnButton:SetPoint("BOTTOM", 0, 10)
+
 core.ItemRefTooltipTryOnButton:SetScript("OnClick", function(self)
     if not DressUpFrame:IsShown() then
         ShowUIPanel(DressUpFrame)
@@ -9,6 +10,7 @@ core.ItemRefTooltipTryOnButton:SetScript("OnClick", function(self)
     end
     DressUpModel:SetAll(self.set)
 end)
+
 core.ItemRefTooltipTryOnButton:SetScript("OnHide", function(self)
     self.set = nil
 end)
@@ -57,7 +59,6 @@ end
 
 core.HideOutfitTooltipStuff = function()
     core.ItemRefTooltipTryOnButton:Hide()
-    core.ItemRefTooltipTryOnButton.set = nil
 end
 
 ItemRefTooltip:HookScript("OnHide", core.HideOutfitTooltipStuff)

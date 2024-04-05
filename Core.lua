@@ -821,6 +821,10 @@ SetCurrentChangesSlot = function(slot, id, silent)
 	else
 		id = nil
 	end
+
+	if slot == "ShieldHandWeaponSlot" and not core.HasShieldHandWeaponSlot() then
+		id = nil
+	end
 	
 	if TransmoggyDB.currentChanges[slot] == id then return end
 
@@ -1049,6 +1053,13 @@ local OnVisualUnlocked = function(payload)
 	core.am("unlockevent", payload)
 	local itemID = payload.itemId
 	core.SetUnlocked(itemID)
+
+	-- local playUnlockSoundOption = 1202 -- "Sound\\interface\\PickUp\\PickUpParchment_Paper.wav"
+	-- if playUnlockSoundOption then
+	-- 	PlaySound(playUnlockSoundOption, "SFX")
+	-- end
+
+	UpdateListeners("unlocks")
 	print("OnVisualUnlock!", itemID, GetItemInfo(itemID))
 end
 rAPI:registerEvent("transmog/visual/unlocked", OnVisualUnlocked)
@@ -1204,7 +1215,7 @@ core.RequestUnlocksSlot = function(slot)
 	local requestID = requestCounterUS[transmogLocation]
 	f(unpack(p)):next(function(items)
 		if requestID == requestCounterUS[transmogLocation] then
-			-- Imo we still want our equipped item in our list of item transmogs to "deselect"? Items with the same displayID as the equipped item also get hidden :/
+			-- Imo we still want our equipped item in our list of item transmogs to "deselect"? A bit confusing that tems with the same displayID as the equipped item also get hidden :/
 			if itemID and not skin then
 				table.insert(items, itemID)
 			end
@@ -1218,18 +1229,13 @@ core.RequestUnlocksSlot = function(slot)
 end
 
 
--- Only calling this once on LogIn, so we do not need to trigger any updates to Interface. Could also just put the API call directly in the OnLogin
--- IF for some reason we want to call this later on, we have to change it, so that it also sets items to 0 that are not in this answer
+-- Only calling this once on LogIn, so we do not need to trigger any updates to Interface
 local requestCounterUA = {}
 core.RequestUnlocksAll = function(slot)
 	local requestID = requestCounterUA
 	API.GetUnlockedVisuals(true):next(function(items)
 		if requestID == requestCounterUA then
-			-- TODO: should we check our data for unlocked items, which where not received in GetUnlockedVisuals() ? smth like:
-			-- for itemID, data in pairs(core.itemData) do
-			--	core.SetUnlocked(itemID, 0) (option for second param not implemented atm)
-			-- end
-			core.MyWaitFunction(0.1, core.SetUnlocks, items) -- just want to see errors -.-
+			core.MyWaitFunction(0.1, core.SetUnlocks, items) -- just want to see errors bra -.-
 		end
 	end):catch(function(err)
 		core.MyWaitFunction(0.1, core.SetUnlocks, {}) -- -.-
@@ -1250,7 +1256,7 @@ core.RequestApplyCurrentChanges = function()
 		end
 	end):catch(function(err)
 		print("RequestApplyCurrentChanges: An error occured:", err.message)		
-		SetCurrentChanges(core.GetCurrentChanges()) -- unknown number of slots might have successfully applied. clears pendings where changes went through
+		SetCurrentChanges(core.GetCurrentChanges()) -- unknown number of slots might have successfully applied. this clears pendings where changes went through
 		UIErrorsFrame:AddMessage(err.message, 1.0, 0.1, 0.1, 1.0)
 	end)
 end	
@@ -1404,7 +1410,7 @@ end
 
 -- Should probably do a full rework of this at some point with all the newfound tricks
 -- The EquipToOffhand trick relies on weaponslots being cleared, which breaks the way previewmodel uses this function, so I removed it for now in case where only an offHand is equipped.
--- still has the problem for chars without titangrip that we cant put 2h into offhand there and either have to do another error message or try to do something with animations or both... should work on this later
+-- still has the problem for chars without titangrip that we cant put 2h into offhand there and either have to do another error message or try to fake this with animations or both...
 
 -- Displays weapons mainHand and offHand on DressUpModel mod as well as possible (i.e. can't display dualwielding weapons, if the player can't dualwield (and wasn't logged into a dualwielding char earlier in the session))
 -- the "logged in on dualwielder before" thing is just another DressUpModel weirdness, since it would be confusing and we can't track it anyway, we don't try to use that feature
@@ -1576,7 +1582,7 @@ a:SetScript("OnEvent", function(self, event, ...)
 
 		core:InitializeAce()
 
-		core.GenerateStringData() -- TODO: or do all this on AddOn Loaded event?
+		core.GenerateStringData() -- TODO: or do this on AddOn Loaded event?
 
 		core.RequestSkins()
 		core.RequestActiveSkin()
@@ -1590,10 +1596,38 @@ a:SetScript("OnEvent", function(self, event, ...)
 		
 		core.FixTooltip(core.extraItemTooltip)
 
-		-- /run core.CreateSlotButtonFrame = nil; core.CreateMannequinFrame = nil ...
+		-- Clear up Space from the CreateXFrame functions:
+
+		-- ItemCollection
+		core.CreateSlotButtonFrame = nil
+		core.CreateEnchantSlotButton = nil
+		core.CreateItemTypeDDM = nil
+		core.CreateOptionsDDM = nil
+		-- core.CreateMannequinFrame = nil -- Still need this, as Itemcollection can dynamically create more models when the row/col counts are increased. Might wanna remove this functionality
+		core.CreateWardrobeModelFrame = nil
+		-- TransmogFrame
+		core.CreatePreviewModel = nil
+		core.CreateSlotButton = nil
+		core.CreateItemSlotOptionsFrame = nil
+		core.CreateSkinDropDown = nil
+		-- Outfit/DressUpFrame
+		core.CreateSlotListButton = nil
+		core.CreateOutfitFrame = nil
+		core.CreateOutfitDDM = nil
+		-- UnlocksOverviewFrame
+		core.CreateUnlocksOverviewFrame = nil
+		core.CreateUnlockedBar = nil
+
+
+		-- core.transmogFrame:HookScript("OnShow", function()
+		-- 	local unpushable = { area = "doublewide", pushable = 0, width = 840, xoffset = 80}
+		-- 	for attribute, value in pairs(unpushable) do
+		-- 		GossipFrame:SetAttribute("UIPanelLayout-" .. attribute, value)
+		-- 	end
+		-- 	UpdateUIPanelPositions(GossipFrame)
+		-- end)
 
 	elseif event == "PLAYER_EQUIPMENT_CHANGED" then
-		-- print(event, ...)
 		local inventorySlotID, itemEquipped = ...
 		local itemSlot = idToSlot[inventorySlotID]
 		if not itemSlot then return end
@@ -1617,6 +1651,7 @@ a:SetScript("OnEvent", function(self, event, ...)
 		if autoOpen and core.gossipOpenTransmogButton:IsShown() then
 			core.gossipOpenTransmogButton:Click()
 		end
+
 	elseif event == "GOSSIP_CLOSED" then
 		--GossipFrame:SetWidth(gossipFrameWidthBackup)
 		GossipFrame:SetAlpha(1)
@@ -1631,11 +1666,11 @@ a:SetScript("OnEvent", function(self, event, ...)
 	end
 end)
 
---Hooks
 
+-- can we make transmog/gossip frame exclusive to other uipanels without closing gossip itself? haven't found a satisfying solution so far
 -- CharacterFrame:HookScript("OnShow", function()
 -- 	if core.transmogFrame:IsShown() then
--- 		--MyWaitFunction(0.01, CloseGossip)
+-- 		MyWaitFunction(0.01, CloseGossip)
 -- 	end
 -- end)
 

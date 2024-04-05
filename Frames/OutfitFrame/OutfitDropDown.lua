@@ -14,14 +14,20 @@ core.IsOutfitPopupActive = function()
 	end
 end
 
+local CreateOutfitPopup_OnAccept = function(self, data)
+	local name = self.editBox:GetText()
+	local success = core.CreateOutfit(name, data.set)
+	if success then
+		data.outfitFrame:SetSelectedOutfit(name)
+	end
+end
+
 StaticPopupDialogs["CreateOutfitPopup"] = {
 	text = "",
 	button1 = ACCEPT,
 	button2 = CANCEL,
 	hasEditBox = 1,
-	OnAccept = function(self, data)
-		core.CreateOutfit(self.editBox:GetText(), data.set)
-	end,
+	OnAccept = CreateOutfitPopup_OnAccept,
 	OnShow = function(self, data)
 		self.text:SetText(data.text)
 		self.editBox:SetFocus();
@@ -32,7 +38,7 @@ StaticPopupDialogs["CreateOutfitPopup"] = {
 		self.editBox:SetText("");
 	end,
 	EditBoxOnEnterPressed = function(self, data)
-		core.CreateOutfit(self:GetText(), data.set)
+		CreateOutfitPopup_OnAccept(self:GetParent(), data)
 		self:GetParent():Hide()
 	end,
 	EditBoxOnEscapePressed = function(self)
@@ -111,10 +117,11 @@ StaticPopupDialogs["OverwriteOutfitPopup"] = {
 	hideOnEscape = 1,
 }
 
-local ShowCreateOutfitPopup = function(set)
+local ShowCreateOutfitPopup = function(set, outfitFrame)
 	local data = {}
 	data.text = core.CREATE_OUTFIT_TEXT1
 	data.set = set
+	data.outfitFrame = outfitFrame
 				
 	StaticPopup_Show("CreateOutfitPopup", nil, nil, data)
 end
@@ -214,7 +221,7 @@ core.CreateOutfitDDM = function(parent)
 			--info.leftPadding = 100 -- ace only
 			--info.padding = 120
 			info.func = function(self, arg1, arg2, checked)
-				ShowCreateOutfitPopup(parent:GetParent():GetAll())
+				ShowCreateOutfitPopup(parent:GetParent():GetAll(), parent)
 				CloseDropDownMenus()
 			end
 			info.value = info.text

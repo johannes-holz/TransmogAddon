@@ -58,6 +58,7 @@ do
             self.searchText:Hide()
         end)
         f:SetScript("OnEditFocusLost", SearchBox_OnEditFocusLost)
+        f:SetScript("OnShow", SearchBox_OnEditFocusLost)
         f:SetScript("OnTextChanged", function(self)
             core.SetShown(self.clearButton, self:GetText() ~= "")
         end)

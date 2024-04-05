@@ -249,7 +249,7 @@ DressUpModel.Dress = function(self)
 end
 
 -- Normally SetUnit on e.g. "target", sets DressUpModel to use target model and currently visible items
--- But since we have no reliable way to know what those items are, we can't have that. Allow changing unit, but show our current item state
+-- But since we have no reliable way to know what those items are (target might be opposing faction or not in range), we can't have that. Allow changing unit, but show our current item state
 -- Maybe implement "steal look" button in InspectFrame
 local SetUnitOld = DressUpModel.SetUnit
 DressUpModel.SetUnit = function(self, unit)
@@ -257,8 +257,13 @@ DressUpModel.SetUnit = function(self, unit)
     self:update()
 end
 
+local SetCreatureOld = DressUpModel.SetCreature
+DressUpModel.SetCreature = function(self, creatureID)
+    SetCreatureOld(self, creatureID)
+    self:update()
+end
 
--- TODO: Weapon Display Logic. Allow only what we can display? Transmog allows more than we can display anyway, so we can't show what we wear in some cases
+-- TODO: Weapon Display Logic. Allow only what we can display? Transmog allows more than what we can display anyway, so we can't even show what we wear in some cases
 -- Also what do we do with outfits, we created on dualwield char or titangrip spec, that we are now unable to display ...
 DressUpModel.update = function(self)
     -- local debug = {}
@@ -296,9 +301,9 @@ DressUpModel.update = function(self)
                 local _, link = GetItemInfo(itemID)
                 -- link = link and core.GetShortenedString(core.LinkToColoredString(link), 42) or nil
                 link = link and core.LinkToColoredString(link) or nil
-                DressUpFrame.itemListFrame.slotFrames[slot]:SetText(core.GetTextureString(texture, 16) .. " " .. (link or core.LOADING2))
+                DressUpFrame.itemListFrame.slotButtons[slot]:SetText(core.GetTextureString(texture, 16) .. " " .. (link or core.LOADING2))
             else
-                DressUpFrame.itemListFrame.slotFrames[slot]:SetText("      " .. (itemID == 1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
+                DressUpFrame.itemListFrame.slotButtons[slot]:SetText("      " .. (itemID == 1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
                                                                                             or core.GetColoredString("(" .. core.SLOT_NAMES[slot] .. ")", core.greyTextColor.hex)))
             end
         end
@@ -347,7 +352,7 @@ DressUpFrame.printButton:SetScript("OnClick", function(self)
     ChatEdit_InsertLink(link)
 end)
 
--- blizzlike item list frame. at least usefull for debugging atm
+-- List of current items on the model. TODO: nicer background, Button Hover Texture?, Modifier Click explanation, Remember Visibility Toggle in WTF?
 DressUpFrame.itemListFrame = CreateFrame("Frame", "ItemListFrame", DressUpFrame)
 DressUpFrame.itemListFrame:SetSize(200, 370)
 DressUpFrame.itemListFrame:SetPoint("TOPLEFT", DressUpFrame, "TOPRIGHT", -40, -30)
@@ -357,82 +362,90 @@ DressUpFrame.itemListFrame:SetToplevel(true)
 -- UIPanelWindows["DressUpFrame"].width = DressUpFrame:GetWidth() + 200
 DressUpFrame.itemListFrame:Hide()
 
-core.CreateSlotListFrame = function(parent, slot)
-    local slotFrame = CreateFrame("Button", "SlotList" .. slot .. "Frame", parent)    
-    slotFrame.slot = slot
-
-    slotFrame:SetSize(parent:GetWidth() - 20, 20)
-    -- slotFrame:SetPoint("Left")
-    -- slotFrame:SetPoint("Right")
-    slotFrame:EnableMouse(true)
-
-    slotFrame.text = slotFrame:CreateFontString()
-    slotFrame.text:SetFontObject(GameFontWhiteSmall)
-    slotFrame.text:SetJustifyH("LEFT")
-    slotFrame.text:SetJustifyV("MIDDLE")
-    slotFrame.text:SetPoint("LEFT")
-    slotFrame.text:SetPoint("RIGHT")
-    slotFrame.text:SetHeight(14)
-
-    slotFrame.SetText = function(self, text)
-        self.text:SetText(text or "")
-        if GetMouseFocus() == self then
-            self:GetScript("OnEnter")(self)
-        end
+local SlotListButton_SetText = function(self, text)
+    self.text:SetText(text or "")
+    if GetMouseFocus() == self then
+        self:GetScript("OnEnter")(self)
     end
-
-    slotFrame:SetScript("OnClick", function(self, button)
-        local itemID = items[self.slot]
-        local _, itemLink = GetItemInfo(itemID or 0)
-        
-        if IsShiftKeyDown() then
-			if ChatEdit_InsertLink(itemLink or "") then
-				return true
-			end
-            DressUpModel:SetSlot(self.slot, 1)
-            return
-        elseif IsControlKeyDown() then
-            DressUpModel:SetSlot(self.slot, nil)
-            return
-        elseif IsAltKeyDown() then
-            DressUpModel:SetSlot(self.slot, GetShownItem(self.slot, core.GetActiveSkin()))
-            return
-        else
-            core.ShowItemInWardrobe(itemID, self.slot)
-        end
-    end)
-
-    slotFrame:SetScript("OnEnter", function(self)
-        local itemID = items[self.slot]
-        
-        GameTooltip:SetOwner(self, "ANCHOR_RIGHT")   
-        if itemID and itemID > 1 then     
-            GameTooltip:SetHyperlink("item:" .. itemID)
-        else
-            GameTooltip:SetText((itemID and (core.HIDDEN .. " - ") or "") .. core.SLOT_NAMES[slot])
-        end
-        GameTooltip:Show()
-        for i = 1, 3 do
-            _G["ShoppingTooltip" .. i]:Hide()
-        end
-    end)
-
-    slotFrame:SetScript("OnLeave", function(self)
-        GameTooltip:Hide()
-    end)
-
-    return slotFrame
 end
 
-DressUpFrame.itemListFrame.slotFrames = {}
-for i, slot in pairs(core.itemSlots) do
-    DressUpFrame.itemListFrame.slotFrames[slot] = core.CreateSlotListFrame(DressUpFrame.itemListFrame, slot)
-    if slot == "HeadSlot" then        
-        DressUpFrame.itemListFrame.slotFrames[slot]:SetPoint("TOPLEFT", 10, -20)
-    else        
-        DressUpFrame.itemListFrame.slotFrames[slot]:SetPoint("TOPLEFT", DressUpFrame.itemListFrame.slotFrames[core.itemSlots[i - 1]], "BOTTOMLEFT", 0, -2)
+local SlotListButton_OnClick = function(self, button)
+    local itemID = items[self.slot]
+    local _, itemLink = GetItemInfo(itemID or 0)
+    
+    if IsShiftKeyDown() then
+        if ChatEdit_InsertLink(itemLink or "") then
+            return true
+        end
+        DressUpModel:SetSlot(self.slot, 1)
+        return
+    elseif IsControlKeyDown() then
+        DressUpModel:SetSlot(self.slot, nil)
+        return
+    elseif IsAltKeyDown() then
+        DressUpModel:SetSlot(self.slot, GetShownItem(self.slot, core.GetActiveSkin()))
+        return
+    else
+        core.ShowItemInWardrobe(itemID, self.slot)
     end
-    DressUpFrame.itemListFrame.slotFrames[slot]:SetText(slot)
+end
+
+local SlotListButton_OnEnter = function(self)
+    local itemID = items[self.slot]
+    
+    GameTooltip:SetOwner(self, "ANCHOR_RIGHT")   
+    if itemID and itemID > 1 then     
+        GameTooltip:SetHyperlink("item:" .. itemID)
+    else
+        GameTooltip:SetText((itemID and (core.HIDDEN .. " - ") or "") .. core.SLOT_NAMES[self.slot])
+    end
+    GameTooltip:Show()
+    for i = 1, 3 do
+        _G["ShoppingTooltip" .. i]:Hide()
+    end
+end
+
+local SlotListButton_OnLeave = function(self)
+    GameTooltip:Hide()
+end
+
+core.CreateSlotListButton = function(parent, slot)
+    local slotButton = CreateFrame("Button", "SlotList" .. slot .. "Button", parent)    
+    slotButton.slot = slot
+
+    slotButton:SetSize(parent:GetWidth() - 20, 20)
+    -- slotButton:SetPoint("Left")
+    -- slotButton:SetPoint("Right")
+    slotButton:EnableMouse(true)
+
+    slotButton.text = slotButton:CreateFontString()
+    slotButton.text:SetFontObject(GameFontWhiteSmall)
+    slotButton.text:SetJustifyH("LEFT")
+    slotButton.text:SetJustifyV("MIDDLE")
+    slotButton.text:SetPoint("LEFT")
+    slotButton.text:SetPoint("RIGHT")
+    slotButton.text:SetHeight(14)
+
+    slotButton.SetText = SlotListButton_SetText
+
+    slotButton:SetScript("OnClick", SlotListButton_OnClick)
+
+    slotButton:SetScript("OnEnter", SlotListButton_OnEnter)
+
+    slotButton:SetScript("OnLeave", SlotListButton_OnLeave)
+
+    return slotButton
+end
+
+DressUpFrame.itemListFrame.slotButtons = {}
+for i, slot in pairs(core.itemSlots) do
+    DressUpFrame.itemListFrame.slotButtons[slot] = core.CreateSlotListButton(DressUpFrame.itemListFrame, slot)
+    if slot == "HeadSlot" then        
+        DressUpFrame.itemListFrame.slotButtons[slot]:SetPoint("TOPLEFT", 10, -20)
+    else        
+        DressUpFrame.itemListFrame.slotButtons[slot]:SetPoint("TOPLEFT", DressUpFrame.itemListFrame.slotButtons[core.itemSlots[i - 1]], "BOTTOMLEFT", 0, -2)
+    end
+    DressUpFrame.itemListFrame.slotButtons[slot]:SetText(slot)
 end
 
 local defaultWidth = DressUpFrame:GetWidth()

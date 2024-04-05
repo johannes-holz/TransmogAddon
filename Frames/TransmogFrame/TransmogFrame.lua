@@ -143,7 +143,7 @@ core.PlayApplyAnimations = function()
 	end
 end
 
-core.InitializeFrame = function()	
+do
 	core.transmogFrame = CreateFrame("Frame", "MyAddonFrame", UIParent)
 	local f = core.transmogFrame
 	f.scale = SCALE
@@ -355,11 +355,11 @@ core.InitializeFrame = function()
 
 	for _, itemSlot in pairs(core.itemSlots) do
 		if itemSlot ~= "MainHandEnchantSlot" and itemSlot ~= "SecondaryHandEnchantSlot" then
-			itemSlotFrames[itemSlot] = core:CreateSlotButton(model, itemSlotWidth * SCALE, itemSlot)
+			itemSlotFrames[itemSlot] = core.CreateSlotButton(model, itemSlotWidth * SCALE, itemSlot)
 		end
 	end
 
-	itemSlotOptionsFrame = core.CreateItemSlotOptionsFrame(itemSlotFrames["HeadSlot"])	
+	itemSlotOptionsFrame = core.CreateItemSlotOptionsFrame(itemSlotFrames["HeadSlot"])
 
 	itemSlotFrames["ChestSlot"]:SetPoint("LEFT", model, "LEFT", 10, 0)
 	itemSlotFrames["ShirtSlot"]:SetPoint("TOP", itemSlotFrames["ChestSlot"], "BOTTOM", 0, -itemSlotDistance * SCALE)
@@ -645,5 +645,3 @@ core.InitializeFrame = function()
 	
 	f:Hide()
 end
-
-core.InitializeFrame()

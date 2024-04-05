@@ -80,7 +80,7 @@ core.mannequinPositions = {
 }
 
 -- Model frames get reset to the initial position on SetUnit and OnHide, but their internal x, y, z values do not.
--- When calling SetPosition(x, y, z) it moves the model by the difference to its own internal position, so if we don't manage this ourselves, it will stop working as intended after after SetUnit/Hide.
+-- When calling SetPosition(x, y, z) it moves the model by the difference to its own internal position, so if we don't manage this ourselves, it will stop working as intended after SetUnit/Hide.
 -- For Example: SetPosition(1, 0, 0) -> SetUnit("player") -> SetPosition(1, 0, 0). The second SetPosition call would not move the model away from the origin, since its internal x value is still 1.
 -- There are different ways to fix this, I chose to reset the models to (0, 0, 0) before SetUnit and OnHide, so that the interal values match with what we see.
 local Model_SetUnit = function(self, unit)
@@ -224,7 +224,7 @@ local LoadingFrame_OnUpdate = function(self, e)
 	end
 end
 
-core.CreateMannequinFrame = function(self, parent, id, width, height)
+core.CreateMannequinFrame = function(parent, id, width, height)
 	local m = CreateFrame("DressUpModel", folder .. "Mannequin" .. id, parent)
 	-- Setting frame strata to HIGH or above would cause the main model to be loaded before the mannequins (models (frames?) get loaded back to front)
 	-- This causes ugly clipping tho in combination with SetTopLevel frames, so have to find another way

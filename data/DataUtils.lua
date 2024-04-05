@@ -523,7 +523,7 @@ end
 core.IsVisualUnlocked = function(itemID)
 	local unlocked, visualGroup = core.GetItemData(itemID)
 	
-	if not visualGroup or visualGroup == 0 then
+	if unlocked == 1 or not visualGroup or visualGroup == 0 then
 		return unlocked
 	end
 

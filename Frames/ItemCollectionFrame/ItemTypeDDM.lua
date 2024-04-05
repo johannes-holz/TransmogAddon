@@ -1,8 +1,8 @@
 local folder, core = ...
 
--- TODO: API function for possible types per TransmogLocation? Or just show whats usually possible? Could only show categories, for which some items are unlocked at NPC (with itemdata)
+-- TODO: API function for possible types per TransmogLocation? Or just show whats usually possible? Could restrict to categories, for which some items are unlocked at NPC (with itemdata)
 
-core.CreateItemTypeDDM = function(self, parent)
+core.CreateItemTypeDDM = function(parent)
     local ddm = CreateFrame("Frame", folder.."ItemTypeDDM", parent, "UIDropDownMenuTemplate")
         
     local ItemTypeDDM_ButtonOnClick = function(self, arg1, arg2, checked)

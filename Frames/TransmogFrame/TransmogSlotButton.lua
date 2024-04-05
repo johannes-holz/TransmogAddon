@@ -226,7 +226,7 @@ local SlotButton_update = function(self) -- Show and hide the right textures
 end
 
 
-core.CreateSlotButton = function(self, parent, width, itemSlot)
+core.CreateSlotButton = function(parent, width, itemSlot)
 	local f = CreateFrame("Frame", itemSlot .. "Frame", parent)
 	f.itemSlot = itemSlot
 	if itemSlot == "MainHandEnchantSlot" or itemSlot == "SecondaryHandEnchantSlot" then f.isEnchantSlot = true end

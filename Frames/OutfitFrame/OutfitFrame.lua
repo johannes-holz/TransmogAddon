@@ -2,8 +2,9 @@ local folder, core = ...
 
 -- Outfitframe with dropdown and save button
 -- Needs to be parented to DressUpModel Frame, that has to implement a GetAll and SetAll method
-local counter = 1
+local counter = 0
 core.CreateOutfitFrame = function(parent)
+    counter = counter + 1
     local outfitFrame = CreateFrame("Frame", folder .. "OutfitFrame" .. counter, parent)
     outfitFrame:SetSize(220, 31)
     outfitFrame:EnableMouse(true)

@@ -44,7 +44,6 @@ itemCollectionFrame:SetScript("OnShow", function(self)
 	self.unlockedStatusBar:ClearAllPoints()
 
 	if not atTransmogrifier then
-		PlaySound("igCharacterInfoOpen")
 		self.slotButtons["Head"]:Click()
 		self.unlockedStatusBar:SetPoint("BOTTOM", self, "TOP", 0, 10)
 		self.unlockedStatusBar:Show()
@@ -56,11 +55,7 @@ itemCollectionFrame:SetScript("OnShow", function(self)
 	end
 end)
 
-itemCollectionFrame:SetScript("OnHide", function(self)	
-	if not core.IsAtTransmogrifier() then
-		PlaySound("igCharacterInfoClose")
-	end
-
+itemCollectionFrame:SetScript("OnHide", function(self)
 	self:SetSlotAndCategory(nil, nil) -- clear slot first, so clearing the other fields does not cause further item iterations
 	self:SetPreviewEnchant(nil)
 	self:SetUnlockedFilter(nil)
@@ -133,7 +128,7 @@ itemCollectionFrame.enchantSlotButton:SetPoint("CENTER", itemCollectionFrame.slo
 
 ----------- ItemType DropDownMenu -----------
 
-itemCollectionFrame.itemTypeDDM = core:CreateItemTypeDDM(itemCollectionFrame)
+itemCollectionFrame.itemTypeDDM = core.CreateItemTypeDDM(itemCollectionFrame)
 itemCollectionFrame.itemTypeDDM:SetPoint("TOPRIGHT", -SIDE_PADDING - 40, -10)
 itemCollectionFrame.itemTypeDDM:Show()
 
@@ -167,7 +162,7 @@ displayFrame:EnableMouseWheel()
 
 itemCollectionFrame.mannequins = {}
 for i = 1, mannequinCount do
-	itemCollectionFrame.mannequins[i] = core:CreateMannequinFrame(displayFrame, i, (WIDTH - IN_BETWEEN_PADDING * (MANNEQUIN_COLCOUNT + 1)) / MANNEQUIN_COLCOUNT,
+	itemCollectionFrame.mannequins[i] = core.CreateMannequinFrame(displayFrame, i, (WIDTH - IN_BETWEEN_PADDING * (MANNEQUIN_COLCOUNT + 1)) / MANNEQUIN_COLCOUNT,
 																				(HEIGHT - IN_BETWEEN_PADDING * (MANNEQUIN_ROWCOUNT + 1)) / MANNEQUIN_ROWCOUNT)
 	if i == 1 then
 		itemCollectionFrame.mannequins[i]:SetPoint("TOPLEFT", IN_BETWEEN_PADDING, -IN_BETWEEN_PADDING)
@@ -187,7 +182,7 @@ itemCollectionFrame.ChangeMannequinCount = function(self, row, col)
 
 	for i = 1, math.max(oldCount, mannequinCount) do
 		if not itemCollectionFrame.mannequins[i] then
-			itemCollectionFrame.mannequins[i] = core:CreateMannequinFrame(displayFrame, i, (WIDTH - IN_BETWEEN_PADDING * (MANNEQUIN_COLCOUNT + 1)) / MANNEQUIN_COLCOUNT,
+			itemCollectionFrame.mannequins[i] = core.CreateMannequinFrame(displayFrame, i, (WIDTH - IN_BETWEEN_PADDING * (MANNEQUIN_COLCOUNT + 1)) / MANNEQUIN_COLCOUNT,
 																							(HEIGHT - IN_BETWEEN_PADDING * (MANNEQUIN_ROWCOUNT + 1)) / MANNEQUIN_ROWCOUNT)
 		end
 		itemCollectionFrame.mannequins[i]:SetSize((WIDTH - IN_BETWEEN_PADDING * (MANNEQUIN_COLCOUNT + 1)) / MANNEQUIN_COLCOUNT, (HEIGHT - IN_BETWEEN_PADDING * (MANNEQUIN_ROWCOUNT + 1)) / MANNEQUIN_ROWCOUNT);
@@ -504,18 +499,19 @@ itemCollectionFrame.PreviousPage = function(self)
 	end
 end
 
+-- Requires that we have already selected the appropriate slot. TODO: Need some highlighting texture or animation on the corresponding mannequin
 itemCollectionFrame.GoToItem = function(self, itemID)
 	local page = 1
 
 	local _, displayGroup = core.GetItemData(itemID)
-	if itemCollectionFrame.displayGroups[displayGroup] then
-		itemID = itemCollectionFrame.displayGroups[displayGroup][1]
+	if self.displayGroups[displayGroup] then
+		itemID = self.displayGroups[displayGroup][1]
 	end
 	
-	for i, listItem in pairs(itemCollectionFrame.displayList) do
+	for i, listItem in ipairs(self.displayList) do
 		-- local _, displayGroup = core.GetItemData(listItem)
 		
-		-- if itemCollectionFrame.displayGroups[displayGroup] then
+		-- if self.displayGroups[displayGroup] then
 		-- 	for _, groupItem in pairs() do
 		-- 		if groupItem == itemID then
 		-- 			page = 1 + floor(i / mannequinCount)
@@ -531,7 +527,6 @@ itemCollectionFrame.GoToItem = function(self, itemID)
 
 	self:SetPage(page)
 end
-
 
 -- Either clear enchant, filters, etc. OnHide or we have save them per/in parent frame (wardrobe, transmog)
 itemCollectionFrame.SetPreviewEnchant = function(self, enchantID)
