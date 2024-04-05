@@ -374,6 +374,19 @@ core.GetContainerVisualID = function(bagID, slotID)
 	return core.API.GetVisualFromItemLink(link)
 end
 
+core.GetInventoryEnchantID = function(unit, slotID)
+	if not unit or not slotID then return end
+
+	if slotID == "MainHandEnchantSlot" or slotID == "SecondaryHandEnchantSlot" then return end
+	
+	if type(slotID) == "string" then slotID = GetInventorySlotInfo(slotID) end -- TODO: too hacky or just allow using slotname like this?
+
+	local link = GetInventoryItemLink(unit, slotID)
+	local enchantID = link and tonumber(select(3, string.find(link, "item:%d+:(%d+)")))
+
+	return enchantID
+end
+
 local knownTypes = { [0] = "player", [3] = "NPC", [4] = "pet", [5] = "vehicle" }
 core.GetNPCID = function(guid)
 	if not guid then return end

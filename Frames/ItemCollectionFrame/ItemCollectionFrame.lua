@@ -89,7 +89,15 @@ itemCollectionFrame.SetSlotAndCategory = function(self, slot, category, update)
 	core.SetShown(self.pageDownButton, slot)
 	core.SetShown(self.pageUpButton, slot)
 	core.SetShown(self.pageText, slot)
-	
+
+	core.SetShown(self.enchantCheckButton, slot == "MainHandSlot" or slot == "ShieldHandWeaponSlot")
+	if core.IsAtTransmogrifier() then
+		-- TODO: How to handle this? For inventory ok like this? For Skin we would want ability, to select enchant? :/
+		if slot == "MainHandSlot" or slot == "ShieldHandWeaponSlot" then
+			self:SetPreviewEnchant(core.GetInventoryEnchantID("player", core.slotToID[slot]))
+		end
+	end
+
 	UIDropDownMenu_SetText(self.itemTypeDDM, category and (core.CATEGORY_DISPLAY_NAME[category] or core.RemoveFirstWordInString(category)) or core.SELECT_ITEM_TYPE)
 	if UIDropDownMenu_GetCurrentDropDown() == self.itemTypeDDM then CloseDropDownMenus() end
 	core.UIDropDownMenu_SetEnabled(self.itemTypeDDM, slot and core.slotCategories[slot] and core.Length(core.slotCategories[slot]) > 1)
@@ -207,7 +215,7 @@ itemCollectionFrame.pageDownButton = core.CreateMeAButton(itemCollectionFrame, 2
 								"Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Down", 0, 0, 1, 1,
 								"Interface\\Buttons\\UI-Common-MouseHilight", 0, 0, 1, 1,
 								"Interface\\Buttons\\UI-SpellbookIcon-PrevPage-Disabled", 0, 0, 1, 1)
-itemCollectionFrame.pageDownButton:SetPoint("TOPLEFT", displayFrame, "BOTTOM", 0, 0)
+itemCollectionFrame.pageDownButton:SetPoint("TOPLEFT", displayFrame, "BOTTOM", 0, 3)
 itemCollectionFrame.pageDownButton:SetScript("OnClick", function()	
 	itemCollectionFrame:SetPage(itemCollectionFrame.page - 1)
 end)
@@ -530,7 +538,8 @@ end
 
 -- Either clear enchant, filters, etc. OnHide or we have save them per/in parent frame (wardrobe, transmog)
 itemCollectionFrame.SetPreviewEnchant = function(self, enchantID)
-	self.enchant = enchantID	
+	if self.enchant == enchantID then return end
+	self.enchant = enchantID
 	self:UpdateMannequins()
 end
 
@@ -738,6 +747,21 @@ itemCollectionFrame.optionsDDM = core.CreateOptionsDDM(itemCollectionFrame)
 itemCollectionFrame.optionsDDM:SetPoint("LEFT", itemCollectionFrame.searchBox, "RIGHT", -10, -3)
 itemCollectionFrame.optionsDDM:Show()
 
+
+--------------- CheckBox Show Enchants ---------------
+
+itemCollectionFrame.previewWeaponEnchants = true
+
+itemCollectionFrame.enchantCheckButton = CreateFrame("CheckButton", folder .. "ShowEnchantsCheckButton", itemCollectionFrame, "UICheckButtonTemplate")
+itemCollectionFrame.enchantCheckButton:SetSize(20, 20)
+itemCollectionFrame.enchantCheckButton:SetPoint("BOTTOMRIGHT", -110, 10)
+itemCollectionFrame.enchantCheckButton:SetChecked(itemCollectionFrame.previewWeaponEnchants)
+itemCollectionFrame.enchantCheckButton:SetScript("OnClick", function(self, button)
+	itemCollectionFrame.previewWeaponEnchants = self:GetChecked()
+	itemCollectionFrame:UpdateMannequins()
+end)
+getglobal(itemCollectionFrame.enchantCheckButton:GetName() .. "Text"):SetText("Enchant preview")
+core.SetTooltip(itemCollectionFrame.enchantCheckButton, "Preview equipped or selected enchant.", nil, nil, nil, nil, 1)
 
 
 ----- Test Position, Animation etc. model -----

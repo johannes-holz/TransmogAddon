@@ -130,7 +130,7 @@ local Model_TryOn = function(self, itemID)
 		self:SetLoading(false)
 	elseif GetItemInfo(itemID) then
 		local slot = self:GetParent():GetParent().selectedSlot
-		local enchant = core.itemCollectionFrame.enchant
+		local enchant = core.itemCollectionFrame.previewWeaponEnchants and core.itemCollectionFrame.enchant
 		local itemString = enchant and "item:" .. itemID .. ":" .. enchant or itemID
 		self:Undress()
 		-- self:TryOnOld(39519) -- Black Gloves
