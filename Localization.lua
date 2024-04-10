@@ -25,6 +25,7 @@ L.deDE = {
     PRINT = "Drucken",
     SHARE = "Teilen",
     SELECT_ITEM_TYPE = "Gegenstandsarten", -- "Gegenstandsart auswählen",
+    OVERVIEW = "Übersicht",
 
     HIDE = "Verstecken",
     UNMOG = "Entmogrifizieren",
@@ -140,6 +141,9 @@ L.deDE = {
     NO_SLOT_SELECTED_TEXT = "Gegenstandsplatz auswählen, um verfügbare Transmogrifikationen anzuzeigen.",
 
     CAN_NOT_DRESS_OFFHAND = "Euer Charakter kann diese Nebenhand nicht anprobieren.",
+    
+    SHADOW_FORM_TOOLTIP_TITLE = "Simuliere Schattengestalt",
+    SHADOW_FORM_TOOLTIP_TEXT = "Emissionstexturen und Gegenstände mit Lichtquellen werden anders aussehen als in der richtigen Schattengestalt.",
 
     CONFIG_NAMES = {
         [1] = "An",
@@ -162,9 +166,9 @@ L.deDE = {
         MainHandSlot = "Waffenhand",
         ShieldHandWeaponSlot = "Schildhandwaffe",
         OffHandSlot = "Nebenhand",
-        --SecondaryHandSlot = "Schildhand",
-        --MainHandEnchantSlot = "Verzauberung Waffenhand",
-        --SecondaryHandEnchantSlot = "Verzauberung Schildhand",
+        SecondaryHandSlot = "Schildhand",
+        MainHandEnchantSlot = "Waffenhandverzauberung",
+        SecondaryHandEnchantSlot = "Schildhandverzauberung",
         RangedSlot = "Distanz",
     },
 }
@@ -193,6 +197,7 @@ L.enEU = {
     PRINT = "Print",
     SHARE = "Share",
     SELECT_ITEM_TYPE = "Item types", -- "Select item type",
+    OVERVIEW = "Overview",
 
     HIDE = "Hide",
     UNMOG = "Unmog",
@@ -309,6 +314,9 @@ L.enEU = {
 
     CAN_NOT_DRESS_OFFHAND = "Your character can't try on this item in the shield hand.",
 
+    SHADOW_FORM_TOOLTIP_TITLE = "Shadow form simulation",
+    SHADOW_FORM_TOOLTIP_TEXT = "Does not give correct results for emissive textures or items with light sources.",
+
     CONFIG_NAMES = {
         [1] = "Enabled",
         [2] = "In PvP disabled",
@@ -330,9 +338,9 @@ L.enEU = {
         MainHandSlot = "Main hand",
         ShieldHandWeaponSlot = "Shield hand weapon",
         OffHandSlot = "Off hand",
-        --SecondaryHandSlot = "Schildhand",
-        --MainHandEnchantSlot = "Verzauberung Waffenhand",
-        --SecondaryHandEnchantSlot = "Verzauberung Schildhand",
+        SecondaryHandSlot = "Shield hand",
+        MainHandEnchantSlot = "Main hand enchant",
+        SecondaryHandEnchantSlot = "Shield hand enchant",
         RangedSlot = "Ranged",
     },
 }

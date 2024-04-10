@@ -40,6 +40,40 @@ DressUpItemLink = function(link, slot)
 end
 ]==]
 
+DressUpModel.shadowFormFlamesModel = CreateFrame("PlayerModel", folder .. "DressUpModelShadowModel", DressUpModel)
+DressUpModel.shadowFormFlamesModel:SetPoint("Center")
+DressUpModel.shadowFormFlamesModel:SetModel("SPELLS/Shadow_Form_Precast.m2")
+DressUpModel.shadowFormFlamesModel:SetAlpha(0.6)
+DressUpModel.shadowFormFlamesModel:SetAllPoints()
+DressUpModel.shadowFormFlamesModel:Hide()
+
+local offTex = "Interface\\Icons\\spell_shadow_shadowform"
+local onTex = "Interface\\Icons\\spell_shadow_chilltouch"
+
+DressUpModel.shadowFormButton = core.CreateMeACustomTexButton(DressUpModel, 24, 24, offTex, 9/64, 9/64, 54/64, 54/64)
+DressUpModel.shadowFormButton:SetPoint("BOTTOMRIGHT", -5, 5)
+DressUpModel.shadowFormButton:SetScript("OnClick", function(self, button)    
+    DressUpModel:SetShadowForm(not DressUpModel:GetShadowForm())
+end)
+core.SetTooltip2(DressUpModel.shadowFormButton, core.SHADOW_FORM_TOOLTIP_TITLE, 1, 1, 1, nil,
+                                                core.SHADOW_FORM_TOOLTIP_TEXT, nil, nil, nil, 1)
+
+DressUpModel.SetShadowForm = function(self, form)
+    self:SetLight(unpack(form and core.LIGHT.shadowForm or core.LIGHT.default))
+    self:SetAlpha(form and 0.75 or 1)
+    core.SetShown(self.shadowFormFlamesModel, form)
+    self.shadowFormFlamesModel:SetModel("SPELLS/Shadow_Form_Precast.m2")
+    local x, y, z = self:GetPosition()
+    self.shadowFormFlamesModel:SetPosition(x, y, z + 0.2)
+    self.shadowFormEnabled = form
+    self.shadowFormButton:SetCustomTexture(form and onTex or offTex)
+end
+
+DressUpModel.GetShadowForm = function(self)
+    return self.shadowFormEnabled
+end
+
+
 core.equipLocToInventorySlot = {
 	INVTYPE_HEAD = "HeadSlot",
 	INVTYPE_SHOULDER = "ShoulderSlot",
@@ -79,16 +113,17 @@ end
 -- TODO: modify OnItemClick to allow setting hidden items?
 -- TODO: How to secure GetItemInfo? 
 DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
-	assert(core.slotToID[itemSlot], "Invalid slot in DressUpModel.SetSlot")
+    -- print(itemSlot, itemID, silent)
+	assert(itemSlot and core.slotToID[itemSlot], "Invalid slot in DressUpModel.SetSlot:" .. (itemSlot or "nil"))
     if itemID and type(itemID) ~= "number" then
         itemID = core.GetItemIDFromLink(itemID)
     end
     if itemID == 0 then
         itemID = nil
     end
-    assert(itemID == nil or itemID == 1 or core.GetItemData(itemID) ~= nil, "Invalid itemID in DressUpModel.SetSlot")
 
-    -- print("Set Slot:", itemSlot, itemID)
+    local isValidEnchant = true -- TODO: implement function. also better check inventoryType of item instead?
+    assert(itemID == nil or itemID == 1 or ((core.IsEnchantSlot(itemSlot) and isValidEnchant) or core.GetItemData(itemID) ~= nil), "Invalid itemID in DressUpModel.SetSlot")
 
     if itemID then
         -- Only allow Offhand or ShieldHandWeapon?
@@ -115,7 +150,7 @@ DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
             end
             if not itemSubType or (not core.CanDualWield() or (itemEquipLoc == "INVTYPE_2HWEAPON" and not (core.HasTitanGrip() and core.CanBeTitanGripped(itemSubType)))) then
                 itemID = items[itemSlot]
-                UIErrorsFrame:AddMessage(core.CAN_NOT_DRESS_OFFHAND, 1.0, 0.1, 0.1, 1.0) -- We could preview offhand weapons in OH without dualwielding in certain cases, but that would be too confusing imo?
+                UIErrorsFrame:AddMessage(core.CAN_NOT_DRESS_OFFHAND, 1.0, 0.1, 0.1, 1.0) -- We could preview offhand weapons without dualwielding in certain cases, but that would be too confusing imo?
                 -- Should we allow setting these freely instead and then check in Dress instead what we can display + indicate somehow if we cant display offhand?
                 -- Otherwise kinda cringe behaviour for especially enhas and furies with different dual spec?
             end
@@ -159,6 +194,9 @@ DressUpModel.SetAll = function(self, set)
 	for _, slot in pairs(core.itemSlots) do
 		self:SetSlot(slot, set[slot], true)
 	end
+    for _, slot in pairs(core.enchantSlots) do 
+		self:SetSlot(slot, set[slot], true)
+    end
 	
 	UpdateListeners("dressUpModel")
 end
@@ -218,7 +256,10 @@ DressUpModel.TryOn = function(self, itemLink, itemSlot)
     end
 
     -- print("tryOn", itemID, itemEquipLoc, inventorySlot)
-    self:SetSlot(itemSlot, enchantID and ("item:" .. itemID .. ":" .. enchantID) or itemID)
+    self:SetSlot(itemSlot, itemID)
+    if enchantID and (itemSlot == "MainHandSlot") then
+        self:SetSlot("MainHandEnchantSlot", enchantID)
+    end
 end
 
 local UndressOld = DressUpModel.Undress
@@ -244,6 +285,15 @@ DressUpModel.Dress = function(self)
 	for _, slot in pairs(core.itemSlots) do
         shownItems[slot] = GetShownItem(slot, skin)
     end
+    -- TODO: new function for this or allow enchants in GetShownItem?
+    local mhEnchant = core.GetInventoryEnchantID("player", 16)
+    local ohEnchant = core.GetInventoryEnchantID("player", 17)
+    local oh = GetShownItem("ShieldHandWeaponSlot")
+
+    -- print("DressUpModel mhEnchant, ohEnchant, oh", mhEnchant, ohEnchant, oh)
+
+    shownItems["MainHandEnchantSlot"] = mhEnchant
+    shownItems["SecondaryHandEnchantSlot"] = ohEnchant
 
     self:SetAll(shownItems)
 end
@@ -276,13 +326,17 @@ DressUpModel.update = function(self)
 
     UndressOld(self)
     for slot, itemID in pairs(items) do
-        if not core.IsWeaponSlot(slot) then
+        if not core.IsWeaponSlot(slot) and not core.IsEnchantSlot(slot) then
             TryOnOld(self, itemID)
         end
     end
 
     local mh, ranged = items["MainHandSlot"], items["RangedSlot"]
     local oh = items["OffHandSlot"] or items["ShieldHandWeaponSlot"]
+    local mhEnchant, ohEnchant = items["MainHandEnchantSlot"], items["SecondaryHandEnchantSlot"]
+
+    mh = (mh and mh > 1 and mhEnchant and "item:" .. mh .. ":" .. mhEnchant) or mh
+    oh = (oh and oh > 1 and ohEnchant and "item:" .. oh .. ":" .. ohEnchant) or oh
 
     if (not mh and not oh) then -- or self.lastWeaponSlot == "RangedSlot" then -- TODO: not needed here if we only allow melee or ranged. Still using it for toggling 1h equip slot
         if ranged and ranged > 1 then
@@ -294,14 +348,19 @@ DressUpModel.update = function(self)
 
     -- If we want that blizzlike item list frame
     if DressUpFrame.itemListFrame then
-        for _, slot in pairs(core.itemSlots) do
+        for _, slot in pairs(core.allSlots) do
             local itemID = items[slot]
             if itemID and itemID > 1 then
-                local texture = GetItemIcon(itemID)
-                local _, link = GetItemInfo(itemID)
-                -- link = link and core.GetShortenedString(core.LinkToColoredString(link), 42) or nil
-                link = link and core.LinkToColoredString(link) or nil
-                DressUpFrame.itemListFrame.slotButtons[slot]:SetText(core.GetTextureString(texture, 16) .. " " .. (link or core.LOADING2))
+                if core.IsEnchantSlot(slot) then
+                    local name, _, tex = core.GetEnchantInfo(itemID)
+                    DressUpFrame.itemListFrame.slotButtons[slot]:SetText("      " .. (name and (core.GetTextureString(tex) .. " " .. name) or "unknown enchant localize me")) -- core.GetTextureString(texture, 16) .. " " .. (link or core.LOADING2))
+                else
+                    local texture = GetItemIcon(itemID)
+                    local _, link = GetItemInfo(itemID)
+                    -- link = link and core.GetShortenedString(core.LinkToColoredString(link), 42) or nil
+                    link = link and core.LinkToColoredString(link) or nil
+                    DressUpFrame.itemListFrame.slotButtons[slot]:SetText(core.GetTextureString(texture, 16) .. " " .. (link or core.LOADING2))
+                end
             else
                 DressUpFrame.itemListFrame.slotButtons[slot]:SetText("      " .. (itemID == 1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
                                                                                             or core.GetColoredString("(" .. core.SLOT_NAMES[slot] .. ")", core.greyTextColor.hex)))
@@ -314,12 +373,15 @@ core.RegisterListener("dressUpModel", DressUpModel)
 -- TODO: is this the way to do this? basically have to do Dress() OnShow, but that overwrites the TryOn item, which triggered the OnShow in the first place
     -- Another way could be to call show (maybe with tryonold), dress and update from SetSlot, if the model is not shown?
 DressUpModel:HookScript("OnShow", function(self)
-    tmp = core.DeepCopy(items) -- if we clear items on hide, tmp only contains the item from the DressUpItemLink call
+    local tmp = core.DeepCopy(items) -- if we clear items on hide, tmp only contains the item from the DressUpItemLink call
     self:Dress()
     for slot, itemID in pairs(tmp) do
         self:SetSlot(slot, itemID, true)
     end
-    self:update()
+    self:update()    
+    core.SetShown(DressUpFrame.itemListFrame, TransmoggyDB.ShowItemListFrame)
+    -- self:SetShadowForm(self:GetShadowForm()) -- Alpha gets overwritten, if we do not delay this -.-
+    core.MyWaitFunction(0.01, self.SetShadowForm, self, self:GetShadowForm())
 end)
 
 DressUpModel:HookScript("OnHide", function(self)
@@ -339,28 +401,29 @@ end)
 DressUpFrame.printButton = core.CreateMeATextButton(DressUpFrame, 80, 22, core.SHARE)
 DressUpFrame.printButton:SetPoint("BOTTOMRIGHT", DressUpFrame.undressButton, "BOTTOMLEFT")
 DressUpFrame.printButton:SetScript("OnClick", function(self)
-    local link = core.API.EncodeOutfitLink(core.ToApiSet(items)) -- , "I bims, 1 Outfit")
-    core.am("Input:", core.ToApiSet(items))
-    core.am("Decoded:", core.API.DecodeOutfitLink(link))
+    local link = core.API.EncodeOutfitLink(core.ToApiSet(items, true)) -- , "I bims, 1 Outfit. Now with enchants!")
+
+    -- core.am("Input:", core.ToApiSet(items, true))
+    -- core.am("Decoded:", core.API.DecodeOutfitLink(link))
     -- link = "\124cffaa00ff\124Houtfit:0:0:0:0:0:0:0:0:1:0:0:0:0:0:0\124h[Transmog Outfit]\124h\124r"
     -- link = "\124cffaa00ff\124Houtfit:0:0:0:0:0:0:0:0:1:0:0:0:0:0:0\124h[Transmog Outfit uwu " .. core.GetTextureString("Interface/Buttons/UI-CheckBox-Check") .. "]\124h\124r"
     -- link = "\124cffaa00ff\124Houtfit:0" ..core.GetTextureString("Interface/Buttons/UI-CheckBox-Check") .. ":0:0:0:0:0:0:0:1:0:0:0:0:0:0\124h[Transmog Outfit]\124h\124r"
-    
-    print(link)
+    -- print(link)
 
-    ChatFrame1EditBox:SetFocus()
+    local chatFrame = SELECTED_CHAT_FRAME or ChatFrame1
+    local editBox = _G[chatFrame:GetName() .. "EditBox"]
+    editBox:SetFocus()
     ChatEdit_InsertLink(link)
 end)
 
--- List of current items on the model. TODO: nicer background, Button Hover Texture?, Modifier Click explanation, Remember Visibility Toggle in WTF?
+-- List of current items on the model. TODO: nicer background, Button Hover Texture?, Modifier Click explanation
 DressUpFrame.itemListFrame = CreateFrame("Frame", "ItemListFrame", DressUpFrame)
-DressUpFrame.itemListFrame:SetSize(200, 370)
+DressUpFrame.itemListFrame:SetSize(200, 400)
 DressUpFrame.itemListFrame:SetPoint("TOPLEFT", DressUpFrame, "TOPRIGHT", -40, -30)
-DressUpFrame.itemListFrame:SetBackdrop(BACKDROP_TOAST_12_12)
+DressUpFrame.itemListFrame:SetBackdrop(BACKDROP_ITEM_LIST)
+DressUpFrame.itemListFrame:SetBackdropColor(0.125, 0.125, 0.25, 1)
 DressUpFrame.itemListFrame:EnableMouse(true)
 DressUpFrame.itemListFrame:SetToplevel(true)
--- UIPanelWindows["DressUpFrame"].width = DressUpFrame:GetWidth() + 200
-DressUpFrame.itemListFrame:Hide()
 
 local SlotListButton_SetText = function(self, text)
     self.text:SetText(text or "")
@@ -394,8 +457,13 @@ local SlotListButton_OnEnter = function(self)
     local itemID = items[self.slot]
     
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")   
-    if itemID and itemID > 1 then     
-        GameTooltip:SetHyperlink("item:" .. itemID)
+    if itemID and itemID > 1 then        
+        if core.IsEnchantSlot(self.slot) then
+            local spellID = core.GetEnchantSpellID(itemID)
+            GameTooltip:SetHyperlink("enchant:" .. spellID) -- Do we really want that ugly enchant tooltip tho?
+        else
+            GameTooltip:SetHyperlink("item:" .. itemID)
+        end
     else
         GameTooltip:SetText((itemID and (core.HIDDEN .. " - ") or "") .. core.SLOT_NAMES[self.slot])
     end
@@ -438,17 +506,28 @@ core.CreateSlotListButton = function(parent, slot)
 end
 
 DressUpFrame.itemListFrame.slotButtons = {}
+
 for i, slot in pairs(core.itemSlots) do
     DressUpFrame.itemListFrame.slotButtons[slot] = core.CreateSlotListButton(DressUpFrame.itemListFrame, slot)
     if slot == "HeadSlot" then        
-        DressUpFrame.itemListFrame.slotButtons[slot]:SetPoint("TOPLEFT", 10, -20)
+        DressUpFrame.itemListFrame.slotButtons[slot]:SetPoint("TOPLEFT", 10, -15)
     else        
         DressUpFrame.itemListFrame.slotButtons[slot]:SetPoint("TOPLEFT", DressUpFrame.itemListFrame.slotButtons[core.itemSlots[i - 1]], "BOTTOMLEFT", 0, -2)
     end
     DressUpFrame.itemListFrame.slotButtons[slot]:SetText(slot)
 end
 
-local defaultWidth = DressUpFrame:GetWidth()
+DressUpFrame.itemListFrame.slotButtons["MainHandEnchantSlot"] = core.CreateSlotListButton(DressUpFrame.itemListFrame, "MainHandEnchantSlot")
+DressUpFrame.itemListFrame.slotButtons["MainHandEnchantSlot"]:SetText("MainHandEnchantSlot")
+DressUpFrame.itemListFrame.slotButtons["MainHandEnchantSlot"]:SetPoint("TOPLEFT", DressUpFrame.itemListFrame.slotButtons["MainHandSlot"], "BOTTOMLEFT", 0, -2)
+DressUpFrame.itemListFrame.slotButtons["ShieldHandWeaponSlot"]:SetPoint("TOPLEFT", DressUpFrame.itemListFrame.slotButtons["MainHandEnchantSlot"], "BOTTOMLEFT", 0, -2)
+
+DressUpFrame.itemListFrame.slotButtons["SecondaryHandEnchantSlot"] = core.CreateSlotListButton(DressUpFrame.itemListFrame, "SecondaryHandEnchantSlot")
+DressUpFrame.itemListFrame.slotButtons["SecondaryHandEnchantSlot"]:SetText("SecondaryHandEnchantSlot")
+DressUpFrame.itemListFrame.slotButtons["SecondaryHandEnchantSlot"]:SetPoint("TOPLEFT", DressUpFrame.itemListFrame.slotButtons["ShieldHandWeaponSlot"], "BOTTOMLEFT", 0, -2)
+DressUpFrame.itemListFrame.slotButtons["OffHandSlot"]:SetPoint("TOPLEFT", DressUpFrame.itemListFrame.slotButtons["SecondaryHandEnchantSlot"], "BOTTOMLEFT", 0, -2)
+
+local defaultWidth = DressUpFrame:GetWidth() -- don't think we have to cache this as the uipanel width attribute is different from GetWidth() ?
 DressUpFrame.itemListFrame:SetScript("OnShow", function(self)    
     -- UIPanelWindows[FrameName].width apparently is only used once at start to initialize panel frame attributes
     -- To change them later on, we have to set the frame attribute width directly and then call UpdateUIPanelPositions(currentFrame)
@@ -467,6 +546,7 @@ end)
 DressUpFrame.listButton = core.CreateMeACustomTexButton(DressUpFrame, 28, 28, GetItemIcon(2725), 9/64, 9/64, 54/64, 54/64) -- core.CreateMeATextButton(DressUpFrame, 22, 22, "L")
 DressUpFrame.listButton:SetPoint("TOPRIGHT", -44, -40)
 DressUpFrame.listButton:SetScript("OnClick", function(self)
-    core.SetShown(self:GetParent().itemListFrame, not self:GetParent().itemListFrame:IsShown())
+    TransmoggyDB.ShowItemListFrame = not TransmoggyDB.ShowItemListFrame
+    core.SetShown(self:GetParent().itemListFrame, TransmoggyDB.ShowItemListFrame) -- not self:GetParent().itemListFrame:IsShown())
 end)
 

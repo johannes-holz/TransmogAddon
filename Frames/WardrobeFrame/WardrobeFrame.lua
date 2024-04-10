@@ -110,7 +110,7 @@ end
 core.unlocksOverviewFrame = core.CreateUnlocksOverviewFrame(core.wardrobeFrame)
 core.unlocksOverviewFrame:Hide()
 
-local TAB_NAMES = { ITEMS, "overview" }
+local TAB_NAMES = { ITEMS, core.OVERVIEW }
 wardrobeFrame.tabs = { "itemCollectionFrame", "unlocksOverviewFrame" }
 wardrobeFrame.tabButtons = {}
 

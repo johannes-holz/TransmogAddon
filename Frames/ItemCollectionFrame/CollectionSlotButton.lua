@@ -42,7 +42,7 @@ end
 
 local EnchantSlotButton_OnEnter = function(self)
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-	GameTooltip:SetText("Enchant preview TODO: Localize")
+	GameTooltip:SetText(core.SLOT_NAMES[self.itemSlot])
 	GameTooltip:Show()
 end
 

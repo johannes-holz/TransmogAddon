@@ -18,66 +18,7 @@ local LIGHT = {
 		0.8, 0.8, 0.8, 0.64,
 	},
 }
-
-core.mannequinPositions = {
-	["Human"] = {
-		["HeadSlot"] = {1.8, 0, -0.74, 0},
-		["ShoulderSlot"] = {1.65, 0, -0.6, 0},
-		["ChestSlot"] = {1.55, 0, -0.3, 0},
-		["ShirtSlot"] = {1.55, 0, -0.3, 0},
-		["TabardSlot"] = {1.55, 0, -0.3, 0},
-		["WristSlot"] = {1.75, 0, -0.1, 0},
-		["HandsSlot"] = {1.75, 0, -0.1, 0},
-		["WaistSlot"] = {1.75, 0, -0.1, 0},
-		["LegsSlot"] = {1.15, 0, 0.28, 0},	
-		["FeetSlot"] = {1.5, 0, 0.5, 0},
-		["BackSlot"] = {1, 0, -0.05, math.pi},
-		["MainHandSlot"] = {0.6, -0.2, 0, math.pi * 0.4},
-		["SecondaryHandSlot"] = {0.6, 0, 0, -math.pi * 0.4},
-		["ShieldHandWeaponSlot"] = {0.6, 0, 0, -math.pi * 0.4},
-		["OffHandSlot"] = {0.6, 0, 0, -math.pi * 0.4},
-		["MainHandEnchantSlot"] = {0.6, 0, 0, math.pi * 0.2},
-		["SecondaryHandEnchantSlot"] = {0.6, 0, 0, -math.pi * 0.2},
-		["RangedSlot"] = {0.6, 0, 0, math.pi * 0.2},},
-	["NightElf"] = {
-		["HeadSlot"] = {3, 0, -0.82, 0},
-		["ShoulderSlot"] = {2.45, 0, -0.6, 0},
-		["ChestSlot"] = {2.65, 0, -0.3, 0},
-		["ShirtSlot"] = {2.65, 0, -0.3, 0},
-		["TabardSlot"] = {2.65, 0, -0.3, 0},
-		["WristSlot"] = {2.75, 0, -0.13, 0},
-		["HandsSlot"] = {2.75, 0, -0.13, 0},
-		["WaistSlot"] = {2.75, 0, -0.13, 0},
-		["LegsSlot"] = {1.79, 0, 0.32, 0},	
-		["FeetSlot"] = {2.6, 0, 0.62, 0},
-		["BackSlot"] = {1.7, 0, -0.05, math.pi},
-		["MainHandSlot"] = {1.5, 0, 0, math.pi * 0.2},
-		["SecondaryHandSlot"] = {1.5, 0, 0, -math.pi * 0.2},
-		["ShieldHandWeaponSlot"] = {1.5, 0, 0, -math.pi * 0.2},
-		["OffHandSlot"] = {1.5, 0, 0, -math.pi * 0.2},
-		["MainHandEnchantSlot"] = {1.5, 0, 0, math.pi * 0.2},
-		["SecondaryHandEnchantSlot"] = {1.5, 0, 0, -math.pi * 0.2},
-		["RangedSlot"] = {1.5, 0, 0, math.pi * 0.2},},
-	["Gnome"] = {
-		["HeadSlot"] = {0.9, 0, -0.18, 0},
-		["ShoulderSlot"] = {0.82, 0, 0, 0},
-		["ChestSlot"] = {1.14, 0, 0.17, 0},
-		["ShirtSlot"] = {1.14, 0, 0.17, 0},
-		["TabardSlot"] = {1.14, 0, 0.17, 0},
-		["WristSlot"] = {1.14, 0, 0.14, 0},
-		["HandsSlot"] = {1, 0, 0.14, 0},
-		["WaistSlot"] = {1.2, 0, 0.21, 0},
-		["LegsSlot"] = {1, 0, 0.28, 0},	
-		["FeetSlot"] = {1.1, 0, 0.34, 0},
-		["BackSlot"] = {0.8, 0, 0.2, math.pi},
-		["MainHandSlot"] = {0, 0, 0.1, math.pi * 0.3},
-		["SecondaryHandSlot"] = {0, 0, 0.1, -math.pi * 0.3}, 
-		["ShieldHandWeaponSlot"] = {0, 0, 0.1, -math.pi * 0.3}, 
-		["OffHandSlot"] = {0, 0, 0.1, -math.pi * 0.3}, 
-		["MainHandEnchantSlot"] = {0, 0, 0.1, math.pi * 0.3},
-		["SecondaryHandEnchantSlot"] = {0, 0, 0.1, -math.pi * 0.3},
-		["RangedSlot"] = {0, 0, 0.1, math.pi * 0.3},},
-}
+core.LIGHT = LIGHT
 
 -- Model frames get reset to the initial position on SetUnit and OnHide, but their internal x, y, z values do not.
 -- When calling SetPosition(x, y, z) it moves the model by the difference to its own internal position, so if we don't manage this ourselves, it will stop working as intended after SetUnit/Hide.
@@ -121,23 +62,44 @@ end
 local Model_TryOn = function(self, itemID)
 	assert(type(itemID) == "number")  -- expects clean numerical itemID!
 	self.itemID = itemID		
-	
-	if core.IsEnchantSlot(core.itemCollectionFrame.selectedSlot) then
-		local itemString = "item:2000:" .. (itemID == 0 and 0 or core.enchants[itemID]["enchantIDs"][1]) -- itemID is the enchantID in this case
+	local slot = self:GetParent():GetParent().selectedSlot
+
+
+	if core.IsEnchantSlot(slot) then
+		local dummyWeapon = (slot == "MainHandEnchantSlot" or core.CanDualWield()) and core.DUMMY_WEAPONS.ENCHANT_PREVIEW_WEAPON or core.DUMMY_WEAPONS.ENCHANT_PREVIEW_OFFHAND_WEAPON
+		local itemString = "item:" .. dummyWeapon .. ":" .. (itemID == 0 and 0 or core.enchants[itemID]["enchantIDs"][1]) -- itemID is the enchantID in this case
 		-- self:TryOnOld(1485) -- TODO: use equip to slot functionality instead of doing the weapon slot manipulation manually like this?
 		-- self:TryOnOld("item:2000:" .. (itemID == 0 and 0 or core.enchants[itemID]["enchantIDs"][1]))
-		core.ShowMeleeWeapons(self, itemString, nil)
+		if slot == "MainHandEnchantSlot" then 
+			core.ShowMeleeWeapons(self, itemString, nil)
+		elseif slot == "SecondaryHandEnchantSlot" then
+			core.ShowMeleeWeapons(self, nil, itemString) -- TODO: fails for 2H weapons without titangrip. would need to find a good model animation + position, where both hands are on the weapon
+		end
 		self:SetLoading(false)
 	elseif GetItemInfo(itemID) then
-		local slot = self:GetParent():GetParent().selectedSlot
 		local enchant = core.itemCollectionFrame.previewWeaponEnchants and core.itemCollectionFrame.enchant
 		local itemString = enchant and "item:" .. itemID .. ":" .. enchant or itemID
 		self:Undress()
-		-- self:TryOnOld(39519) -- Black Gloves
-		-- self:TryOnOld(11731) -- Black Shoes
-		-- self:TryOnOld(6835) -- Black Leggings
-		-- self:TryOnOld(3427) -- Black Shirt
-		-- self:TryOnOld(9998) -- Black West
+		moreModestyPlease = false
+		if moreModestyPlease then
+			if not (slot == "ChestSlot" or slot == "ShirtSlot" or slot == "TabardSlot" or slot == "WristSlot" or slot == "HandsSlot") then
+				self:TryOnOld(3427) -- Black Shirt
+				-- self:TryOnOld(41253) -- Darkblue Shirt		
+				-- self:TryOnOld(9998) -- Black West			
+				-- self:TryOnOld(14637) -- Black West2		
+				-- self:TryOnOld(7110) -- Black Sweater
+				-- self:TryOnOld(6834) -- Black Smoking	
+				-- self:TryOnOld(41254) -- Dark Shirt	
+				self:TryOnOld(39519) -- Black Gloves
+			end
+			if slot == "WristSlot" or slot == "HandsSlot" then		
+				self:TryOnOld(14637) -- Black West2
+			end
+			if slot ~= "LegsSlot" and slot ~= "FeetSlot" then
+				self:TryOnOld(11731) -- Black Shoes
+				self:TryOnOld(6835) -- Black Leggings
+			end
+		end
 		if slot == "MainHandSlot" then 
 			core.ShowMeleeWeapons(self, itemString, nil)
 		elseif slot == "ShieldHandWeaponSlot" then

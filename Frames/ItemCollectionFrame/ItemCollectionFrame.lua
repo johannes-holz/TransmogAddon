@@ -53,6 +53,8 @@ itemCollectionFrame:SetScript("OnShow", function(self)
 		self.searchBox:SetPoint("RIGHT", self.itemTypeDDM, "LEFT", 0, 3)
 		self.unlockedStatusBar:Hide()
 	end
+
+	self:UpdateMannequins()
 end)
 
 itemCollectionFrame:SetScript("OnHide", function(self)
@@ -79,7 +81,10 @@ itemCollectionFrame.SetSlotAndCategory = function(self, slot, category, update)
 		for _, button in pairs(self.slotButtons) do
 			core.SetShown(button.selectedTexture, button.itemSlot == slot)
 		end
-		core.SetShown(self.enchantSlotButton.selectedTexture, self.enchantSlotButton.itemSlot == slot)
+		for _, button in pairs(self.enchantSlotButtons) do
+			core.SetShown(button.selectedTexture, button.itemSlot == slot)
+		end
+		-- core.SetShown(self.enchantSlotButton.selectedTexture, self.enchantSlotButton.itemSlot == slot)
 	end
 
 	-- TODO: setshown all the other shit: shown = not (atNpc and not slot)
@@ -131,8 +136,11 @@ end
 --- TEST
 
 -- enchantSlots = { "MainHandEnchantSlot", "OffHandEnchantSlot" }
-itemCollectionFrame.enchantSlotButton = core.CreateEnchantSlotButton(itemCollectionFrame.slotButtons["MainHand"], core.enchantSlots[1], BUTTON_WIDTH * 0.6)
-itemCollectionFrame.enchantSlotButton:SetPoint("CENTER", itemCollectionFrame.slotButtons["MainHand"], "BOTTOMRIGHT")
+itemCollectionFrame.enchantSlotButtons = {}
+itemCollectionFrame.enchantSlotButtons["MainHandEnchantSlot"] = core.CreateEnchantSlotButton(itemCollectionFrame.slotButtons["MainHand"], "MainHandEnchantSlot", BUTTON_WIDTH * 0.6)
+itemCollectionFrame.enchantSlotButtons["MainHandEnchantSlot"]:SetPoint("CENTER", itemCollectionFrame.slotButtons["MainHand"], "BOTTOMRIGHT", -3, 3)
+itemCollectionFrame.enchantSlotButtons["SecondaryHandEnchantSlot"] = core.CreateEnchantSlotButton(itemCollectionFrame.slotButtons["ShieldHandWeapon"], "SecondaryHandEnchantSlot", BUTTON_WIDTH * 0.6)
+itemCollectionFrame.enchantSlotButtons["SecondaryHandEnchantSlot"]:SetPoint("CENTER", itemCollectionFrame.slotButtons["ShieldHandWeapon"], "BOTTOMRIGHT", -3, 3)
 
 ----------- ItemType DropDownMenu -----------
 
@@ -249,25 +257,27 @@ itemCollectionFrame.noSlotSelectedText:SetText(core.NO_SLOT_SELECTED_TEXT)
 
 itemCollectionFrame.UpdateMannequins = function(self)
 	local _, race = UnitRace("player")
-	if not core.mannequinPositions[race] then race = "Human" end
+	local sex = UnitSex("player") -- 1: Neutrum/Unknown, 2: Male, 3: Female
+	local positions = TransmoggyDB.mannequinPositions and TransmoggyDB.mannequinPositions[sex] or core.mannequinPositions[sex]
+	if not positions[race] then race = "Human" end
 	--local inventorySlot = select(2, core:GetTransmogLocationInfo(self.location))
 	local slot, category = self.selectedSlot, self.selectedCategory
-	local pos = (slot and race) and core.mannequinPositions[race][slot] or {0, 0, 0, 0}
+	local pos = (slot and race) and positions[race][slot] or {0, 0, 0, 0}
 	local list = self.displayList-- core:GetItemsToDisplay()
 	
 	local sequenceID, sequenceTime = 15, 100
 
-	local sex = UnitSex("player")
-	local id = core.sexRaceToID[sex][race]
-	local posCat = category or "Default"
-	if TransmoggyDB.positionData and TransmoggyDB.positionData[id] and TransmoggyDB.positionData[id][slot] and TransmoggyDB.positionData[id][slot][posCat] then
-		local x, y, z, facing, near, far, seq, time = unpack(TransmoggyDB.positionData[id][slot][posCat])
-		pos = { x, y, z, facing }
-		sequenceID, sequenceTime = seq, time
-		-- pos = TransmoggyDB.positionData[id][slot]
-	end
+	-- local sex = UnitSex("player")
+	-- local id = core.sexRaceToID[sex][race]
+	-- local posCat = category or "Default"
+	-- if TransmoggyDB.positionData and TransmoggyDB.positionData[id] and TransmoggyDB.positionData[id][slot] and TransmoggyDB.positionData[id][slot][posCat] then
+	-- 	local x, y, z, facing, near, far, seq, time = unpack(TransmoggyDB.positionData[id][slot][posCat])
+	-- 	pos = { x, y, z, facing }
+	-- 	sequenceID, sequenceTime = seq, time
+	-- 	-- pos = TransmoggyDB.positionData[id][slot]
+	-- end
 
-	--local enchantID = 3789
+	--local enchantID = 3789 -- berserker test
 
 	for i = 1, mannequinCount do
 		local itemID = list[mannequinCount * (self.page - 1) + i]
@@ -319,7 +329,30 @@ local Mannequin_OnMouseDown = function(self, button)
 
 	if isEnchantSlot then
 		if not itemID then print("Error: expected enchantVisualID in mannequin's OnClick") end
-		itemCollectionFrame:SetPreviewEnchant(itemID ~= 0 and core.enchants[itemID].enchantIDs[1] or nil)  -- TODO: make enchant choosable and hide this data specific stuff
+
+		local enchantID = itemID ~= 0 and core.enchants[itemID].enchantIDs[selected] or nil
+		itemCollectionFrame:SetPreviewEnchant(enchantID)  -- TODO: make enchant choosable and hide this data specific stuff
+
+		if enchantID and core.GetEnchantInfo(enchantID) then
+			print(enchantID, "isEnchant")
+			-- if IsModifiedClick("CHATLINK") then
+			-- 	if ChatEdit_InsertLink(itemLink) then
+			-- 		return true
+			-- 	end
+			-- 	return
+			-- end
+
+			if core.IsAtTransmogrifier() then
+				-- core.SetPending(core.GetSelectedSlot(), itemID)
+				print("Enchant transmog not supported yet. localize me")
+			else
+				if not DressUpFrame:IsShown() then
+					ShowUIPanel(DressUpFrame)
+					DressUpModel:SetUnit("player")
+				end
+				DressUpModel:SetSlot(itemCollectionFrame.selectedSlot, enchantID)			
+			end
+		end
 	else
 		local _, displayGroup = core.GetItemData(itemID)
 		if itemCollectionFrame.displayGroups[displayGroup] then
@@ -341,7 +374,7 @@ local Mannequin_OnMouseDown = function(self, button)
 				core.SetPending(core.GetSelectedSlot(), itemID)
 			else
 				-- DressUpItemLink(itemCollectionFrame.enchant and ("item:" .. itemID .. ":" .. itemCollectionFrame.enchant) or itemID)
-				link = itemCollectionFrame.enchant and ("item:" .. itemID .. ":" .. itemCollectionFrame.enchant) or itemID
+				local link = itemID -- itemCollectionFrame.enchant and ("item:" .. itemID .. ":" .. itemCollectionFrame.enchant) or itemID -- TODO: which behaviour do we want
 				if not DressUpFrame:IsShown() then
 					ShowUIPanel(DressUpFrame)
 					DressUpModel:SetUnit("player")
@@ -416,7 +449,7 @@ local Mannequin_OnEnter = function(self)
 		local _, displayGroup = core.GetItemData(itemID)
 		if isEnchantSlot then
 			if itemID == 0 then
-				GameTooltip:AddLine("Hidden Enchant yoyoyoyo")
+				GameTooltip:AddLine("No/Hidden Enchant localize me")
 			else
 				for _, id in pairs(core.enchants[itemID].enchantIDs) do
 					local name, _, tex = core.GetEnchantInfo(id)
@@ -562,6 +595,9 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 	local atTransmogrifier = core.IsAtTransmogrifier()
 	local slot, category = self.selectedSlot, self.selectedCategory
 
+	local isEnchantSlot = core.IsEnchantSlot(slot)
+	local hiddenID = isEnchantSlot and 0 or 1
+
 	print("atNPC:", atTransmogrifier, "slot:", slot, "cat:", category)
 
 	local t1 = GetTime()
@@ -582,50 +618,51 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 	local itemCount = 0 -- tmp for testing/debugging
 
 	-- local memCount = collectgarbage("count")
-	if slot and core.IsEnchantSlot(slot) then
-		table.insert(self.displayList, 0) -- Hidden/No enchant
-		for enchantVisualID, enchantInfo in pairs(core.enchants) do
-			if searchTerm then
-				for _, enchantID in pairs(enchantInfo.enchantIDs) do					
-                    local name = core.GetEnchantInfo(enchantID)
-					if enchantID == searchTerm or (name and strfind(name, searchTerm)) then
-						table.insert(self.displayList, enchantVisualID)
-						break
+	if slot then
+		if isEnchantSlot then
+			table.insert(self.displayList, hiddenID) -- Hidden/No enchant
+			for enchantVisualID, enchantInfo in pairs(core.enchants) do
+				if searchTerm then
+					for _, enchantID in pairs(enchantInfo.enchantIDs) do					
+						local name = core.GetEnchantInfo(enchantID)
+						if enchantID == searchTerm or (name and strfind(name, searchTerm)) then
+							table.insert(self.displayList, enchantVisualID)
+							break
+						end
 					end
+				else
+					table.insert(self.displayList, enchantVisualID)
 				end
-			else
-				table.insert(self.displayList, enchantVisualID)
 			end
-		end
-	
-	elseif slot then
-		local withNames = searchTerm and not searchByID
-		for itemID, itemName in core.ItemIterator(slot, category, withNames) do
-			itemCount = itemCount + 1
-			local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
-			
-			if (atTransmogrifier and core.IsAvailableSourceItem(itemID, slot)) or
-					(not atTransmogrifier and (not self.filter.unlocked or unlocked == self.filter.unlocked)) then
+		else
+			local withNames = searchTerm and not searchByID
+			for itemID, itemName in core.ItemIterator(slot, category, withNames) do
+				itemCount = itemCount + 1
+				local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
+				
+				if (atTransmogrifier and core.IsAvailableSourceItem(itemID, slot)) or
+						(not atTransmogrifier and (not self.filter.unlocked or unlocked == self.filter.unlocked)) then
 
-				if not searchTerm or itemID == searchTerm or (itemName and strfind(itemName, searchTerm)) then --strfind(strlower(itemName), strlower(searchTerm))) then --[[strfind(itemName, searchTerm)) then]] --strfind(name, searchTerm)) then
-					
-					self.itemUnlocked[itemID] = unlocked
-					self.visualUnlocked[itemID] = unlocked	-- this will track whether the visual is unlocked by an item that fits the current selection
-
-					if displayGroup == 0 or not self.displayGroups[displayGroup] then
-						table.insert(self.displayList, itemID)
+					if not searchTerm or itemID == searchTerm or (itemName and strfind(itemName, searchTerm)) then --strfind(strlower(itemName), strlower(searchTerm))) then --[[strfind(itemName, searchTerm)) then]] --strfind(name, searchTerm)) then
 						
-						if displayGroup == 0 and unlocked == 1 then
-							unlockedCount = unlockedCount + 1 -- counting the unlocked visuals without display group
-						end
-						
-						if displayGroup ~= 0 then
-							self.displayGroups[displayGroup] = {} -- temporary displayGroups that only contain items that fit the current selection
-						end
-					end
+						self.itemUnlocked[itemID] = unlocked
+						self.visualUnlocked[itemID] = unlocked	-- this will track whether the visual is unlocked by an item that fits the current selection
 
-					if self.displayGroups[displayGroup] then
-						table.insert(self.displayGroups[displayGroup], itemID)
+						if displayGroup == 0 or not self.displayGroups[displayGroup] then
+							table.insert(self.displayList, itemID)
+							
+							if displayGroup == 0 and unlocked == 1 then
+								unlockedCount = unlockedCount + 1 -- counting the unlocked visuals without display group
+							end
+							
+							if displayGroup ~= 0 then
+								self.displayGroups[displayGroup] = {} -- temporary displayGroups that only contain items that fit the current selection
+							end
+						end
+
+						if self.displayGroups[displayGroup] then
+							table.insert(self.displayGroups[displayGroup], itemID)
+						end
 					end
 				end
 			end
@@ -654,14 +691,12 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 		local t2 = GetTime()
 
 		table.sort(self.displayList, function(a, b) -- TODO: sorting like this only compares the items we picked to represent a visual group, so sort by itemID is weird
-			-- Would need O(n log n) ? GetItemData calls per attribute. Better to cache relevant item data, even if it generates some garbage?
 			local unlockedA = self.visualUnlocked[a] --core.GetItemData(a) --
 			local unlockedB = self.visualUnlocked[b] --core.GetItemData(b) --
 
-			-- if a == 1 or b == 1 then
-			-- 	return a == 1
-			-- else
-			if unlockedA == unlockedB then
+			if a == hiddenID or b == hiddenID then
+				return a == 1
+			elseif unlockedA == unlockedB then
 				return a > b
 			else
 				return unlockedA > unlockedB
@@ -761,10 +796,78 @@ itemCollectionFrame.enchantCheckButton:SetScript("OnClick", function(self, butto
 	itemCollectionFrame:UpdateMannequins()
 end)
 getglobal(itemCollectionFrame.enchantCheckButton:GetName() .. "Text"):SetText("Enchant preview")
-core.SetTooltip(itemCollectionFrame.enchantCheckButton, "Preview equipped or selected enchant.", nil, nil, nil, nil, 1)
+core.SetTooltip(itemCollectionFrame.enchantCheckButton, "Preview equipped or selected enchant on weapons.", nil, nil, nil, nil, 1)
 
 
 ----- Test Position, Animation etc. model -----
-local model = core.CreateWardrobeModelFrame(core.itemCollectionFrame)
-model:SetPoint("TOPLEFT", model:GetParent(), "TOPRIGHT")
-model:Hide()
+-- local model = core.CreateWardrobeModelFrame(core.itemCollectionFrame)
+-- model:SetPoint("TOPLEFT", model:GetParent(), "TOPRIGHT")
+-- model:Hide()
+
+
+-- local EnablePositionMode = function()
+-- 	TransmoggyDB.mannequinPositions = TransmoggyDB.mannequinPositions or core.mannequinPositions
+
+-- 	moveFactor = 0.02
+
+-- 	for _, mannequin in pairs(itemCollectionFrame.mannequins) do
+-- 		mannequin:SetScript("OnMouseDown", function(self, button)
+			
+-- 			if true or button == "RightButton" then
+-- 				itemCollectionFrame.posX, itemCollectionFrame.posY = GetCursorPosition()
+-- 				itemCollectionFrame.moving = 1
+-- 			end
+-- 		end)
+-- 		mannequin:SetScript("OnMouseUp", function(self, button)
+-- 			itemCollectionFrame.moving = nil
+-- 		end)
+-- 		itemCollectionFrame:SetScript("OnUpdate", function(self, elapsed)
+-- 			if self.moving then
+-- 				local curX, curY = GetCursorPosition()
+-- 				local difX, difY = curX - self.posX, curY - self.posY
+-- 				itemCollectionFrame.posX, itemCollectionFrame.posY = curX, curY
+-- 				print("moving", curX, curY)
+
+-- 				local _, race = UnitRace("player")
+-- 				local sex = UnitSex("player")
+-- 				local slot, category = self.selectedSlot, self.selectedCategory
+-- 				local positions = TransmoggyDB.mannequinPositions[sex]
+-- 				positions[race] = positions[race] or core.DeepCopy(positions["Human"])
+-- 				positions[race][slot] = positions[race][slot] or { 0, 0, 0, 0 }
+				
+-- 				if IsShiftKeyDown() then
+-- 					positions[race][slot][2] = positions[race][slot][2] + moveFactor * difX
+-- 				elseif IsControlKeyDown() then
+-- 					positions[race][slot][3] = positions[race][slot][3] + moveFactor * difY
+-- 				elseif IsAltKeyDown() then
+-- 					positions[race][slot][4] = positions[race][slot][4] + moveFactor * difY
+-- 				else					
+-- 					positions[race][slot][1] = positions[race][slot][1] + moveFactor * difY
+-- 				end
+
+-- 				itemCollectionFrame:UpdateMannequins()
+-- 			end
+-- 		end)
+-- 	end
+-- end
+-- itemCollectionFrame:HookScript("OnShow", function(self)	
+-- 	EnablePositionMode()
+-- 	for sex, tab0 in pairs(TransmoggyDB.mannequinPositions) do
+-- 		for race, tab1 in pairs(tab0) do
+-- 			tab1["MainHandEnchantSlot"] = core.DeepCopy(tab1["MainHandSlot"])
+-- 			tab1["ShieldHandWeaponSlot"] = core.DeepCopy(tab1["MainHandSlot"])
+-- 			tab1["ShieldHandWeaponSlot"][2] = -tab1["ShieldHandWeaponSlot"][2]
+-- 			tab1["ShieldHandWeaponSlot"][4] = -tab1["ShieldHandWeaponSlot"][4]
+-- 			tab1["SecondaryHandEnchantSlot"] = core.DeepCopy(tab1["ShieldHandWeaponSlot"])
+-- 		end
+-- 	end
+-- 	if not TransmoggyDB.mannequinPositions[3] then
+-- 		local tmp = core.DeepCopy(TransmoggyDB.mannequinPositions)
+-- 		TransmoggyDB.mannequinPositions = nil
+-- 		TransmoggyDB.mannequinPositions = {}
+-- 		TransmoggyDB.mannequinPositions[3] = tmp
+-- 	end
+-- 	if not TransmoggyDB.mannequinPositions[2] then
+-- 		TransmoggyDB.mannequinPositions[2] = core.DeepCopy(TransmoggyDB.mannequinPositions[3])
+-- 	end
+-- end)

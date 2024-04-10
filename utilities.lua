@@ -274,6 +274,19 @@ core.SetTooltip = function(frame, text, r, g, b, a, wrap)
 	end)
 end
 
+core.SetTooltip2 = function(frame, title, r1, g1, b1, wrap1, text, r2, g2, b2, wrap2)
+	if not frame or not title then return end
+	frame:HookScript("OnEnter", function(self)		
+		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+		GameTooltip:AddLine(title, r1, g1, b1, wrap1)
+		GameTooltip:AddLine(text, r2, g2, b2, wrap2)
+		GameTooltip:Show()
+	end)
+	frame:HookScript("OnLeave", function(self)
+		GameTooltip:Hide()
+	end)
+end
+
 core.MouseIsOver = function(frame)
 	local x, y = GetCursorPosition()
 	local s = frame:GetEffectiveScale()
@@ -581,4 +594,14 @@ BACKDROP_Test_1 = {
 	edgeSize = 16,
 	insets = { left = 3, right = 3, top = 3, bottom = 3 },
 	-- backdropBorderColor = { red = 1, green = 0.675, blue = 0.125, alpha = 1 }, -- have to call frame:SetBackdropBorderColor() instead
-};
+}
+
+BACKDROP_ITEM_LIST = {
+	bgFile = "Interface\\AchievementFrame\\UI-Achievement-AchievementBackground",
+	edgeFile = "Interface\\FriendsFrame\\UI-Toast-Border",
+	tile = false,
+	tileEdge = true,
+	tileSize = 12,
+	edgeSize = 12,
+	insets = { left = 5, right = 5, top = 5, bottom = 5 },
+}

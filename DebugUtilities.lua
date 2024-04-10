@@ -223,3 +223,13 @@ end
 PrintBalance = function()
 	am(balance)
 end
+
+local testSet = { MainHandSlot = 2000, MainHandEnchantSlot = 3789, }
+
+TestToApiSet = function()
+	local apiSet = core.ToApiSet(testSet, true)
+	local itemSet = core.FromApiSet(apiSet, true)
+	core.am(core.ToApiSet(testSet))
+	core.am(apiSet)
+	core.am(itemSet)
+end

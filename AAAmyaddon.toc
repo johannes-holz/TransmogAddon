@@ -26,11 +26,12 @@ TooltipHooks.lua
 
 # Enchant and item data
 data\DataUtils.lua
-data\enchants.lua
-data\items.lua
+data\Enchants.lua
+data\Items.lua
 data\ItemNamesEnglish.lua
 data\ItemNamesGerman.lua
 data\Recipes.lua
+data\MannequinPositions.lua
 #data\StringData.lua
 
 # ItemCollectionFrame

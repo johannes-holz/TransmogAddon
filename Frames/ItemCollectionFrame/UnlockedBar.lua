@@ -57,7 +57,6 @@ core.ComputeSlotUnlocks = function()
 
     local unlocks = {}
 
-    -- TODO: using invType iterator and sum up results would avoid counting overlap for the weaponSlots
     for _, slot in pairs(core.itemSlots) do
         local itemUnlocked = {}
         local visualUnlocked = {}    

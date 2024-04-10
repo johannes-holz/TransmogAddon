@@ -36,7 +36,7 @@ core.InitializeAce = function(self)
 	LibStub('AceConfigDialog-3.0'):AddToBlizOptions("Transmoggy-Profiles", 'Profiles', self.title)
 	
 	--self:RegisterChatCommand("HPE", function () InterfaceOptionsFrame_OpenToCategory(self.optionsFrame) end)
-	LibStub('AceConsole-3.0'):RegisterChatCommand("transmoggy", function () InterfaceOptionsFrame_OpenToCategory(self.optionsFrame) end)
+	LibStub('AceConsole-3.0'):RegisterChatCommand("transmoggy", function () print("hi there") end) -- InterfaceOptionsFrame_OpenToCategory(self.optionsFrame) end)
 end
 
 core.OnProfileChanged = function(self, ...)
@@ -311,19 +311,40 @@ core.itemSlots = itemSlots
 -- extra table for enchants. need different behaviour and are not really supported so far
 core.enchantSlots = {
 	"MainHandEnchantSlot",
-	"OffHandEnchantSlot",
+	"SecondaryHandEnchantSlot",
 }
 
-core.IsEnchantSlot = function(slot)
-	return slot and (slot == core.enchantSlots[0] or slot == core.enchantSlots[1])
-end
-
-local isWeaponSlot = {
+core.allSlots = {
+	"HeadSlot",
+	"ShoulderSlot",
+	"BackSlot",
+	"ChestSlot",
+	"ShirtSlot",
+	"TabardSlot",
+	"WristSlot",
+	"HandsSlot",
+	"WaistSlot",
+	"LegsSlot",
+	"FeetSlot",
 	"MainHandSlot",
-	"SecondaryHandSlot",
+	--"SecondaryHandSlot",
 	"ShieldHandWeaponSlot",
 	"OffHandSlot",
 	"RangedSlot",
+	"MainHandEnchantSlot",
+	"SecondaryHandEnchantSlot",
+}
+
+core.IsEnchantSlot = function(slot)
+	return slot and (slot == core.enchantSlots[1] or slot == core.enchantSlots[2])
+end
+
+local isWeaponSlot = {
+	MainHandSlot = true,
+	SecondaryHandSlot = true,
+	ShieldHandWeaponSlot = true,
+	OffHandSlot = true,
+	RangedSlot = true,
 }
 core.IsWeaponSlot = function(slot)
 	return slot and isWeaponSlot[slot]
@@ -451,7 +472,7 @@ end
 
 if true then -- completely bugged items, that should probably not be included?
 	-- INVTYPE_WEAPON: staves, 2hswords, 2haxes, polearms. these are all included in mhslot already, but would technically be usable as tmog for 1h in offhand?
-	-- INVTYPE_2HWEAPON: armor misc (obtainable quest item),
+	-- INVTYPE_2HWEAPON: armor misc (obtainable quest item o.O),
 	-- INVTYPE_WEAPONMAINHAND: 2hswords,
 	-- INVTYPE_RANGEDRIGHT: 1haxes, 
 end
@@ -466,10 +487,11 @@ for _, slot in pairs(core.itemSlots) do
 end
 
 core.DUMMY_WEAPONS = {
-	POLEARM = 1485,
-	INVISIBLE_1H = 25194, 			-- 45630 should be "Invisible Axe", but it shows as the debug cube model instead. 25194 is smallest knuckle duster
-	ENCHANT_PREVIEW_WEAPON = 2000, 	-- 2000: Archeus, basic 2H sword
-	TOOLTIP_FIX_ITEM = 32479,		-- needed for tooltip line fix
+	POLEARM = 1485,							-- 1485: Any polearm. Used to reset a DressUpModel's memory about which hand had a 1H weapon equipped last
+	INVISIBLE_1H = 25194, 					-- 45630 should be "Invisible Axe", but it shows as the debug cube model instead. 25194 is smallest knuckle duster
+	ENCHANT_PREVIEW_WEAPON = 864, 			-- 864: Basic looking sword for enchant preview
+	ENCHANT_PREVIEW_OFFHAND_WEAPON = 12939, -- 12939: Most basic offhand weapon I could find so far. Used to display enchanted offhand weapon without dualwield
+	TOOLTIP_FIX_ITEM = 32479,				-- 32479: Any item with >= 9 tooltip lines. Needed for tooltip line fix
 }
 
 for name, itemID in pairs(core.DUMMY_WEAPONS) do
@@ -519,8 +541,8 @@ local invSlotToTransmogLocation = {
 	MainHandSlot = "MainHand",
 	ShieldHandWeaponSlot = "ShieldHandWeapon",
 	OffHandSlot = "OffHand",
-	--SecondaryHandSlot", special case
-	MainHandEnchantSlot = "EnchantMainHand", --TODO: erlaubt?
+	-- SecondaryHandSlot", special case
+	MainHandEnchantSlot = "EnchantMainHand", -- TODO: do we allow this?
 	SecondaryHandEnchantSlot = "EnchantOffHand",
 	RangedSlot = "Ranged",
 }
@@ -530,7 +552,7 @@ ToTransmogLocation = function(itemSlot) --, special)
 
 	if invSlotToTransmogLocation[itemSlot] then
 		return API.Slot[invSlotToTransmogLocation[itemSlot]]
-	elseif itemSlot == "SecondaryHandSlot" then
+	elseif itemSlot == "SecondaryHandSlot" then -- not sure if we still use this at all
 		local equipped = GetInventoryItemID("player", 17)
 		if not equipped then return API.Slot.ShieldHandWeapon end -- No offhand equipped, so the field will be nil anyway, but have to return something
 		local invtype = select(9, GetItemInfo(equipped)) -- item info should always be cached/available for equipped items
@@ -563,10 +585,10 @@ end
 
 core.TransmogGetSlotInfo = function(itemSlot, skinID)
 	assert(slotToID[itemSlot] ~= nil, "Invalid slot in TransmogGetSlotInfo")
-	skinID = skinID or core.GetSelectedSkin() -- TODO: allow optional skinID parameter?
+	skinID = skinID or core.GetSelectedSkin() -- TODO: allow optional this optional skinID parameter?
 
 	local inventorySlotID = slotToID[itemSlot]
-	local locationID = ToTransmogLocation(itemSlot) -- TODO: hopefully soon replaced so we work on locations instead of itemslots, PEPW
+	local locationID = ToTransmogLocation(itemSlot) -- TODO: hopefully soon replaced so we work on locations instead of itemslots (not gonna happen PEPW)
 	--local locationID = core:GetTransmogLocationInfo(location)
 	--print(itemSlot, "inventoryID", inventorySlotID, "location", location, "locationID", locationID, "selectedSkin", core.GetSelectedSkin())
 
@@ -647,13 +669,17 @@ core.HasShieldHandWeaponSlot = function()
 	return class == "WARRIOR" or class == "DEATHKNIGHT" or class == "SHAMAN" or class == "ROGUE" or class == "HUNTER"
 end
 
-local ToApiSet = function(set)
+local ToApiSet = function(set, withEnchants)
 	local apiSet = {}
 	for slot, itemID in pairs(set) do
-		if slot ~= "MainHandEnchantSlot" and slot ~= "SecondaryHandEnchantSlot" then
-			assert(core.Contains(itemSlots, slot)) -- Technically only needs the transmoglocation check?
-			assert(type(itemID) == "number" or (type(itemID) == "boolean" and not itemID))
+		local isEnchantSlot = core.IsEnchantSlot(slot)
+		if withEnchants or not isEnchantSlot then
+			-- assert(core.Contains(itemSlots, slot) or (withEnchants and core.Contains(core.enchantSlots, slot))) -- Technically only needs the transmoglocation check?
+			assert(type(itemID) == "number" or (type(itemID) == "boolean" and not itemID)) --  TODO: remove the boolean stuff? artifact from when hidden was encoded as "false" ...?
 			
+			if isEnchantSlot then
+				-- TODO: do we only allow enchants when there is a weapon in the set? or should we allow setting enchantSlot for e.g. skins without a weapon in the set?
+			end
 			--local slotID, _ = GetInventorySlotInfo(slot)
 			local transmogLocation = ToTransmogLocation(slot)
 			if (transmogLocation == nil) then print("Could not find transmogLocation for", slot) end
@@ -661,7 +687,8 @@ local ToApiSet = function(set)
 			apiSet[transmogLocation] = itemID
 		end
 	end
-	core.am(apiSet)
+	-- am("From set:", set, withEnchants)
+	-- am("To apiSet:", apiSet)
 	return apiSet
 end
 core.ToApiSet = ToApiSet
@@ -674,8 +701,8 @@ core.FromApiSet = function(apiSet)
 			set[itemSlot] = itemID
 		end
 	end
-	am("apiset:", apiSet)
-	am("set:", set)
+	-- am("From apiset:", apiSet)
+	-- am("To set:", set)
 	return set
 end
 
@@ -717,7 +744,7 @@ local configToAPI = {
 }
 
 core.SetConfig = function(c)
-	if not c or not c.visibility or not visibilities[c.visibility] then core.am("ERROR: Unknown visibility in config", c); return end
+	if not c or not c.visibility or not visibilities[c.visibility] then core.am("ERROR: Unknown visibility in SetConfig:", c); return end
 
 	config = visibilities[c.visibility]
 	print("setconfig", config)
@@ -731,7 +758,7 @@ end
 SetSkinCosts = function(points, copper)
 	skinCosts.points = points
 	skinCosts.copper = copper
-	UpdateListeners("skinCosts") -- no one atm
+	UpdateListeners("skinCosts") -- no one atm. could technically close the buy skin popup here
 end
 
 core.GetSkinCosts = function()
@@ -823,7 +850,7 @@ SetCurrentChangesSlot = function(slot, id, silent)
 	end
 
 	if slot == "ShieldHandWeaponSlot" and not core.HasShieldHandWeaponSlot() then
-		id = nil
+		id = nil -- e.g. we tried copying an outfit with shieldhandweapon into skin on character without dualwield
 	end
 	
 	if TransmoggyDB.currentChanges[slot] == id then return end
@@ -1424,8 +1451,8 @@ core.ShowMeleeWeapons = function(mod, mainHand, offHand, callID)
 	local mainHandID = core.GetItemIDFromLink(mainHand)
 	local offHandID = core.GetItemIDFromLink(offHand)
 
-	if not mainHandID or mainHandID < 0 then mainHand = nil end
-	if not offHandID or offHandID < 0 then offHand = nil end
+	if not mainHandID or mainHandID == 1 then mainHand = nil end
+	if not offHandID or offHandID == 1 then offHand = nil end
 	
 	local _, _, _, _, _, _, mhSubType, _, mhInvType = GetItemInfo(mainHand or 0)
 	local _, _, _, _, _, _, ohSubType, _, ohInvType = GetItemInfo(offHand or 0)

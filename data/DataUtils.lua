@@ -170,7 +170,7 @@ local function addString(stack, s)
 	end
 end
 
-ReplaceChar = function(s, pos, c)
+local ReplaceChar = function(s, pos, c)
     return s:sub(1, pos - 1) .. c .. s:sub(pos + 1)
 end
 
@@ -206,7 +206,7 @@ core.itemInfo = {
 	unlocked = {},
 }
 core.displayIDs = {}
-core.AddItem = function(displayID,itemID,class,subClass,inventoryType,quality,requiredLevel,allowableRace,allowableClass,allowableFaction)
+core.AddItem = function(displayID, itemID, class, subClass, inventoryType, quality, requiredLevel, allowableRace, allowableClass, allowableFaction)
 	if not core.inventoryTypes[inventoryType] then return end -- only want transmogable item types
 
 	if core.displayIDs[displayID] then
@@ -455,7 +455,7 @@ core.SetUnlocks = function(unlocks)
 	core.MyWaitFunction(3.0, collectgarbage, "collect")
 end
 
--- Sets a certain item to unlocked
+-- Any need for setting unlocked to 0 again?
 core.SetUnlocked = function(itemID)
 	assert(itemID and type(itemID) == "number" and itemID > 0 and itemID < 55000)
 
@@ -492,6 +492,16 @@ core.GetEnchantInfo = function(enchantID)
 	if spellID then
 		return GetSpellInfo(spellID)
 	end
+end
+
+-- Maybe we should just return spellID
+core.GetEnchantSpellID = function(enchantID)
+	return core.enchantInfo.spellID[enchantID]
+end
+
+-- Unused so far, not sure
+core.VisualToEnchantIDs = function(visualID)
+	return core.enchants[visualID].enchantIDs
 end
 
 core.GetItemData = function(itemID)

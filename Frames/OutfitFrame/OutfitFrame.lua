@@ -36,6 +36,11 @@ core.CreateOutfitFrame = function(parent)
                 return true
             end
         end
+        for _, slot in pairs(core.enchantSlots) do
+            if modelSlots[slot] ~= outfitSlots[slot] then
+                return true
+            end
+        end
         return false
     end
 

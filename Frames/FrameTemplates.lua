@@ -155,6 +155,11 @@ local function CreateMeACustomTexButton(parent, width, height, tex, left, up, ri
     local scale = -0.14
     b.ctex:SetPoint("TOPLEFT", b ,"TOPLEFT", -width*scale, height*scale)
     b.ctex:SetPoint("BOTTOMRIGHT", b ,"BOTTOMRIGHT", width*scale, -height*scale)
+
+    b.SetCustomTexture = function(self, tex, g, b, a)
+        self.ctex:SetTexture(type(tex) == "string" and tex or tex, g, b, a)
+    end
+    
     --core.am(b.ctex:GetPoint(1))
     --ctex:SetAllPoints()	
     --b.ctex:SetBlendMode("BLEND")

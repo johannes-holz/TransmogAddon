@@ -1,6 +1,6 @@
-local MyAddon, myadd = ...
+local folder, core = ...
 
-local a = myadd.AddItem
+local a = core.AddItem
 
 a(1542,25,2,7,21,1,1,nil,nil,nil)
 a(472,35,2,10,17,1,1,nil,nil,nil)
