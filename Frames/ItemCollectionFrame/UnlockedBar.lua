@@ -129,7 +129,7 @@ core.CreateUnlocksOverviewFrame = function(parent)
     frame:SetSize(600, 400)
     frame:SetPoint("BOTTOM", parent, "TOP")
     
-	frame:SetBackdrop(BACKDROP_Test_1)
+	frame:SetBackdrop(core.BACKDROP_ITEM_COLLECTION)
 	frame:SetBackdropBorderColor(0.675, 0.5, 0.125, 1)
 	frame:SetBackdropColor(0.375, 0.375, 0.375, 1)
 

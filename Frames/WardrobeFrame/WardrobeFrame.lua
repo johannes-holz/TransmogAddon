@@ -23,7 +23,6 @@ core.wardrobeFrame = CreateFrame("Frame", folder .. "WardrobeFrame", UIParent, "
 local wardrobeFrame = core.wardrobeFrame
 wardrobeFrame:SetSize(WIDTH, HEIGHT)
 wardrobeFrame:SetPoint("CENTER")
--- wardrobeFrame:SetBackdrop(BACKDROP_TOAST_12_12)
 wardrobeFrame:EnableMouse(true)
 wardrobeFrame:SetMovable(true)
 wardrobeFrame:SetToplevel(true) -- raises frame level to be on top of other frames on mouse click

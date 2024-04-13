@@ -105,7 +105,11 @@ local TransmogFrame_OnShow = function(self)
 	end
     core.RequestPriceTotal()
     
-    SetPortraitTexture(f.charTexture, "target")
+	if UnitExists("target") then
+    	SetPortraitTexture(f.portraitTexture, "target")
+	else
+		SetPortraitToTexture(f.portraitTexture, "interface/icons/inv_mushroom_11")
+	end
 end
 
 local TransmogFrame_OnHide = function(self)
@@ -187,7 +191,11 @@ do
 		end
 		-- core.RequestPriceTotal() -- TODO: No point in using this anymore? If we want to request prices again, should probably make a function to recheck all pendings instead of using this
 		
-		SetPortraitTexture(f.portraitTexture, "target")
+		if UnitExists("target") then
+			SetPortraitTexture(f.portraitTexture, "target")
+		else
+			SetPortraitToTexture(f.portraitTexture, "Interface/Icons/Achievement_Boss_Algalon_01")
+		end
 		f:update()
 	end)
 

@@ -73,6 +73,7 @@ L.deDE = {
     TRANSMOG_NAME = "Transmogrifikation",
     APPEARANCE_NOT_COLLECTED_TEXT_A = "Ihr habt dieses Aussehen noch nicht gesammelt.", -- "You haven't collected this appearance"
     APPEARANCE_NOT_COLLECTED_TEXT_B = "Ihr habt dieses Aussehen gesammelt, aber nicht von diesem Gegenstand.", --"You've collected this appearance, but not from this item"
+    APPEARANCE_NOT_COLLECTED_TEXT_NO = "Gesammelte Aussehen konnten nicht abgefragt werden.",
 
     APPEARANCE_TOOLTIP_TEXT1A = "Gegenstände mit diesem Aussehen:",
     APPEARANCE_TOOLTIP_TEXT1B = "Verfügbare Gegenstände mit diesem Aussehen:",
@@ -88,9 +89,11 @@ L.deDE = {
     TRANSMOG_TOOLTIP_CURRENT_SKIN = "Aktuell ausgewählt:",
     TRANSMOG_TOOLTIP_REMOVE_SKIN = "Leerer Slot",
 
-    CAN_NOT_PREVIEW = "Waffenkombination kann in Vorschau nicht angezeigt werden", -- "Can not preview current melee weapons together."
+    CAN_NOT_PREVIEW = "Waffenkombination kann in Vorschau nicht angezeigt werden", -- "Cannot preview current melee weapons together."
     OH_WILL_BE_HIDDEN = "OH wird von aktueller MH versteckt werden", -- "Off hand will be hidden by current main hand appearance."
     OH_APPEARANCE_WONT_BE_SHOWN = "Transmog auf Nebenhand wird nicht angezeigt", -- "This off hand appearance will not be shown while in this slot."
+    MH_APPEARANCE_WONT_BE_SHOWN = "Transmog auf Waffenhand wird nicht angezeigt",
+    MH_OH_APPEARANCE_WONT_BE_SHOWN = "Transmog auf beiden Händen wird nicht angezeigt",
 
     MINIMAP_TOOLTIP_TEXT1 = "Linksklick: Sammlung öffnen", -- "Left-click: Open Wardrobe"
     MINIMAP_TOOLTIP_TEXT2 = "Umschalt + Linksklick: Transmogfenster öffnen", -- "Shift + Left-click: Open Transmog Interface"
@@ -140,7 +143,7 @@ L.deDE = {
 
     NO_SLOT_SELECTED_TEXT = "Gegenstandsplatz auswählen, um verfügbare Transmogrifikationen anzuzeigen.",
 
-    CAN_NOT_DRESS_OFFHAND = "Euer Charakter kann diese Nebenhand nicht anprobieren.",
+    CAN_NOT_DRESS_OFFHAND = "Euer Charakter kann diesen Gegenstand nicht in der Nebenhand anprobieren.",
     
     SHADOW_FORM_TOOLTIP_TITLE = "Simuliere Schattengestalt",
     SHADOW_FORM_TOOLTIP_TEXT = "Emissionstexturen und Gegenstände mit Lichtquellen werden anders aussehen als in der richtigen Schattengestalt.",
@@ -245,6 +248,7 @@ L.enEU = {
     TRANSMOG_NAME = "Transmogrification",
     APPEARANCE_NOT_COLLECTED_TEXT_A = "You haven't collected this appearance.",
     APPEARANCE_NOT_COLLECTED_TEXT_B = "You've collected this appearance, but not from this item.",
+    APPEARANCE_NOT_COLLECTED_TEXT_NO = "Could not retrieve collected appearances from server.",
 
     APPEARANCE_TOOLTIP_TEXT1A = "Items with this Appearance:",
     APPEARANCE_TOOLTIP_TEXT1B = "Available items with this Appearance:",
@@ -260,21 +264,23 @@ L.enEU = {
     TRANSMOG_TOOLTIP_CURRENT_SKIN = "Aktuell ausgewählt:",
     TRANSMOG_TOOLTIP_REMOVE_SKIN = "Empty slot",
 
-    CAN_NOT_PREVIEW = "Can not preview current melee weapons together.",
+    CAN_NOT_PREVIEW = "Cannot preview current melee weapons together.",
     OH_WILL_BE_HIDDEN = "Off hand will be hidden by current main hand appearance.",
-    OH_APPEARANCE_WONT_BE_SHOWN = "This off hand appearance will not be shown while in this slot.",
+    OH_APPEARANCE_WONT_BE_SHOWN = "Off hand appearance will not be shown while in this slot.",
+    MH_APPEARANCE_WONT_BE_SHOWN = "Main hand appearance will not be shown while in this slot.",
+    MH_OH_APPEARANCE_WONT_BE_SHOWN = "Main and off hand appearance incompatible with slo.t",
 
     MINIMAP_TOOLTIP_TEXT1 = "Left click: Open wardrobe", -- "Left-click: Open Wardrobe"
     MINIMAP_TOOLTIP_TEXT2 = "Shift + left click: Open transmogrification", -- "Shift + Left-click: Open Transmog Interface"
     MINIMAP_TOOLTIP_TEXT3 = "Right click: Change transmog visibility", -- "Right-click: Toggle through visibility options"
 
     TRANSMOG_STATUS = "Transmog status: ",
-    TRANSMOG_STATUS_UNKNOWN = "Transmog Sichtbarkeit konnte nicht abgefragt werden.",
+    TRANSMOG_STATUS_UNKNOWN = "Could not retrieve transmog configuration from server.",
 
-    SHOW_ITEMS_UNDER_SKIN_TOOLTIP_TEXT = "Aktivieren, um anzuzeigen, wie der Skin in Verbindung mit der aktuellen Ausrüstung aussehen wird.",
+    SHOW_ITEMS_UNDER_SKIN_TOOLTIP_TEXT = "Show how the skin will look on top of your current equipment.",
 
-    BUY_SKIN_TEXT = "Seid Ihr sicher, dass Ihr einen weiteren Skinplatz kaufen möchtet?",
-    NO_SKIN_COSTS_ERROR = "Skin Preis konnte nicht abgefragt werden",
+    BUY_SKIN_TEXT = "Do you want to buy another skin slot?",
+    NO_SKIN_COSTS_ERROR = "Could not retrieve price for skin slot from server.",
 
     RENAME_SKIN_TEXT1 = "Enter new name for skin ",
     RENAME_SKIN_TEXT2 = ":",
@@ -312,7 +318,7 @@ L.enEU = {
 
     NO_SLOT_SELECTED_TEXT = "Select an item slot to display available transmogrifications.",
 
-    CAN_NOT_DRESS_OFFHAND = "Your character can't try on this item in the shield hand.",
+    CAN_NOT_DRESS_OFFHAND = "Your character cannot try on this item in the shield hand.",
 
     SHADOW_FORM_TOOLTIP_TITLE = "Shadow form simulation",
     SHADOW_FORM_TOOLTIP_TEXT = "Does not give correct results for emissive textures or items with light sources.",

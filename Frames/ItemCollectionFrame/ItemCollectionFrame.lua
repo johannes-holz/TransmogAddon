@@ -34,7 +34,7 @@ itemCollectionFrame:SetScript("OnShow", function(self)
 
 	self:SetScale(atTransmogrifier and core.transmogFrame.scale / 1.2 or 1)
 
-	self:SetBackdrop(not atTransmogrifier and BACKDROP_Test_1 or {})
+	self:SetBackdrop(not atTransmogrifier and core.BACKDROP_ITEM_COLLECTION or {})
 	self:SetBackdropBorderColor(0.675, 0.5, 0.125, 1)
 	self:SetBackdropColor(0.375, 0.375, 0.375, 1)
 
@@ -54,7 +54,9 @@ itemCollectionFrame:SetScript("OnShow", function(self)
 		self.unlockedStatusBar:Hide()
 	end
 
-	self:UpdateMannequins()
+	if not self.page then
+		self:SetSlotAndCategory(nil, nil) -- Dirty way to init. Maybe find cleaner way
+	end
 end)
 
 itemCollectionFrame:SetScript("OnHide", function(self)
@@ -262,8 +264,11 @@ itemCollectionFrame.UpdateMannequins = function(self)
 	if not positions[race] then race = "Human" end
 	--local inventorySlot = select(2, core:GetTransmogLocationInfo(self.location))
 	local slot, category = self.selectedSlot, self.selectedCategory
-	local pos = (slot and race) and positions[race][slot] or {0, 0, 0, 0}
+	local isEnchantSlot = core.IsEnchantSlot(slot)
+	local x, y, z, facing = unpack((slot and race) and positions[race][slot] or { 0, 0, 0, 0 })
 	local list = self.displayList-- core:GetItemsToDisplay()
+	local canDualWield = core.CanDualWield()
+	local hasTitanGrip = core.HasTitanGrip()
 	
 	local sequenceID, sequenceTime = 15, 100
 
@@ -277,29 +282,33 @@ itemCollectionFrame.UpdateMannequins = function(self)
 	-- 	-- pos = TransmoggyDB.positionData[id][slot]
 	-- end
 
-	--local enchantID = 3789 -- berserker test
-
 	for i = 1, mannequinCount do
 		local itemID = list[mannequinCount * (self.page - 1) + i]
 		local mannequin = self.mannequins[i]
 
 		if not itemID then
-			mannequin:SetPosition(0, 0, 0)
 			mannequin:Hide()
-		else
-			mannequin:SetDisplayMode(self.visualUnlocked[itemID] == 1)
-
-			mannequin:SetPosition(pos[1], pos[2], pos[3])
-			mannequin:SetFacing(pos[4])
-			if sequenceID then
-				mannequin:SetAnimation(sequenceID, sequenceTime)
-			end
-			if not core.IsEnchantSlot(slot) then
+		else			
+			local itemCategory
+			if not isEnchantSlot then
 				local _, _, _, class, subClass = core.GetItemData(itemID)
-				if class == 2 and subClass == 2 then mannequin:SetFacing(-pos[4]) end -- Bows
+				itemCategory = class and subClass and core.classSubclassToType[class][subClass]
 			end
+			local isTwoHand = itemCategory and core.CanBeTitanGripped(itemCategory) -- those are the only 2H in offhand slot
+			local displaySlot = slot
+			-- scuffed fix for offhand weapon display
+			-- TODO: find and add animation pose, where the weapon is gripped by both hands or the weapon arm is stretched out
+			if (slot == "ShieldHandWeaponSlot") and ((isTwoHand and not hasTitanGrip) or not canDualWield) then
+				displaySlot = "MainHandSlot"
+				y = -y + 0.2
+			end
+			
+			mannequin:SetDisplayMode(self.visualUnlocked[itemID] == 1)
+			mannequin:SetPosition(x, y, z)
+			mannequin:SetFacing(itemCategory == core.CATEGORIES.WEAPON_BOWS and -facing or facing) -- bows are held in the left hand
+			mannequin:SetAnimation(sequenceID, sequenceTime)
 			mannequin:Undress()			
-			mannequin:TryOn(itemID, slot) --"item:"..itemID..":"..enchantID -- MannequinFrame displays chosen enchant itself
+			mannequin:TryOn(itemID, displaySlot)
 			mannequin:Show()
 		end
 		-- if slot == "MainHandSlot" then DEB(mannequin) end -- Was used for tests showing weapons with greyed out model

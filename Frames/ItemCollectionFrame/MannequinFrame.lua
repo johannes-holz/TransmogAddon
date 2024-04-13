@@ -59,11 +59,11 @@ local Model_SetLoading = function(self, loading)
 end
 
 -- Set and show display item. If we don't have the item cached, we query it and show a loading frame. The loading frame also periodically checks, if the item has been loaded
-local Model_TryOn = function(self, itemID)
+local Model_TryOn = function(self, itemID, slot)
 	assert(type(itemID) == "number")  -- expects clean numerical itemID!
-	self.itemID = itemID		
-	local slot = self:GetParent():GetParent().selectedSlot
-
+	self.itemID = itemID
+	self.slot = slot
+	-- slot = slot or self:GetParent():GetParent().selectedSlot
 
 	if core.IsEnchantSlot(slot) then
 		local dummyWeapon = (slot == "MainHandEnchantSlot" or core.CanDualWield()) and core.DUMMY_WEAPONS.ENCHANT_PREVIEW_WEAPON or core.DUMMY_WEAPONS.ENCHANT_PREVIEW_OFFHAND_WEAPON
@@ -80,8 +80,7 @@ local Model_TryOn = function(self, itemID)
 		local enchant = core.itemCollectionFrame.previewWeaponEnchants and core.itemCollectionFrame.enchant
 		local itemString = enchant and "item:" .. itemID .. ":" .. enchant or itemID
 		self:Undress()
-		moreModestyPlease = false
-		if moreModestyPlease then
+		if core.db.profile.General.clothedMannequins then
 			if not (slot == "ChestSlot" or slot == "ShirtSlot" or slot == "TabardSlot" or slot == "WristSlot" or slot == "HandsSlot") then
 				self:TryOnOld(3427) -- Black Shirt
 				-- self:TryOnOld(41253) -- Darkblue Shirt		
@@ -117,7 +116,7 @@ end
 
 -- Displays a special border for equipped item, current transmog, skin or pending
 local Model_UpdateBorders = function(self)
-	local slot = self:GetParent():GetParent().selectedSlot
+	local slot = self:GetParent():GetParent().selectedSlot -- TryOn uses different slot for OH display stuff. Here we care about the real slot
 	local isEnchantSlot = slot and core.IsEnchantSlot(slot)
 
 	if slot and self.itemID and core.IsAtTransmogrifier() then
@@ -205,7 +204,7 @@ core.CreateMannequinFrame = function(parent, id, width, height)
 	-- m.borderFrame:SetAllPoints()
 	
 	m.backgroundTexture = m:CreateTexture(nil, "BACKGROUND")
-	m.backgroundTexture:SetTexture(0, 0, 0)
+	m.backgroundTexture:SetTexture(0.15, 0.15, 0.15)
 	m.backgroundTexture:SetPoint("BOTTOMLEFT", 1, 1)
 	m.backgroundTexture:SetPoint("TOPRIGHT", -1, -1)
 

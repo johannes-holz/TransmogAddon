@@ -49,18 +49,19 @@ core.InitLDB = function()
 				local config = core.GetConfig()
 
 				tooltip:AddLine(folder)
-				tooltip:AddLine(core.MINIMAP_TOOLTIP_TEXT1)
-				tooltip:AddLine(core.MINIMAP_TOOLTIP_TEXT2)
-				tooltip:AddLine(core.MINIMAP_TOOLTIP_TEXT3)
 				tooltip:AddLine(" ")
-				local text = core.TRANSMOG_STATUS_UNKNOWN
+				tooltip:AddLine(core.MINIMAP_TOOLTIP_TEXT1, 1, 1, 1)
+				tooltip:AddLine(core.MINIMAP_TOOLTIP_TEXT2, 1, 1, 1)
+				tooltip:AddLine(core.MINIMAP_TOOLTIP_TEXT3, 1, 1, 1)
+				tooltip:AddLine(" ")
+				local text = RED_FONT_COLOR_CODE .. core.TRANSMOG_STATUS_UNKNOWN .. FONT_COLOR_CODE_CLOSE 
 				if config then
 					text = core.TRANSMOG_STATUS
 					for i, name in ipairs(core.CONFIG_NAMES) do
 						text = text .. (config == i and GREEN_FONT_COLOR_CODE or GRAY_FONT_COLOR_CODE) .. name .. FONT_COLOR_CODE_CLOSE .. (i < #core.CONFIG_NAMES and ", " or "")
 					end
 				end
-				tooltip:AddLine(text)
+				tooltip:AddLine(text, nil, nil, nil, 1)
 				--tooltip:AddLine(config and "Transmog Status: " .. core.CONFIG_NAMES[config] or "Transmog Status konnte nicht abgefragt werden.")
 			end,
 		})

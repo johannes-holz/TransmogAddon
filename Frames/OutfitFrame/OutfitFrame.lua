@@ -118,7 +118,7 @@ core.CreateOutfitFrame = function(parent)
         self:SetScript("OnUpdate", fading and self.OnUpdate or nil)
     end
     outfitFrame.EnableBackground = function(self, background)
-        self:SetBackdrop(background and BACKDROP_TUTORIAL_16_16 or nil)
+        self:SetBackdrop(background and core.BACKDROP_TUTORIAL_16_16 or nil)
     end
 
     outfitFrame.Resize = function(self)

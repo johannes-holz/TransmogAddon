@@ -38,6 +38,22 @@ local OwnerFrame_GetUnitSlot = function(f)
 	end
 end
 
+local Tooltip_AddCollectedLine = function(tooltip, itemID)
+	if core.db.profile.General.tooltipNoCollectedStatus then return end
+
+	local itemUnlocked = core.GetItemData(itemID)
+
+	if itemUnlocked and itemUnlocked ~= 1 then 	-- or just check for == 0? (dressable item and not unlocked)
+		if core.requestUnlocksAllFailed then
+			tooltip:AddLine(core.APPEARANCE_NOT_COLLECTED_TEXT_NO, 1.0, 0.1, 0.1, 1.0)
+		else
+			local text = (core.IsVisualUnlocked(itemID) == 1) and core.APPEARANCE_NOT_COLLECTED_TEXT_B or core.APPEARANCE_NOT_COLLECTED_TEXT_A
+			local color = core.appearanceNotCollectedTooltipColor
+			tooltip:AddLine(text, color.r, color.g, color.b, color.a, 1)
+		end
+	end
+end
+
  -- for non player units we get visualID through GetInventoryItemID, for the player can get the itemtransmog from the itemlink and skin information through the API GetSkins()
  -- TODO: Fix TransmogLine + Hiding Scuffness, maybe seperate by task into multiple functions, not sure
 local last = 0
@@ -64,11 +80,7 @@ local function TooltipAddMogLine(tooltip)
 	local visualUnlocked = core.GetItemData(visualID)
 	local skinVisualUnlocked = core.GetItemData(skinVisualID)	
 
-	if itemUnlocked and itemUnlocked ~= 1 then -- GetItemData returned "not unlocked", but not nil, so it is dressable item. can't use IsDressableItem(itemID), because it also returns true for trinkets, recipes, ...
-		local text = (core.IsVisualUnlocked(itemID) == 1) and core.APPEARANCE_NOT_COLLECTED_TEXT_B or core.APPEARANCE_NOT_COLLECTED_TEXT_A
-		local color = core.appearanceNotCollectedTooltipColor
-		tooltip:AddLine(text, color.r, color.g, color.b, color.a, 1)
-	end
+	Tooltip_AddCollectedLine(tooltip, itemID)
 
 	local textLeft1, textLeft2
 	if strfind(tooltip:GetName(), "Shopping") then -- Compare Item tooltips, that contain extra "Currently equipped" line
@@ -154,19 +166,12 @@ for _, tooltip in pairs(tooltips) do
 end
 
 -- Adds "item/visual not collected" line to recipe spells
--- TODO: received recipe data is missing recipes, that are only taught by the trainer or a spell (instead of being taught by an item)
 local OnTooltipSetSpell = function(tooltip)
 	local name, rank, spellID = tooltip:GetSpell()
 	
 	if spellID and core.GetSpellRecipeInfo(spellID) then
-		local itemID = core.GetSpellRecipeInfo(spellID)
-		local itemUnlocked = core.GetItemData(itemID)
-
-		if itemUnlocked and itemUnlocked ~= 1 then -- GetItemData returned "not unlocked", but not nil, so it is dressable item. can't use IsDressableItem(itemID), because it also returns true for trinkets, recipes, ...
-			local text = (core.IsVisualUnlocked(itemID) == 1) and core.APPEARANCE_NOT_COLLECTED_TEXT_B or core.APPEARANCE_NOT_COLLECTED_TEXT_A
-			local color = core.appearanceNotCollectedTooltipColor
-			tooltip:AddLine(text, color.r, color.g, color.b, color.a, 1)
-		end
+		local itemID = core.GetSpellRecipeInfo(spellID)		
+		Tooltip_AddCollectedLine(tooltip, itemID)
 	end
 end
 
@@ -283,7 +288,6 @@ end)
 
 -- InspectFrame Skin Fix
 -- GetInventoryItemLink return value never changes for other players with activated skin until a new NotifyInspect call is made
--- TODO: AddOns like GearScore spam NotifyInspect on MouseOver and cause glitchy behaviour. Probably best to disable NotifyInspect while InspectFrame is open.
 local f = CreateFrame("Frame")
 f:RegisterEvent("ADDON_LOADED")
 --f:RegisterEvent("INSPECT_READY")

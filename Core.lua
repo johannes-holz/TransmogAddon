@@ -1256,18 +1256,26 @@ core.RequestUnlocksSlot = function(slot)
 end
 
 
--- Only calling this once on LogIn, so we do not need to trigger any updates to Interface
-local requestCounterUA = {}
+-- Should only be called once on login, so we do not need to trigger updates to interface
+local requestCounterUA = 0
 core.RequestUnlocksAll = function(slot)
+	requestCounterUA = requestCounterUA + 1
 	local requestID = requestCounterUA
 	API.GetUnlockedVisuals(true):next(function(items)
 		if requestID == requestCounterUA then
-			core.MyWaitFunction(0.1, core.SetUnlocks, items) -- just want to see errors bra -.-
+			core.requestUnlocksAllFailed = nil
+			if requestID == requestCounterUA then
+				core.SetUnlocks(items)
+				-- core.MyWaitFunction(0.1, core.SetUnlocks, items) -- used delay to be able to see errors, can remove this now
+			end
 		end
-	end):catch(function(err)
-		core.MyWaitFunction(0.1, core.SetUnlocks, {}) -- -.-
-		-- core.SetUnlocks({})
-		print("RequestUnlocksAll: An error occured:", err.message)
+	end):catch(function(err)		
+		if requestID == requestCounterUA then
+			core.requestUnlocksAllFailed = 1
+			core.SetUnlocks({})
+			-- core.MyWaitFunction(0.1, core.SetUnlocks, {})
+			print("RequestUnlocksAll: An error occured:", err.message)
+		end
 	end)
 end
 

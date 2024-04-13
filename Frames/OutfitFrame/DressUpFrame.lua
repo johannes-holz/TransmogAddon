@@ -50,13 +50,24 @@ DressUpModel.shadowFormFlamesModel:Hide()
 local offTex = "Interface\\Icons\\spell_shadow_shadowform"
 local onTex = "Interface\\Icons\\spell_shadow_chilltouch"
 
-DressUpModel.shadowFormButton = core.CreateMeACustomTexButton(DressUpModel, 24, 24, offTex, 9/64, 9/64, 54/64, 54/64)
+DressUpModel.shadowFormButton = core.CreateMeACustomTexButton(DressUpModel, 24, 24, "Interface\\Buttons\\CheckButtonHilight", 9/64, 9/64, 54/64, 54/64)
 DressUpModel.shadowFormButton:SetPoint("BOTTOMRIGHT", -5, 5)
-DressUpModel.shadowFormButton:SetScript("OnClick", function(self, button)    
+DressUpModel.shadowFormButton:SetScript("OnClick", function(self, button)
     DressUpModel:SetShadowForm(not DressUpModel:GetShadowForm())
+    core.PlayButtonSound()
 end)
 core.SetTooltip2(DressUpModel.shadowFormButton, core.SHADOW_FORM_TOOLTIP_TITLE, 1, 1, 1, nil,
                                                 core.SHADOW_FORM_TOOLTIP_TEXT, nil, nil, nil, 1)
+
+-- DressUpModel.testButton = core.CreateCustomCheckButton(DressUpModel, "$parentTestButton", 20, 20)
+-- DressUpModel.testButton:SetPoint("BOTTOMRIGHT", -50, 8)
+-- DressUpModel.testButton:SetScript("OnClick", function(self, button)
+--     print("hi", self:GetChecked())
+--     core.PlayButtonSound()
+--     DressUpModel:SetShadowForm(not DressUpModel:GetShadowForm())
+-- end)
+-- core.SetTooltip2(DressUpModel.testButton, core.SHADOW_FORM_TOOLTIP_TITLE, 1, 1, 1, nil,
+--                                           core.SHADOW_FORM_TOOLTIP_TEXT, nil, nil, nil, 1)
 
 DressUpModel.SetShadowForm = function(self, form)
     self:SetLight(unpack(form and core.LIGHT.shadowForm or core.LIGHT.default))
@@ -67,6 +78,7 @@ DressUpModel.SetShadowForm = function(self, form)
     self.shadowFormFlamesModel:SetPosition(x, y, z + 0.2)
     self.shadowFormEnabled = form
     self.shadowFormButton:SetCustomTexture(form and onTex or offTex)
+    -- self.testButton:SetNormalTexture(form and onTex or offTex)
 end
 
 DressUpModel.GetShadowForm = function(self)
@@ -396,6 +408,7 @@ DressUpFrame.undressButton = core.CreateMeATextButton(DressUpFrame, 80, 22, core
 DressUpFrame.undressButton:SetPoint("BOTTOMRIGHT", DressUpFrameResetButton, "BOTTOMLEFT")
 DressUpFrame.undressButton:SetScript("OnClick", function(self)
     DressUpModel:Undress()
+    core.PlayButtonSound()
 end)
 
 DressUpFrame.printButton = core.CreateMeATextButton(DressUpFrame, 80, 22, core.SHARE)
@@ -414,13 +427,14 @@ DressUpFrame.printButton:SetScript("OnClick", function(self)
     local editBox = _G[chatFrame:GetName() .. "EditBox"]
     editBox:SetFocus()
     ChatEdit_InsertLink(link)
+    core.PlayButtonSound()
 end)
 
 -- List of current items on the model. TODO: nicer background, Button Hover Texture?, Modifier Click explanation
 DressUpFrame.itemListFrame = CreateFrame("Frame", "ItemListFrame", DressUpFrame)
 DressUpFrame.itemListFrame:SetSize(200, 400)
 DressUpFrame.itemListFrame:SetPoint("TOPLEFT", DressUpFrame, "TOPRIGHT", -40, -30)
-DressUpFrame.itemListFrame:SetBackdrop(BACKDROP_ITEM_LIST)
+DressUpFrame.itemListFrame:SetBackdrop(core.BACKDROP_ITEM_LIST)
 DressUpFrame.itemListFrame:SetBackdropColor(0.125, 0.125, 0.25, 1)
 DressUpFrame.itemListFrame:EnableMouse(true)
 DressUpFrame.itemListFrame:SetToplevel(true)

@@ -69,23 +69,32 @@ core.options = {
 				Header = {
 					type = "header",
 					order = 1,
-					name = "MOBA-style health bars"
+					name = "Header Title"
 				},
 				MobaDescription = {
 					type = "description",
 					order = 2,
-					name = "Overlay lines for 1k and 10k segments over health bars.",
+					name = "blablabla description",
 				},		
-                RulerToggle = {
+                ClothedMannequins = {
                     type = "toggle",
-                            --width = 1.5, --apparently numerics arent supported
                     order = 3,
-                    name = "Enable",
-                        width = "full",
-                    desc = "Display lines for 1k and 10k segments on healthbars.",
+                    name = "Clothed mannequins",
+					width = "full",
+                    desc = "Put some cloth on for Anzu's sake.",
                     get = GetWidgetValue,
                     set = SetWidgetValue,
-                    arg = "Enable",
+                    arg = "clothedMannequins",
+                },
+				TooltipNoCollected = {
+                    type = "toggle",
+                    order = 3,
+                    name = "Hide collection status in tooltips.",
+					width = "full",
+                    desc = "Activate in order to not show whether in item has been collected in its tooltip.",
+                    get = GetWidgetValue,
+                    set = SetWidgetValue,
+                    arg = "tooltipNoCollectedStatus",
                 },
             },		
         },
@@ -122,7 +131,8 @@ core.options = {
 core.defaults = {	
 	profile = {
 		General = {
-			Enable = true,
+			clothedMannequins = false,
+			tooltipNoCollectedStatus = false,
 		},
 		CCTracker = {
 			Enable = true,

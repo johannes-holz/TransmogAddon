@@ -13,7 +13,16 @@ local modelPositions = {
 	["Orc"] = {0, 0, 0.05},
 }
 
-core.TwoHandExclusive = {[core.ITEM_SUB_CLASSES.POLEARMS] = true, [core.ITEM_SUB_CLASSES.STAVES] = true, [core.ITEM_SUB_CLASSES.FISHING_POLES] = true}
+core.TwoHandExclusive = { [core.ITEM_SUB_CLASSES.POLEARMS] = true, [core.ITEM_SUB_CLASSES.STAVES] = true, [core.ITEM_SUB_CLASSES.FISHING_POLES] = true }
+core.MHOnly = { INVTYPE_WEAPONMAINHAND = true }
+core.OHOnly = { INVTYPE_WEAPONOFFHAND = true }
+
+local Model_SetUnit = function(self, unit)
+	local x, y, z = self:GetPosition()
+	self:SetPosition(0, 0, 0)
+	self:SetUnitOld(unit)
+	self:SetPosition(x, y, z)
+end
 
 core.CreatePreviewModel = function(parent, width, height)
 	local model = CreateFrame("DressUpModel", folder .. "PreviewModel", parent)
@@ -21,15 +30,19 @@ core.CreatePreviewModel = function(parent, width, height)
 	model:EnableMouse()
 	model:EnableMouseWheel()
 
+	local _, race = UnitRace("player")
+	local _, class = UnitClass("player")
+
 	model.border = CreateFrame("Frame", nil, model)
 	model.border:SetPoint("BOTTOMLEFT", -4, -4)
 	model.border:SetPoint("TOPRIGHT", 4, 4)
 	model.border:SetBackdrop(core.BACKDROP_TOAST_ONLY_BORDER_12_12)	
+
+	model.SetUnitOld = model.SetUnit
+	model.SetUnit = Model_SetUnit
 	
-	model:SetUnit("player")	
-	local _, race = UnitRace("player")
-	model.standardPos = modelPositions[race] or {0, 0, 0}
-	model.posBackup = {0, 0, 0} -- Pos must be set to 0, 0, 0 on hide, otherwise camera gets translated on next show. So we have to save our last Position and set it again OnShow
+	model:SetUnit("player")
+	model.posBackup = modelPositions[race] or { 0, 0, 0 }
 	model.texRatio, model.texCutoff = 3/4, 0	
 	
 	model.seqtime = 0
@@ -54,55 +67,61 @@ core.CreatePreviewModel = function(parent, width, height)
 		onUpdateNormal(self, elapsed)
 		local curX, curY = GetCursorPosition()
 		local dif = curX - model.x
-		model:SetFacing(model.facing + dif * rotSpeed) -- TODO: scale with screen resolution for consistent behaviour?
+		model:SetFacing(model.facing + dif * rotSpeed)
 	end
 	
-	local turning, dragging = false, false
+	model.isTurning, model.isDragging = false, false
 	model:SetScript("OnMouseDown", function(self, button)
 		CloseDropDownMenus()
 		if button == "LeftButton" then
-			if dragging then return end
-			turning = true
+			if model.isDragging then return end
+			model.isTurning = true
 			model.x, model.y = GetCursorPosition()
 			model.facing = model:GetFacing()
 			self:SetScript("OnUpdate", onUpdateTurning)
 		elseif button == "RightButton" then
-			if turning then return end
-			dragging = true
+			if model.isTurning then return end
+			model.isDragging = true
 		end
 	end)
 	
 	model:SetScript("OnMouseUp", function(self, button)
 		if button == "LeftButton" then
-			turning = false
+			model.isTurning = false
 		elseif button == "RightButton" then
-			dragging = false
+			model.isDragging = false
 		end
-		if not turning and not dragging then self:SetScript("OnUpdate", onUpdateNormal) end		
+		if not model.isTurning and not model.isDragging then self:SetScript("OnUpdate", onUpdateNormal) end		
 	end)
 	
 	model:SetScript("OnShow", function(self)
-		model:SetPosition(model.posBackup[1], model.posBackup[2], model.posBackup[3])
+		self:SetPosition(unpack(self.posBackup))
+
 		self:SetScript("OnUpdate", onUpdateNormal)
 		
 		-- kappa
 		local weekday, month, day, year = CalendarGetDate()
 		if month == 4 and day == 1 and not self.openedBefore then
 			self.openedBefore = true
-			model:SetModel("CREATURE/Tauren_MountedCanoe/Tauren_MountedCanoe.m2")
+			self:SetModel("CREATURE/Tauren_MountedCanoe/Tauren_MountedCanoe.m2")
 		else
-			model:SetUnit("player")
+			self:SetUnit("player")
 		end
 		-- shiny bladestorm
-		model:ChangeSequence((math.random() > 0.9999) and 126 or -1)
+		self:ChangeSequence((math.random() > 0.9999) and 126 or -1)
+
+		if self.SetShadowForm then
+			self:SetShadowForm(self:GetShadowForm())
+		end
 		
-		model:update()
+		self:update()
 	end)
 
 	model:SetScript("OnHide", function(self)
-		turning, dragging = false, false
-		model.posBackup[1], model.posBackup[2], model.posBackup[3] = model:GetPosition() 
-		model:SetPosition(model.standardPos[1], model.standardPos[2], model.standardPos[3])
+		model.isTurning, model.isDragging = false, false
+		model.posBackup[1], model.posBackup[2], model.posBackup[3] = model:GetPosition()
+		core.am(model.posBackup)
+		model:SetPosition(0, 0, 0)
 		--[[model.texRatio, model.texCutoff = 3/4, 0
 		model.BGTopLeft:SetHeight(model:GetHeight()*model.texRatio)		
 		model.BGTopLeft:SetTexCoord(model.texCutoff,1,0,1) --(0,0,middleCutOff,1,1,0,1,1)
@@ -112,19 +131,17 @@ core.CreatePreviewModel = function(parent, width, height)
 		model.BGTopRight:SetTexCoord(0,0.95-model.texCutoff,0,1)
 		model.BGBottomRight:SetHeight(model:GetHeight()*(1-model.texRatio))
 		model.BGBottomRight:SetTexCoord(0,0.95-model.texCutoff,0,0.5-model.texCutoff*2)]] --Only needed if full reset is desired on hide
-		--self:SetScript("OnUpdate", nil) --Happens automatically
+		--self:SetScript("OnUpdate", nil) -- OnUpdate only gets called for shown frames
 	end)
-	--TODO: -maybe on enter self.controllFrame:Show() etc
 	
-	--TODO: Bei langeweile am Fakezoom weiterarbeiten
+	--TODO: Improve or remove fake texture zoom
 	model:SetScript("OnMouseWheel", function(self, delta)
-		--TODO: Scroll auf bestimmte Körperstellen ermöglichen?
-		--camera is in (2, 0, 0?) depends on race and gets translated depending on modelposition at the point of init/show
+		--TODO: Allow scrolling on specific positions?
+		-- camera is in (2, 0, 0?) depends on race and gets translated depending on modelposition at the point of init/show
 		--model:SetModelScale(1.5)
 		--model:SetPosition(0, 0, -0.5)
-		local scale = model:GetModelScale()
+		-- local scale = model:GetModelScale()
 		local x, y, z = model:GetPosition()
-		--core.am(x)
 		if delta < 0 and x > 0.1 then
 			--if x > 0.65 then z = z + x / 20 end
 			x = x - 0.05
@@ -136,8 +153,8 @@ core.CreatePreviewModel = function(parent, width, height)
 			model.texRatio = model.texRatio + 0.014
 			model.texCutoff = model.texCutoff + 0.01
 		end
-		--Hängt von der Kameraposition und der Hintergrundtexture ab und braucht daher auch pro rasse/geschlecht abgestimmte parameter
-		--Nach oben hin auch weniger punktflucht als zur seite? bei himmel gut, bei wänden und co weniger
+
+		-- fake zoom on background texture. should probably just remove this and allow positional zoom instead and maybe even model dragging, even tho it looks bad
 		--local middleCutOff = model.texCutoff * model.texRatio        --   Strahlensatz: 1 / model.texRatio = 	model.texCutoff / middleCutOff
 		model:SetPosition(x, y, z)
 		model.BGTopLeft:SetHeight(model:GetHeight()*model.texRatio)		
@@ -155,10 +172,10 @@ core.CreatePreviewModel = function(parent, width, height)
 	--elseif race == "Troll" then race = "Orc" end
 	local path = "Interface\\DressUpFrame\\"
 	if race == "Gnome" or race == "Troll" or race == "Orc" then
-		--race = "Nightborne"--"Nightborne"--"TROLL"--"Worgen"--"HighmountainTauren"
+		-- race = "Nightborne"--"Nightborne"--"TROLL"--"Worgen"--"HighmountainTauren"
 		path = "Interface\\AddOns\\".. folder .."\\images\\DressUpFrame\\"
-		--model.texRatio = 4/5 --spillt textur über
-		--model:SetPosition(0.1, 0, -0.1)
+		-- model.texRatio = 4/5 --spillt textur über
+		-- model:SetPosition(0.1, 0, -0.1)
 	end
 	
 	model.BGTopLeft = model:CreateTexture(nil, "BACKGROUND")
@@ -240,7 +257,9 @@ core.CreatePreviewModel = function(parent, width, height)
 	
 	model.update = function(self)
 		if not model:IsShown() then return end
+
 		local selectedSlot = core.GetSelectedSlot()
+		local skin = core.GetSelectedSkin()
 
 		if core.IsWeaponSlot(selectedSlot) then
 			model.lastWeaponSlot = selectedSlot -- make displayed weapon depend on last selected weapon slot?
@@ -249,7 +268,6 @@ core.CreatePreviewModel = function(parent, width, height)
 		local itemsToShow = self:GetItemsToDisplay()
 
 		model:Undress()
-        model.cantPreviewMessage:Hide()
 		
 		for k, v in pairs(itemsToShow) do
 			if not core.Contains({"MainHandSlot", "MainHandEnchantSlot", "SecondaryHandEnchantSlot", "SecondaryHandSlot", "RangedSlot", "OffHandSlot", "ShieldHandWeaponSlot"}, k) then
@@ -258,23 +276,40 @@ core.CreatePreviewModel = function(parent, width, height)
 		end
 
 		-- TODO: Are we happy with this offhand display behaviour?. maybe remember last offhand slot and also range slot/melee slot and show that one instead of always melee weps?
-		-- TODO: still the problem that we cant display 2h in offhand for dualwielders without titangrip. what do we do here?		
+		-- TODO: still the problem that we cant display 2h in offhand for dualwielders without titangrip. what do we do here?
 
+		-- Weapon display logic:
 		local mh = itemsToShow["MainHandSlot"]
-		--if mh and itemsToShow["MainHandEnchantSlot"] then mh = "item:"..mh..":"..itemsToShow["MainHandEnchantSlot"] end
 		local oh = (selectedSlot == "OffHandSlot" or selectedSlot == "ShieldHandWeaponSlot") and itemsToShow[selectedSlot]
 					or not (selectedSlot == "OffHandSlot" or selectedSlot == "ShieldHandWeaponSlot") and (itemsToShow["ShieldHandWeaponSlot"] or itemsToShow["OffHandSlot"]) or nil
-		--if oh and itemsToShow["SecondaryHandEnchantSlot"] then oh = "item:"..oh..":"..itemsToShow["SecondaryHandEnchantSlot"] end
 
         local mhWeaponType = mh and select(7, GetItemInfo(mh))
         local ohWeaponType = oh and select(7, GetItemInfo(oh))
-        
-        core.SetShown(model.mhHidesOH, mhWeaponType and ohWeaponType and core.TwoHandExclusive[mhWeaponType])
-        core.SetShown(model.ohAppearanceNotShown, ohWeaponType and core.TwoHandExclusive[ohWeaponType])
 
-        if ohWeaponType and core.TwoHandExclusive[ohWeaponType] then
-            oh = core.TransmogGetSlotInfo("SecondaryHandSlot")
-        end
+        local mhInvType = mh and select(9, GetItemInfo(mh))
+        local ohInvType = oh and select(9, GetItemInfo(oh))
+
+		print(mhInvType, mhTransmogHidden)
+
+		local mhTransmogHidden = mhWeaponType and core.OHOnly[mhInvType]
+		local ohTransmogHidden = ohWeaponType and core.TwoHandExclusive[ohWeaponType] or core.MHOnly[ohInvType]
+		
+		-- Staff/polearm/fishing pole transmogs will not be shown while in the offhand. Similar for MH/OH exclusive weapons in the wrong slot. Confusing ...
+		mh = mhTransmogHidden and core.TransmogGetSlotInfo("MainHandSlot") or mh
+		oh = ohTransmogHidden and core.TransmogGetSlotInfo("SecondaryHandSlot") or oh
+		
+		-- How to handle enchants? :)
+		local showInventoryEnchants = not skin or core.showItemsUnderSkin
+		local mhEnchant = showInventoryEnchants and core.GetInventoryEnchantID("player", 16)
+		local ohEnchant = showInventoryEnchants and core.GetInventoryEnchantID("player", 17)
+		if mh and mh > 1 and mhEnchant and mhEnchant > 0 then mh = "item:" .. mh .. ":" .. mhEnchant end
+		if oh and ohEnchant then oh = "item:" .. oh .. ":" .. ohEnchant end
+        
+		model.ohAppearanceNotShown:SetText((mhTransmogHidden and ohTransmogHidden) and core.MH_OH_APPEARANCE_WONT_BE_SHOWN or
+											mhTransmogHidden and core.MH_APPEARANCE_WONT_BE_SHOWN or core.OH_APPEARANCE_WONT_BE_SHOWN)
+        core.SetShown(model.mhHidesOH, mhWeaponType and ohWeaponType and core.TwoHandExclusive[mhWeaponType])
+        core.SetShown(model.ohAppearanceNotShown, mhTransmogHidden or ohTransmogHidden)
+        model.cantPreviewMessage:Hide()
 		
 		if core.GetSelectedSlot() == "RangedSlot" then
 			if itemsToShow["RangedSlot"] then
@@ -298,13 +333,13 @@ core.CreatePreviewModel = function(parent, width, height)
 	core.RegisterListener("selectedSkin", model)
 	
 
-	------------------- Outfit Stuff -------------------
+	---- Outfit Stuff ----
+
 	model.GetAll = function(self)
 		local items = self:GetItemsToDisplay(true)		
 		local selectedSlot = core.GetSelectedSlot()
 
-
-        -- Only allow Offhand or ShieldHandWeapon?
+        -- Only allow Offhand or ShieldHandWeapon in outfits?
         if selectedSlot == "OffHandSlot" then
             items["ShieldHandWeaponSlot"] = nil
         elseif selectedSlot == "ShieldHandWeaponSlot" then
@@ -329,12 +364,58 @@ core.CreatePreviewModel = function(parent, width, height)
 
 		return items
 	end
+
 	model.SetAll = function(self, set)
 		core.SetCurrentChanges(set)
 		core.SetSlotAndCategory(nil, nil)
 	end
+	
+	---- Shadowform Simulation ----
 
-	----------------------------------------------------
+	if class == "PRIEST" then
+		model.shadowFormFlamesModel = CreateFrame("PlayerModel", folder .. "$parentShadowModel", model)
+		model.shadowFormFlamesModel:SetPoint("Center")
+		model.shadowFormFlamesModel:SetModel("SPELLS/Shadow_Form_Precast.m2")
+		model.shadowFormFlamesModel:SetAlpha(0.6)
+		model.shadowFormFlamesModel:SetAllPoints()
+		model.shadowFormFlamesModel:Hide()
+		model.shadowFormFlamesModel:SetScript("OnUpdate", function(self, elapsed)
+			self.elapsed = (self.elapsed or 0) - elapsed
+			if self.elapsed < 0 then
+				self.elapsed = 0.1
+				local x, y, z = model:GetPosition()
+				self:SetPosition(x, y, z + 0.2)
+			end
+		end)
+
+		local offTex = "Interface\\Icons\\spell_shadow_shadowform"
+		local onTex = "Interface\\Icons\\spell_shadow_chilltouch"
+
+		model.shadowFormButton = core.CreateMeACustomTexButton(model, 24, 24, offTex, 9/64, 9/64, 54/64, 54/64)
+		model.shadowFormButton:SetPoint("BOTTOMRIGHT", -5, 5)
+		model.shadowFormButton:SetScript("OnClick", function(self, button)    
+			model:SetShadowForm(not model:GetShadowForm())
+		end)
+		core.SetTooltip2(model.shadowFormButton, core.SHADOW_FORM_TOOLTIP_TITLE, 1, 1, 1, nil,
+														core.SHADOW_FORM_TOOLTIP_TEXT, nil, nil, nil, 1)
+
+		model.SetShadowForm = function(self, form)
+			self:SetLight(unpack(form and core.LIGHT.shadowForm or core.LIGHT.default))
+			self:SetAlpha(form and 0.75 or 1)
+			core.SetShown(self.shadowFormFlamesModel, form)
+			self.shadowFormFlamesModel:SetModel("SPELLS/Shadow_Form_Precast.m2")
+			local x, y, z = self:GetPosition()
+			self.shadowFormFlamesModel:SetPosition(x, y, z + 0.2)
+			self.shadowFormEnabled = form
+			self.shadowFormButton:SetCustomTexture(form and onTex or offTex)
+		end
+
+		model.GetShadowForm = function(self)
+			return self.shadowFormEnabled
+		end
+	end
+
+	-----------------------------------
 	
 	return model
 end
