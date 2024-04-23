@@ -1594,7 +1594,6 @@ a:RegisterEvent("PLAYER_REGEN_ENABLED")
 
 local lastClosed = 0
 a:SetScript("OnEvent", function(self, event, ...)
-	print(event, ...)
 	if event == "PLAYER_ENTERING_WORLD" then
 		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 
