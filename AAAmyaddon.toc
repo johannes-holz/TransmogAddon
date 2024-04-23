@@ -43,7 +43,7 @@ Frames\ItemCollectionFrame\WardrobeModelFrame.lua
 Frames\ItemCollectionFrame\ItemCollectionFrame.lua
 
 # UnlocksOverviewFrame
-Frames\ItemCollectionFrame\UnlockedBar.lua
+Frames\ItemCollectionFrame\UnlocksOverviewFrame.lua
 
 # TransmogFrame
 Frames\TransmogFrame\PreviewModel.lua

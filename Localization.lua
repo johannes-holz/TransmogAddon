@@ -78,6 +78,8 @@ L.deDE = {
     APPEARANCE_TOOLTIP_TEXT1A = "Gegenstände mit diesem Aussehen:",
     APPEARANCE_TOOLTIP_TEXT1B = "Verfügbare Gegenstände mit diesem Aussehen:",
     APPEARANCE_TOOLTIP_TEXT2 = "Drücke Tab oder Rechtsklick, um einen anderen Gegenstand auszuwählen.",
+    APPEARANCE_TOOLTIP_TEXT3 = "Es gibt weitere Gegenstände mit diesem Aussehen, die nicht der aktuellen Auswahl entsrprechen.",
+    APPEARANCE_TOOLTIP_TEXT4 = "* Durch die Transmogrifikation wird der Gegenstand an euch gebunden und kann nicht mehr gehandelt oder zurückgegeben werden.",
 
     ITEM_TOOLTIP_TRANSMOGRIFIED_TO = "Transmogrifiziert zu:",
     ITEM_TOOLTIP_ACTIVE_SKIN = "Aktiver Skin:",
@@ -97,7 +99,7 @@ L.deDE = {
 
     MINIMAP_TOOLTIP_TEXT1 = "Linksklick: Sammlung öffnen", -- "Left-click: Open Wardrobe"
     MINIMAP_TOOLTIP_TEXT2 = "Umschalt + Linksklick: Transmogfenster öffnen", -- "Shift + Left-click: Open Transmog Interface"
-    MINIMAP_TOOLTIP_TEXT3 = "Rechtsklick: Transmogsichtbarkeit umschalten", -- "Right-click: Toggle through visibility options"
+    MINIMAP_TOOLTIP_TEXT3 = "Rechtsklick: Transmog Sichtbarkeit umschalten", -- "Right-click: Toggle through visibility options"
 
     TRANSMOG_STATUS = "Transmog Sichtbarkeit: ",
     TRANSMOG_STATUS_UNKNOWN = "Transmog Sichtbarkeit konnte nicht abgefragt werden.",
@@ -250,9 +252,11 @@ L.enEU = {
     APPEARANCE_NOT_COLLECTED_TEXT_B = "You've collected this appearance, but not from this item.",
     APPEARANCE_NOT_COLLECTED_TEXT_NO = "Could not retrieve collected appearances from server.",
 
-    APPEARANCE_TOOLTIP_TEXT1A = "Items with this Appearance:",
-    APPEARANCE_TOOLTIP_TEXT1B = "Available items with this Appearance:",
+    APPEARANCE_TOOLTIP_TEXT1A = "Items with this appearance:",
+    APPEARANCE_TOOLTIP_TEXT1B = "Available items with this appearance:",
     APPEARANCE_TOOLTIP_TEXT2 = "Press tab or right klick to cycle through items.",
+    APPEARANCE_TOOLTIP_TEXT3 = "There are other items with this appearance that don't fit current filters.",
+    APPEARANCE_TOOLTIP_TEXT3 = "* Using this item for transmogrification will bind it to you and make it non-tradable and non-refundable.",
 
     ITEM_TOOLTIP_TRANSMOGRIFIED_TO = "Transmogrified to:",
     ITEM_TOOLTIP_ACTIVE_SKIN = "Active skin:",
@@ -311,7 +315,7 @@ L.enEU = {
     UNLOCKED_BAR_TOOLTIP_TEXT1 = "Amount of collected appearances for current selection.",
     SEARCHBOX_TOOLTIP_TEXT1 = "Filter by item name or ID.",
 
-    SELECT_SKIN = "Select skin",
+    SELECT_SKIN = "Select a Skin",
 
     APPLY_ERROR1 = "Could not retrieve transmogrification costs or balance from server.",
     APPLY_ERROR2 = "You do not have enough gold or Shards of Illusion.",

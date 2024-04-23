@@ -233,7 +233,7 @@ core.CreatePreviewModel = function(parent, width, height)
     model.mhHidesOH:SetText(core.OH_WILL_BE_HIDDEN)
 
 
-	model.GetItemsToDisplay = function(self, includeHidden)	
+	model.GetItemsToDisplay = function(self, includeHidden)
 		local skin = core.GetSelectedSkin()
 		local selectedSlot = core.GetSelectedSlot()
 
@@ -241,11 +241,11 @@ core.CreatePreviewModel = function(parent, width, height)
 		for _, slot in pairs(core.itemSlots) do        
             local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot)
 
-			local show = pendingID or (skin and skinVisualID) or ((not skin or core.showItemsUnderSkin) and (visualID or itemID)) or nil
-			if core.showItemsUnderSkin and not itemID then show = nil end
+			local show = pendingID or (skin and skinVisualID) or ((not skin or self.showItemsUnderSkin) and (visualID or itemID)) or nil
+			if self.showItemsUnderSkin and not itemID then show = nil end
 
 			if show == 0 then
-				show = (not skin or core.showItemsUnderSkin) and itemID or nil
+				show = (not skin or self.showItemsUnderSkin) and itemID or nil
 			elseif show == 1 and not includeHidden then
 				show = nil
 			end
@@ -261,9 +261,13 @@ core.CreatePreviewModel = function(parent, width, height)
 		local selectedSlot = core.GetSelectedSlot()
 		local skin = core.GetSelectedSkin()
 
-		if core.IsWeaponSlot(selectedSlot) then
-			model.lastWeaponSlot = selectedSlot -- make displayed weapon depend on last selected weapon slot?
-		end
+		-- make displayed weapon depend on last selected weapon slot?
+		-- not sure if this would confuse people
+		-- if core.IsWeaponSlot(selectedSlot) then
+		-- 	model.lastWeaponSlot = selectedSlot 
+		-- elseif model.lastWeaponSlot then
+		-- 	selectedSlot = model.lastWeaponSlot
+		-- end
 	
 		local itemsToShow = self:GetItemsToDisplay()
 
@@ -276,7 +280,6 @@ core.CreatePreviewModel = function(parent, width, height)
 		end
 
 		-- TODO: Are we happy with this offhand display behaviour?. maybe remember last offhand slot and also range slot/melee slot and show that one instead of always melee weps?
-		-- TODO: still the problem that we cant display 2h in offhand for dualwielders without titangrip. what do we do here?
 
 		-- Weapon display logic:
 		local mh = itemsToShow["MainHandSlot"]
@@ -289,17 +292,15 @@ core.CreatePreviewModel = function(parent, width, height)
         local mhInvType = mh and select(9, GetItemInfo(mh))
         local ohInvType = oh and select(9, GetItemInfo(oh))
 
-		print(mhInvType, mhTransmogHidden)
-
+		-- Staff/polearm/fishing pole transmogs will not be shown while in the offhand. Similar for MH/OH exclusive weapons in the wrong slot. Confusing ...
 		local mhTransmogHidden = mhWeaponType and core.OHOnly[mhInvType]
 		local ohTransmogHidden = ohWeaponType and core.TwoHandExclusive[ohWeaponType] or core.MHOnly[ohInvType]
 		
-		-- Staff/polearm/fishing pole transmogs will not be shown while in the offhand. Similar for MH/OH exclusive weapons in the wrong slot. Confusing ...
 		mh = mhTransmogHidden and core.TransmogGetSlotInfo("MainHandSlot") or mh
 		oh = ohTransmogHidden and core.TransmogGetSlotInfo("SecondaryHandSlot") or oh
 		
 		-- How to handle enchants? :)
-		local showInventoryEnchants = not skin or core.showItemsUnderSkin
+		local showInventoryEnchants = not skin or self.showItemsUnderSkin
 		local mhEnchant = showInventoryEnchants and core.GetInventoryEnchantID("player", 16)
 		local ohEnchant = showInventoryEnchants and core.GetInventoryEnchantID("player", 17)
 		if mh and mh > 1 and mhEnchant and mhEnchant > 0 then mh = "item:" .. mh .. ":" .. mhEnchant end
@@ -311,7 +312,7 @@ core.CreatePreviewModel = function(parent, width, height)
         core.SetShown(model.ohAppearanceNotShown, mhTransmogHidden or ohTransmogHidden)
         model.cantPreviewMessage:Hide()
 		
-		if core.GetSelectedSlot() == "RangedSlot" then
+		if selectedSlot == "RangedSlot" then
 			if itemsToShow["RangedSlot"] then
 				model:TryOn(itemsToShow["RangedSlot"])
 			end		

@@ -47,8 +47,14 @@ local SetWidgetValue = function(info, input)
 	
 	core.db.profile[caller][arg] = input
 	
+	-- Update our stuff
+	core.OnSettingsUpdate()
 	-- core.Reload()
-    print("Options changed.")
+    print("Options changed:", caller, arg, input)
+end
+
+core.OnSettingsUpdate = function()
+	core.UpdateMinimapIcon()
 end
 
 core.options = {
@@ -58,7 +64,7 @@ core.options = {
 		OptionsHeader = {
 			order = 2,
 			type = "header",
-			name = "" --"Hoernchen's Plate Extensions",--GetAddOnMetadata(folder, "title")," v",GetAddOnMetadata(folder, "version")
+			name = "", -- core.titleFull, --"Hoernchen's Plate Extensions",--GetAddOnMetadata(folder, "title")," v",GetAddOnMetadata(folder, "version")
 		},
 		
 		General = {
@@ -76,6 +82,16 @@ core.options = {
 					order = 2,
 					name = "blablabla description",
 				},		
+				ShowMinimapIcon = {
+                    type = "toggle",
+                    order = 2.1,
+                    name = "Show minimap icon",
+					width = "full",
+                    desc = "Activate in order to show a minimap icon for this AddOn.",
+                    get = GetWidgetValue,
+                    set = SetWidgetValue,
+                    arg = "showMinimapIcon",
+                },
                 ClothedMannequins = {
                     type = "toggle",
                     order = 3,
@@ -88,43 +104,96 @@ core.options = {
                 },
 				TooltipNoCollected = {
                     type = "toggle",
-                    order = 3,
-                    name = "Hide collection status in tooltips.",
+                    order = 4,
+                    name = "Hide collection status in tooltips",
 					width = "full",
-                    desc = "Activate in order to not show whether in item has been collected in its tooltip.",
+                    desc = "Activate in order to not show whether in item has been collected in tooltips.",
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "tooltipNoCollectedStatus",
                 },
+				AutoOpen = {
+                    type = "toggle",
+                    order = 6,
+                    name = "Open transmog window automatically",
+					width = "full",
+                    desc = "When activated, the transmog window will open automatically when you talk to the transmog NPC.",
+                    get = GetWidgetValue,
+                    set = SetWidgetValue,
+                    arg = "autoOpen",
+                },				
+				ExtraItemTooltip = {
+                    type = "toggle",
+                    order = 7,
+                    name = "Show extra item tooltip.",
+					width = "full",
+                    desc = "Activate to show the transmogrification source in an extra tooltip when pressing shift.",
+                    get = GetWidgetValue,
+                    set = SetWidgetValue,
+                    arg = "extraItemTooltip",
+                },			
+				UseWrongTextures = {
+                    type = "toggle",
+                    order = 8,
+                    name = "Show wrong textures.",
+					width = "full",
+                    desc = "Activate to not fix the bug where the character and inspect frame show the texture of the transmog items instead of the original items.",
+                    get = GetWidgetValue,
+                    set = SetWidgetValue,
+                    arg = "useWrongTextures",
+                },	
+				PlaySpecialSounds = {
+                    type = "toggle",
+                    order = 8.1,
+                    name = "Play unlock sounds.",
+					width = "full",
+                    desc = "Activate to play a sound when you gain Shards of Illusion or unlock visuals.",
+                    get = GetWidgetValue,
+                    set = SetWidgetValue,
+                    arg = "playSpecialSounds",
+                },
             },		
         },
         
-		CCTracker = {		
-			order = 4,
+		-- CCTracker = {		
+		-- 	order = 4,
+		-- 	type  = "group",
+		-- 	name  = "Aura Widget",
+		-- 	args = {			
+		-- 		Header2 = {
+		-- 			order = 1,
+		-- 			type = "header",
+		-- 			name = "Aura Widget",
+		-- 		},	
+		-- 		description1 = {
+		-- 			type = "description",
+		-- 			order = 2,
+		-- 			name = "Shows the strongest type of CC or certain buffs beside nameplates, similar to LoseControl.",
+		-- 		},		
+		-- 		CCTrackerEnable = {
+		-- 			type = "toggle",
+		-- 			order = 3,
+		-- 				width = "full",
+		-- 			name = "Enable",
+		-- 			get = GetWidgetValue,
+		-- 			set = SetWidgetValue,
+		-- 			arg = "Enable",
+		-- 		},
+        --     },
+        -- },
+		
+		About = {
+			order = 20,
 			type  = "group",
-			name  = "Aura Widget",
-			args = {			
-				Header2 = {
-					order = 1,
-					type = "header",
-					name = "Aura Widget",
-				},	
+			name  = "About",
+			args = {
 				description1 = {
 					type = "description",
-					order = 2,
-					name = "Shows the strongest type of CC or certain buffs beside nameplates, similar to LoseControl.",
-				},		
-				CCTrackerEnable = {
-					type = "toggle",
-					order = 3,
-						width = "full",
-					name = "Enable",
-					get = GetWidgetValue,
-					set = SetWidgetValue,
-					arg = "Enable",
+					order = 1,
+					name = "Does transmog things.",
 				},
-            },
-        },
+			},
+		},
     },
 }
 
@@ -133,9 +202,11 @@ core.defaults = {
 		General = {
 			clothedMannequins = false,
 			tooltipNoCollectedStatus = false,
+			showMinimapIcon = true,
+			autoOpen = true,
+			extraItemTooltip = true,
+			useWrongTextures = false,
+			playSpecialSounds = true,
 		},
-		CCTracker = {
-			Enable = true,
-        },
     },
 }

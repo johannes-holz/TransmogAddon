@@ -103,7 +103,7 @@ local TransmogFrame_OnShow = function(self)
     if not core.GetBalance().shards then
 		core.RequestBalance()
 	end
-    core.RequestPriceTotal()
+    -- core.RequestPriceTotal()
     
 	if UnitExists("target") then
     	SetPortraitTexture(f.portraitTexture, "target")
@@ -148,7 +148,7 @@ core.PlayApplyAnimations = function()
 end
 
 do
-	core.transmogFrame = CreateFrame("Frame", "MyAddonFrame", UIParent)
+	core.transmogFrame = CreateFrame("Frame", folder .. "TransmogFrame", UIParent)
 	local f = core.transmogFrame
 	f.scale = SCALE
 
@@ -159,24 +159,13 @@ do
 	f:SetSize(WIDTH * SCALE, HEIGHT * SCALE) --TODO: make independent of /run print(UIParent:GetScale()) ?
 	f:SetPoint("CENTER")
 	LoadPosition()
-
 	f:EnableMouse(true)
 	f:SetMovable(true)
 
-	--local func = CharacterFrameCloseButton:GetScript("OnClick")
-	f:SetScript("OnShow", function()
-		PlaySound("igCharacterInfoOpen")
-		--CharacterFrame:Hide()
-		--ToggleAchievementFrame()
-		--ToggleAchievementFrame()
-		--CharacterMicroButton_SetPushed()
-
+	f:SetScript("OnShow", function(self)
 		-- make an CollectionFrame:SetContainer function, that sets points etc, putting that stuff into onshow probable not optimal, since when we swap tabs, it would get called needlessly?
 		-- at end of set container do self:SetTab(self.GetParent().selectedTab)
-		f:SelectItemTab()
-
-		--model:Hide() -- still needed?
-		--model:Show()
+		self:SelectItemTab()
 
 		-- Request unlocks for all slots or only for currently selected slot?
 		-- for slot, updateNeeded in pairs(core.availableMogsUpdateNeeded) do --TODO all the stuff about how and when to update unlocks for slot / item
@@ -184,27 +173,28 @@ do
 		-- 	if updateNeeded and itemID then
 		-- 		core.RequestUnlocksSlot(slot)
 		-- 	end
-		-- end	
+		-- end
+		-- TODO: Either recheck all pendings, clear all pendings or clear pending on equipment changed?
 		
 		if not core.GetBalance().shards then
 			core.RequestBalance()
 		end
-		-- core.RequestPriceTotal() -- TODO: No point in using this anymore? If we want to request prices again, should probably make a function to recheck all pendings instead of using this
 		
 		if UnitExists("target") then
 			SetPortraitTexture(f.portraitTexture, "target")
 		else
 			SetPortraitToTexture(f.portraitTexture, "Interface/Icons/Achievement_Boss_Algalon_01")
 		end
+
 		f:update()
+		PlaySound("igCharacterInfoOpen")
 	end)
 
-	f:SetScript("OnHide", function()	
+	f:SetScript("OnHide", function(self)	
 		core.SetIsAtTransmogrifier(false)
 		GossipFrameGreetingPanel:Show()
 		GossipFrameCloseButton:Show()
 		GossipFrame:SetAlpha(1)
-		CloseGossip()
 		PlaySound("igCharacterInfoClose")
 	end)
 
@@ -246,6 +236,11 @@ do
 	f.BGBottomRight:SetSize(256 * SCALE, 256 * SCALE)
 	f.BGBottomRight:SetPoint("TOPLEFT", f.BGBottom, "TOPRIGHT")
 	
+	f.portraitTexture = f:CreateTexture(nil, "BACKGROUND")
+	f.portraitTexture:SetSize(58 * SCALE, 58 * SCALE)
+	f.portraitTexture:SetPoint("TOPLEFT", 8 * SCALE, -7 * SCALE)
+	SetPortraitTexture(f.portraitTexture, "player")
+	
 	f:SetScript("OnMouseDown",function(self,button)
 		CloseDropDownMenus()
 		if button == "LeftButton" then
@@ -263,108 +258,79 @@ do
 	core.previewModel = model
 	model:SetPoint("TOPLEFT", 20 * SCALE, -74 * SCALE)
 
-	local exitButton = core.CreateMeAButton(f, 22 * SCALE, 22 * SCALE, nil,
+	f.exitButton = core.CreateMeAButton(f, 22 * SCALE, 22 * SCALE, nil,
 		"Interface\\Buttons\\UI-Panel-MinimizeButton-Up", 90/512, 118/512, 451/512, 481/512,
 		"Interface\\Buttons\\UI-Panel-MinimizeButton-Down", 90/512, 118/512, 451/512, 481/512,
 		"Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", 90/512, 118/512, 451/512, 481/512,
-		"Interface\\Buttons\\UI-Panel-MinimizeButton-Disabled", 90/512, 118/512, 451/512, 481/512)
-	--exitButton:SetFrameStrata("FULLSCREEN")																
-	exitButton:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1 * SCALE, -15 * SCALE)
-	exitButton:SetScript("OnClick", function() 
+		"Interface\\Buttons\\UI-Panel-MinimizeButton-Disabled", 90/512, 118/512, 451/512, 481/512)		
+	f.exitButton:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1 * SCALE, -15 * SCALE)
+	f.exitButton:SetScript("OnClick", function() 
+		CloseGossip()
+		f:Hide()
+	end)
+
+	f.minimizeButton = core.CreateMeAButton(f, 22 * SCALE, 22 * SCALE, nil,
+		"Interface\\Buttons\\UI-Panel-SmallerButton-Up", 90/512, 118/512, 451/512, 481/512,
+		"Interface\\Buttons\\UI-Panel-SmallerButton-Down", 90/512, 118/512, 451/512, 481/512,
+		"Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", 90/512, 118/512, 451/512, 481/512,
+		"Interface\\Buttons\\UI-Panel-SmallerButton-Disabled", 90/512, 118/512, 451/512, 481/512)
+	f.minimizeButton:SetPoint("RIGHT", f.exitButton, "LEFT")
+	f.minimizeButton:SetScript("OnClick", function()
 		f:Hide()
 	end)
 	
-	f.portraitTexture = f:CreateTexture(nil, "BACKGROUND")
-	f.portraitTexture:SetSize(58 * SCALE, 58 * SCALE)
-	f.portraitTexture:SetPoint("TOPLEFT", 8 * SCALE, -7 * SCALE)
-	SetPortraitTexture(f.portraitTexture, "player")
-
-	local left, top, right, bottom = 451/512, 90/512, 481/512,118/512
-	--local cancelButton = core.CreateMeACustomTexButton(model, 24, 24, "Interface\\AddOns\\".. folder .."\\images\\Transmogrify", left, top, right, bottom)
-	local cancelButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\Buttons\\UI-Panel-MinimizeButton-Up", 0, 0, 1, 1)
-	cancelButton:SetPoint("TOPRIGHT", model, "TOPRIGHT", -4 * SCALE, -4 * SCALE)
-	core.SetTooltip(cancelButton, core.RESET_ALL)
-	cancelButton:SetScript("OnClick", function()
+	-- local left, top, right, bottom = 451/512, 90/512, 481/512,118/512
+	-- f.cancelAllButton = core.CreateMeACustomTexButton(model, 24, 24, "Interface\\AddOns\\".. folder .."\\images\\Transmogrify", left, top, right, bottom)
+	f.cancelAllButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\PaperDollInfoFrame\\UI-GearManager-LeaveItem-Transparent", 0, 0, 1, 1)
+	f.cancelAllButton:SetPoint("TOPRIGHT", model, "TOPRIGHT", -4 * SCALE, -4 * SCALE)
+	f.cancelAllButton:SetScript("OnClick", function()
 		core.SetCurrentChanges({})
 	end)
-
+	core.SetTooltip(f.cancelAllButton, core.RESET_ALL)
 	
 	local left, top, right, bottom = 417/512, 90/512, 443/512,116/512
-	local undressButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\AddOns\\".. folder .."\\images\\Transmogrify", left, top, right, bottom) --CreateMeATextButton(bar, 70, 24, "Undress")
-	--undressButton.ctex:SetAlpha(0.8)
-	undressButton:SetPoint("TOPRIGHT", cancelButton, "TOPLEFT", -doAllButtonDistance * SCALE, 0)
-	core.SetTooltip(undressButton, core.HIDE_ALL)
-	
-	undressButton:SetScript("OnClick", function()
+	f.undressAllButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\AddOns\\" .. folder .. "\\images\\Transmogrify", left, top, right, bottom)
+	f.undressAllButton:SetPoint("TOPRIGHT", f.cancelAllButton, "TOPLEFT", -doAllButtonDistance * SCALE, 0)	
+	f.undressAllButton:SetScript("OnClick", function()
 		local tar = {}
 		for _, slot in pairs(core.itemSlots) do
 			tar[slot] = 1
 		end
 		core.SetCurrentChanges(tar)
-	end)	
-	undressButton:Show()
-
-	core.showItemsUnderSkin = false -- Don't really wanna do the whole "SetX" "UpdateListeners" thing for this, since only preview model needs refresh
-	local showItemsUnderSkinCheckButton = CreateFrame("CheckButton", folder .. "ShowItemsUnderSkinCheckButton", model)
-	showItemsUnderSkinCheckButton:SetSize(20 * SCALE, 20 * SCALE)
-	showItemsUnderSkinCheckButton:SetPoint("BOTTOMLEFT", 4 * SCALE, 4 * SCALE)
-	showItemsUnderSkinCheckButton:SetChecked(core.showItemsUnderSkin)
-	--skinOnItemsCheckButton:SetText("Only show mogable")
-	--skinOnItemsCheckButton:GetNormalFontObject():SetTextColor(1, 1, 0)
-	--skinOnItemsCheckButton.tooltip = "Only show the items you can currently use as Transmogsource."
-
-	local makeTexture = function (frame, path, blend)
-		local t = frame:CreateTexture()
-		t:SetTexture(path)
-		t:SetAllPoints(frame)
-		if blend then
-			t:SetBlendMode(blend)
-		end
-		return t
-	end
-	
-	showItemsUnderSkinCheckButton:SetNormalTexture(makeTexture(showItemsUnderSkinCheckButton, "Interface\\Buttons\\UI-CheckBox-Up"))
-	showItemsUnderSkinCheckButton:SetPushedTexture(makeTexture(showItemsUnderSkinCheckButton, "Interface\\Buttons\\UI-CheckBox-Down"))
-	showItemsUnderSkinCheckButton:SetDisabledTexture(makeTexture(showItemsUnderSkinCheckButton, "Interface\\Buttons\\UI-CheckBox-Check-Disabled"))
-	showItemsUnderSkinCheckButton:SetCheckedTexture(makeTexture(showItemsUnderSkinCheckButton, "Interface\\Buttons\\UI-CheckBox-Check"))
-	showItemsUnderSkinCheckButton:SetHighlightTexture(makeTexture(showItemsUnderSkinCheckButton, "Interface\\Buttons\\UI-CheckBox-Highlight", "ADD"))
-	core.SetTooltip(showItemsUnderSkinCheckButton, core.SHOW_ITEMS_UNDER_SKIN_TOOLTIP_TEXT, nil, nil, nil, nil, 1)
-	showItemsUnderSkinCheckButton:SetScript("OnClick", function(self, button)
-		core.showItemsUnderSkin = self:GetChecked()
-		model:update()
 	end)
-	showItemsUnderSkinCheckButton.update = function(self)
-		core.SetShown(self, core.GetSelectedSkin())
-	end
-	showItemsUnderSkinCheckButton:update()
-	core.RegisterListener("selectedSkin", showItemsUnderSkinCheckButton)
-
-	-- showItemsUnderSkinCheckButton.eyeTexture = showItemsUnderSkinCheckButton:CreateTexture()
-	-- showItemsUnderSkinCheckButton.eyeTexture:SetTexture("Interface\\LFGFrame\\UI-LFG-PORTRAIT")
-	-- showItemsUnderSkinCheckButton.eyeTexture:SetSize(20 * SCALE, 20 * SCALE)
-	-- showItemsUnderSkinCheckButton.eyeTexture:SetBlendMode("ADD")
-	-- showItemsUnderSkinCheckButton.eyeTexture:SetPoint("LEFT", showItemsUnderSkinCheckButton, "RIGHT")
+	core.SetTooltip(f.undressAllButton, core.HIDE_ALL)
 
 	local left, top, right, bottom = 451/512, 90/512, 481/512,118/512
-	local removeAllMogButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\AddOns\\".. folder .."\\images\\Transmogrify", left, top, right, bottom) --CreateMeATextButton(bar, 70, 24, "Undress")
-	removeAllMogButton:SetPoint("RIGHT", undressButton, "LEFT", -doAllButtonDistance * SCALE, 0)
-	core.SetTooltip(removeAllMogButton, core.UNMOG_ALL)
-	
-	removeAllMogButton:SetScript("OnClick", function()
+	f.removeAllMogButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\AddOns\\".. folder .."\\images\\Transmogrify", left, top, right, bottom) --CreateMeATextButton(bar, 70, 24, "Undress")
+	f.removeAllMogButton:SetPoint("RIGHT", f.undressAllButton, "LEFT", -doAllButtonDistance * SCALE, 0)	
+	f.removeAllMogButton:SetScript("OnClick", function()
 		local tar = {}
-		for _, slot in pairs(core.itemSlots) do				
-			if slot ~= "MainHandEnchantSlot" and slot~= "SecondaryHandEnchantSlot" then
-				tar[slot] = 0
-			end
+		for _, slot in pairs(core.itemSlots) do
+			tar[slot] = 0
 		end
 		core.SetCurrentChanges(tar)
 	end)	
-	removeAllMogButton:Show()
+	core.SetTooltip(f.removeAllMogButton, core.UNMOG_ALL)
+
+	model.showItemsUnderSkin = false
+	f.showItemsUnderSkinCheckButton = CreateFrame("CheckButton", folder .. "ShowItemsUnderSkinCheckButton", model, "UICheckButtonTemplate")
+	f.showItemsUnderSkinCheckButton:SetSize(20 * SCALE, 20 * SCALE)
+	f.showItemsUnderSkinCheckButton:SetPoint("BOTTOMLEFT", 4 * SCALE, 4 * SCALE)
+	f.showItemsUnderSkinCheckButton:SetChecked(model.showItemsUnderSkin)
+	f.showItemsUnderSkinCheckButton:SetScript("OnClick", function(self, button)
+		model.showItemsUnderSkin = self:GetChecked()
+		model:update()
+	end)
+	getglobal(f.showItemsUnderSkinCheckButton:GetName() .. "Text"):SetText("Equip preview")
+	core.SetTooltip(f.showItemsUnderSkinCheckButton, core.SHOW_ITEMS_UNDER_SKIN_TOOLTIP_TEXT, nil, nil, nil, nil, 1)
+	f.showItemsUnderSkinCheckButton.update = function(self)
+		core.SetShown(self, core.GetSelectedSkin())
+	end
+	f.showItemsUnderSkinCheckButton:update()
+	core.RegisterListener("selectedSkin", f.showItemsUnderSkinCheckButton)
 
 	for _, itemSlot in pairs(core.itemSlots) do
-		if itemSlot ~= "MainHandEnchantSlot" and itemSlot ~= "SecondaryHandEnchantSlot" then
-			itemSlotFrames[itemSlot] = core.CreateSlotButton(model, itemSlotWidth * SCALE, itemSlot)
-		end
+		itemSlotFrames[itemSlot] = core.CreateSlotButton(model, itemSlotWidth * SCALE, itemSlot)
 	end
 
 	itemSlotOptionsFrame = core.CreateItemSlotOptionsFrame(itemSlotFrames["HeadSlot"])
@@ -382,13 +348,13 @@ do
 	itemSlotFrames["LegsSlot"]:SetPoint("TOP", itemSlotFrames["WaistSlot"], "BOTTOM", 0, -itemSlotDistance * SCALE)
 	itemSlotFrames["FeetSlot"]:SetPoint("TOP", itemSlotFrames["LegsSlot"], "BOTTOM", 0, -itemSlotDistance * SCALE)
 
-	itemSlotFrames["MainHandSlot"]:SetPoint("BOTTOMRIGHT", model, "BOTTOM", (core.HasRangeSlot() and -itemSlotWidth or 0) * SCALE, 10)
+	itemSlotFrames["MainHandSlot"]:SetPoint("BOTTOMRIGHT", model, "BOTTOM", (core.HasRangedSlot() and -itemSlotWidth or 0) * SCALE, 10)
 --	itemSlotFrames["SecondaryHandSlot"]:SetPoint("LEFT", itemSlotFrames["MainHandSlot"], "RIGHT", itemSlotDistance * SCALE, 0)
 	itemSlotFrames["ShieldHandWeaponSlot"]:SetPoint("LEFT", itemSlotFrames["MainHandSlot"], "RIGHT", itemSlotDistance * SCALE, 0)
 	itemSlotFrames["OffHandSlot"]:SetPoint("LEFT", itemSlotFrames["MainHandSlot"], "RIGHT", itemSlotDistance * SCALE, 0)
 
 	itemSlotFrames["RangedSlot"]:SetPoint("LEFT", itemSlotFrames["OffHandSlot"], "RIGHT", itemSlotDistance * 2 * SCALE, 0)
-	if not core.HasRangeSlot() then itemSlotFrames["RangedSlot"]:Hide() end -- TODO: remove rangeslot from core.itemSlots instead?
+	if not core.HasRangedSlot() then itemSlotFrames["RangedSlot"]:Hide() end -- TODO: remove rangeslot from core.itemSlots instead?
 	
 --	itemSlotFrames["MainHandEnchantSlot"]:SetPoint("RIGHT", itemSlotFrames["MainHandSlot"], "BOTTOMLEFT", -12, 0)
 --	itemSlotFrames["SecondaryHandEnchantSlot"]:SetPoint("RIGHT", itemSlotFrames["SecondaryHandSlot"], "BOTTOMLEFT", -12, 0)
@@ -532,10 +498,10 @@ do
 
 	balanceFrame.update = function()
 		local balance = core.GetBalance()
-		local balString = balance.shards
-		if balString == nil then balString = "?" end
-		--balanceFrame.text:SetText(balString .. " |T" .. core.CURRENCY_ICON .. ":" .. 14 .. "|t\n" .. core.GetCoinTextureStringFull(GetMoney())) --balanceFrame:GetStringHeight()*1.3
-		balanceFrame.text:SetText(core.GetPriceString(balance.shards, GetMoney(), true))
+		balanceFrame.text:SetText(core.GetPriceString(balance and balance.shards or "?", GetMoney(), true))
+		-- local balString = balance.shards
+		-- if balString == nil then balString = "?" end
+		-- balanceFrame.text:SetText(balString .. " |T" .. core.CURRENCY_ICON .. ":" .. 14 .. "|t\n" .. core.GetCoinTextureStringFull(GetMoney())) --balanceFrame:GetStringHeight()*1.3
 	end
 	balanceFrame.update()
 	core.RegisterListener("balance", balanceFrame)
@@ -607,8 +573,6 @@ do
 	end	
 	PanelTemplates_SetNumTabs(f, #f.TAB_NAMES)
 	--tab_OnClick(_G[f:GetName().."Tab1"])
-	
-
 	
 	f.update = function()
 		local selectedSkin = core.GetSelectedSkin()

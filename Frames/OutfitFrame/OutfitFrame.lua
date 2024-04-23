@@ -70,6 +70,7 @@ core.CreateOutfitFrame = function(parent)
         if not selectedOutfit then return end
 
         core.SaveOutfit(selectedOutfit, slots)
+        core.PlayButtonSound()
     end)
     outfitFrame.saveButton.update = function(self)
         local outfit = self:GetParent().selectedOutfit

@@ -126,7 +126,7 @@ end
 
 ---- Attempt at PortraitFrameTemplate -----
 do
-    -- TODO :)
+    -- TODO ? :)
 
 end
 
@@ -160,6 +160,7 @@ core.CreateMeAButton = function(parent, width, height, text,
     htex:SetTexture(highlightTex or "Interface/Buttons/UI-Panel-Button-Highlight")
     htex:SetTexCoord(highLeft, highRight, highUp, highDown)
     htex:SetAllPoints()
+    htex:SetBlendMode("ADD")
     b:SetHighlightTexture(htex)
 
     local dtex = b:CreateTexture()

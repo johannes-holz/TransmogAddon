@@ -1,6 +1,6 @@
 local folder, core = ...
 
-local BAR_COLOR = { r = 20 / 255, g = 0.7, b = 8 / 255 } --30 / 255, 1, 12 / 255
+local BAR_COLOR = { r = 20 / 255, g = 0.7, b = 8 / 255 }
 local BAR_WIDTH, BAR_HEIGHT = 120, 12
 
 local UnlockedBar_OnValueChange = function(self, value)
@@ -52,9 +52,6 @@ core.CreateUnlockedBar = function(parent, slot)
 end
 
 core.ComputeSlotUnlocks = function()
-    local withNames = nil
-    local searchTerm = nil
-
     local unlocks = {}
 
     for _, slot in pairs(core.itemSlots) do
@@ -104,34 +101,53 @@ core.ComputeSlotUnlocks = function()
             end
         end
         
-        unlocks[slot] = {vUnlocked = unlockedCount, vTotal = totalCount, cUnlocked = itemUnlockCount, cTotal = itemTotalCount}
+        unlocks[slot] = { vUnlocked = unlockedCount, vTotal = totalCount, iUnlocked = itemUnlockCount, iTotal = itemTotalCount }
     end
 
-    core.am(unlocks)
+    -- This would count some inventory types twice for mh/oh. Also does not take into account that some slots might be unavailable ..
+    -- Summing up inventory type counts for each slot would also be incorrect tho, as some visuals would get counted twice
+    -- Would need another full item iteration to get overall unlocks?
+    -- local allSlots = { vUnlocked = 0, vTotal = 0, iUnlocked = 0, iTotal = 0 }
+    -- for slot, tab in pairs(unlocks) do
+    --     for key, val in pairs(tab) do
+    --         allSlots[key] = allSlots[key] + val
+    --     end
+    -- end
+    -- unlocks.allSlots = allSlots
     return unlocks
 end
-
-
-
---- temp test ---
--- local bar = core.CreateUnlockedBar(core.itemCollectionFrame, "HeadSlot")
--- bar:SetPoint("RIGHT", bar:GetParent(), "LEFT") 
--- bar:Show()
 
 local COLS = 4
 local SPACING_HOR, SPACING_VERT = 30, 40
 local SPACING_LEFT, SPACING_TOP = 40, 120
 
 core.CreateUnlocksOverviewFrame = function(parent)
-    local frame = CreateFrame("Frame", folder .. "UnlocksOverviewFrame", parent)    
-    -- frame:SetSize(width, height)
-    -- frame:SetAllPoints()
+    local frame = CreateFrame("Frame", folder .. "UnlocksOverviewFrame", parent)
     frame:SetSize(600, 400)
     frame:SetPoint("BOTTOM", parent, "TOP")
     
 	frame:SetBackdrop(core.BACKDROP_ITEM_COLLECTION)
 	frame:SetBackdropBorderColor(0.675, 0.5, 0.125, 1)
 	frame:SetBackdropColor(0.375, 0.375, 0.375, 1)
+
+    frame.title = frame:CreateFontString()
+    frame.title:SetFontObject(GameFontNormal)
+    frame.title:SetText("Unlocked Visuals")
+    frame.title:SetJustifyH("CENTER")
+    frame.title:SetJustifyV("MIDDLE")
+    -- frame.title:SetPoint("TOPLEFT", SPACING_LEFT, -50)
+    frame.title:SetPoint("TOP", -11, -50)
+
+	frame.toggleButton = core.CreateMeAButton(frame, 22, 22, nil,
+        "Interface\\Buttons\\UI-SpellbookIcon-NextPage-Up", 0, 0, 1, 1,
+        "Interface\\Buttons\\UI-SpellbookIcon-NextPage-Down", 0, 0, 1, 1,
+        "Interface\\Buttons\\UI-Common-MouseHilight", 0, 0, 1, 1,
+        "Interface\\Buttons\\UI-SpellbookIcon-NextPage-Disabled", 0, 0, 1, 1)
+    frame.toggleButton:SetPoint("LEFT", frame.title, "RIGHT")
+    frame.toggleButton:SetScript("OnClick", function(self)
+		self:GetParent():Toggle()
+        core.PlayButtonSound()
+	end)
 
     frame.bars = {}
     for i, slot in ipairs(core.itemSlots) do
@@ -140,11 +156,10 @@ core.CreateUnlocksOverviewFrame = function(parent)
 
         bar.title = bar:CreateFontString()
         bar.title:SetFontObject(GameFontNormal)
-        bar.title:SetPoint("CENTER", 0, 20)
+        bar.title:SetPoint("BOTTOM", bar, "TOP", 0, 2)
         bar.title:SetJustifyH("CENTER")
         bar.title:SetJustifyV("MIDDLE")
         bar.title:SetText(core.SLOT_NAMES[slot])
-
 
         if (i - 1) % COLS == 0 then
             if i == 1 then
@@ -165,17 +180,26 @@ core.CreateUnlocksOverviewFrame = function(parent)
         frame.bars.ShieldHandWeaponSlot:Hide()
         frame.bars.OffHandSlot:SetPoint("TOPLEFT", frame.bars.MainHandSlot, "TOPRIGHT", SPACING_HOR, 0)
     end
-    if not core.HasRangeSlot() then
+    if not core.HasRangedSlot() then
         frame.bars.RangedSlot:Hide()
     end
 
-    frame.UpdateBars = function(self)
-        self.unlocks = core.ComputeSlotUnlocks()
+    frame.UpdateBars = function(self, noRecount)
+        if not noRecount then
+            self.unlocks = core.ComputeSlotUnlocks()
+        end
 
         for _, bar in pairs(self.bars) do
-            bar:SetMinMaxValues(0, self.unlocks[bar.slot].vTotal)
-            bar:SetValue(self.unlocks[bar.slot].vUnlocked)
+            bar:SetMinMaxValues(0, self.unlocks[bar.slot][self.showItems and "iTotal" or "vTotal"])
+            bar:SetValue(self.unlocks[bar.slot][self.showItems and "iUnlocked" or "vUnlocked"])
         end
+
+        self.title:SetText(self.showItems and "Unlocked Items" or "Unlocked Visuals")
+    end
+
+    frame.Toggle = function(self)
+        self.showItems = not self.showItems
+        self:UpdateBars(true)
     end
 
     frame.OnShow = function(self)
@@ -193,5 +217,3 @@ core.CreateUnlocksOverviewFrame = function(parent)
 
     return frame
 end
-
--- local test = core.CreateUnlocksOverviewFrame(core.itemCollectionFrame)

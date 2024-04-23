@@ -121,9 +121,9 @@ DressUpModel.GetAll = function(self)
     return core.DeepCopy(items)
 end
 
--- We allow setting slots to 1 (hidden) now. The original TryOn just ignores these calls anyway.
+-- We allow setting slots to 1 (hidden) now. The original TryOn just ignores these calls anyway. Problem with enchants, as there is an enchant with ID=1 :)
+-- Item info should not be needed at this point: We can check itemType for OH stuff with item data and we just have to call a display update on item query
 -- TODO: modify OnItemClick to allow setting hidden items?
--- TODO: How to secure GetItemInfo? 
 DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
     -- print(itemSlot, itemID, silent)
 	assert(itemSlot and core.slotToID[itemSlot], "Invalid slot in DressUpModel.SetSlot:" .. (itemSlot or "nil"))
@@ -134,10 +134,31 @@ DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
         itemID = nil
     end
 
-    local isValidEnchant = true -- TODO: implement function. also better check inventoryType of item instead?
-    assert(itemID == nil or itemID == 1 or ((core.IsEnchantSlot(itemSlot) and isValidEnchant) or core.GetItemData(itemID) ~= nil), "Invalid itemID in DressUpModel.SetSlot")
+    local isEnchantSlot = core.IsEnchantSlot(itemSlot)
+    local isValidEnchant = true -- TODO: check whether this is a weapon enchant?
 
-    if itemID then
+    assert(itemID == nil or itemID == 1 or ((isEnchantSlot and isValidEnchant) or core.GetItemData(itemID) ~= nil), "Invalid itemID in DressUpModel.SetSlot")
+
+    if not isEnchantSlot and itemID then
+        local itemSubType, itemEquipLoc
+        if itemID > 1 then
+            local _, _, _, _, _, _, subType, _, equipLoc = GetItemInfo(itemID)
+            if not subType then -- TODO: Hide this scuffness in data function?
+                local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
+                itemSubType = class and core.classSubclassToType[class][subClass] -- contains categories (type + subtype) now, but CanBeTitanGripped accepts either
+                itemEquipLoc = inventoryType and core.inventoryTypes[inventoryType]
+            else
+                itemSubType, itemEquipLoc = subType, equipLoc
+            end
+            local equipLocID = core.inventoryTypeToID[itemEquipLoc]
+            -- Wrong slot+item combination might arise, if we implement slot click preview, e.g. mh has oh enchant and we try to preview that in mh
+            -- assert(equipLocID and core.slotItemTypes[itemSlot][equipLocID], "Incompatible item and slot in DressUpModel.SetSlot")
+            if not (equipLocID and core.slotItemTypes[itemSlot][equipLocID]) then
+                UIErrorsFrame:AddMessage("Can not preview this item in this slot.", 1.0, 0.1, 0.1, 1.0)
+                return
+            end
+        end
+
         -- Only allow Offhand or ShieldHandWeapon?
         if itemSlot == "OffHandSlot" then
             items["ShieldHandWeaponSlot"] = nil
@@ -151,18 +172,22 @@ DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
             items["OffHandSlot"] = nil
         elseif itemSlot == "MainHandSlot" or itemSlot == "ShieldHandWeaponSlot" or itemSlot == "OffHandSlot"then
             items["RangedSlot"] = nil
+        end        
+        -- If we allow OH-only weapons for non dual wielders, we need to clear their OH when setting MH
+        if itemSlot == "MainHandSlot" and itemID > 1 and not core.CanDualWield() then
+            items["ShieldHandWeaponSlot"] = nil
         end
-        -- Only allow things we can display?
-        if itemID > 1 and itemSlot == "ShieldHandWeaponSlot" then
-            local _, _, _, _, _, _, itemSubType, _, itemEquipLoc = GetItemInfo(itemID)
-            if not itemSubType then -- TODO: Hide this scuffness in data function
-                local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
-                itemSubType = class and core.classSubclassToType[class][subClass] -- contains categories (type + subtype) now, but CanBeTitanGripped accepts either
-                itemEquipLoc = inventoryType and core.inventoryTypes[inventoryType]
-            end
+        -- Only allow dualwield things we can display?
+        if itemSlot == "ShieldHandWeaponSlot" and itemID > 1 then
             if not itemSubType or (not core.CanDualWield() or (itemEquipLoc == "INVTYPE_2HWEAPON" and not (core.HasTitanGrip() and core.CanBeTitanGripped(itemSubType)))) then
-                itemID = items[itemSlot]
-                UIErrorsFrame:AddMessage(core.CAN_NOT_DRESS_OFFHAND, 1.0, 0.1, 0.1, 1.0) -- We could preview offhand weapons without dualwielding in certain cases, but that would be too confusing imo?
+                -- Allow OH-only weapons so non-dualwielders can still preview, like the original DressUpModel does?
+                print(itemEquipLoc)
+                if itemEquipLoc == "INVTYPE_WEAPONOFFHAND" then
+                    items["MainHandSlot"] = nil
+                else
+                    itemID = items[itemSlot] -- or just return? if we return instead and dont update view, we need to do this check before we do any other changes to items
+                    UIErrorsFrame:AddMessage(core.CAN_NOT_DRESS_OFFHAND, 1.0, 0.1, 0.1, 1.0)
+                end
                 -- Should we allow setting these freely instead and then check in Dress instead what we can display + indicate somehow if we cant display offhand?
                 -- Otherwise kinda cringe behaviour for especially enhas and furies with different dual spec?
             end

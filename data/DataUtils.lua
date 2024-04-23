@@ -82,6 +82,11 @@ core.inventoryTypes = { -- These IDs are used in our original item Data
 	[26] = "INVTYPE_RANGEDRIGHT",
 }
 
+core.inventoryTypeToID = {} -- backwards map
+for id, invType in pairs(core.inventoryTypes) do
+	core.inventoryTypeToID[invType] = id
+end
+
 core.slotItemTypes = {
 	["HeadSlot"] = {[1] = true},
 	["ShoulderSlot"] = {[3] = true},
@@ -613,6 +618,14 @@ core.DisplayGroupIterator = function(itemID)
 		end
 		return tmp
 	end
+end
+
+core.GetDisplayGroupSize = function(itemID)
+	local s = 0
+	for _ in core.DisplayGroupIterator(itemID) do
+		s = s + 1
+	end
+	return s
 end
 
 -- Example usage:

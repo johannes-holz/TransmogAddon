@@ -7,8 +7,6 @@ local folder, core = ...
 	-- Then scan all inventory slots and count items that belong to the set. if they belong to our set, look up their display items name and add them to table {name = true}
 	-- then fix relevant tooltip lines
 
-local GetInventoryVisualID = core.GetInventoryVisualID
-
 -- Minimal scanning Tooltip to get correct player Setboni (https://wowwiki-archive.fandom.com/wiki/UIOBJECT_GameTooltip)
 core.ScanningTooltip = CreateFrame("GameTooltip", folder .. "ScanningTooltip")
 ScanningTooltip = core.ScanningTooltip
@@ -54,9 +52,9 @@ local Tooltip_AddCollectedLine = function(tooltip, itemID)
 	end
 end
 
- -- for non player units we get visualID through GetInventoryItemID, for the player can get the itemtransmog from the itemlink and skin information through the API GetSkins()
+ -- for non player units we only get visualID through GetInventoryItemID, for the player we can get visualID from the item link and skin information through the API via GetSkins()
  -- TODO: Fix TransmogLine + Hiding Scuffness, maybe seperate by task into multiple functions, not sure
-local last = 0
+local ignoreRecipeCall = {}
 local function TooltipAddMogLine(tooltip)
 	tooltip:Show()
 
@@ -67,13 +65,18 @@ local function TooltipAddMogLine(tooltip)
 
 	local itemID = core.GetItemIDFromLink(link)
 
-	-- Recipe Hack: OnTooltipSetItem gets called 2 times for recipes, the first time for the crafting item (but link is still the recipe)
-	if core.GetRecipeInfo(itemID) and GetTime() - last > 0.005 then
+	-- Recipe Hack
+	-- OnTooltipSetItem gets called 2 times for recipes, apprently the first call is for the produced item, the second is for the recipe itself
+	-- GetItem() returns the recipes both times tho, so if we find that this a relevant recipe tooltip, we only add our stuff on the first call 
+	if core.GetRecipeInfo(itemID) and not ignoreRecipeCall[tooltip] then
 		itemID = core.GetRecipeInfo(itemID)
-		last = GetTime()
+		ignoreRecipeCall[tooltip] = 1
+	else
+		ignoreRecipeCall[tooltip] = nil
+		-- return
 	end
 
-	local visualID = lastUnit and GetInventoryVisualID(lastUnit, lastSlot) or core.API.GetVisualFromItemLink(link)
+	local visualID = lastUnit and core.GetInventoryVisualID(lastUnit, lastSlot) or core.API.GetVisualFromItemLink(link)
 	local skinVisualID = lastUnit and UnitGUID(lastUnit) == UnitGUID("player") and core.GetInventorySkinID(lastSlot)
 
 	local itemUnlocked = core.GetItemData(itemID)
@@ -83,12 +86,12 @@ local function TooltipAddMogLine(tooltip)
 	Tooltip_AddCollectedLine(tooltip, itemID)
 
 	local textLeft1, textLeft2
-	if strfind(tooltip:GetName(), "Shopping") then -- Compare Item tooltips, that contain extra "Currently equipped" line
+	if strfind(tooltip:GetName(), "Shopping") then -- Compare Item tooltips contain extra "Currently equipped" line
 		textLeft1 = _G[tooltip:GetName() .. "TextLeft2"]
 		textLeft2 = _G[tooltip:GetName() .. "TextLeft3"]
 	else
-		textLeft1 = _G[tooltip:GetName() .. "TextLeft1"] -- or regions[10] -- GameTooltipTextLeft1 --regions[10]
-		textLeft2 = _G[tooltip:GetName() .. "TextLeft2"] -- or regions[12] -- GameTooltipTextLeft2 --regions[12]
+		textLeft1 = _G[tooltip:GetName() .. "TextLeft1"] -- or regions[10]
+		textLeft2 = _G[tooltip:GetName() .. "TextLeft2"] -- or regions[12]
 	end
 
 	local text = ""
@@ -141,8 +144,8 @@ local function TooltipAddMogLine(tooltip)
 	textLeft1:SetHeight(textLeft1:GetStringHeight() + tooltip.mogText:GetHeight())
 	tooltip:Show() -- triggers resize
 
-	if tooltip == GameTooltip and visualID and visualID > 1 then
-		core.SetExtraItemTooltip(visualID, "ANCHOR_TOP") -- TODO: Options
+	if core.db.profile.General.extraItemTooltip and tooltip == GameTooltip and visualID and visualID > 1 then
+		core.SetExtraItemTooltip(visualID, "ANCHOR_TOP")
 	end
 end
 
@@ -165,7 +168,7 @@ for _, tooltip in pairs(tooltips) do
 	tooltip:HookScript("OnTooltipCleared", TooltipHideMogLine)
 end
 
--- Adds "item/visual not collected" line to recipe spells
+-- Adds "item/visual not collected" line to recipe spell tooltips
 local OnTooltipSetSpell = function(tooltip)
 	local name, rank, spellID = tooltip:GetSpell()
 	
@@ -179,19 +182,19 @@ GameTooltip:HookScript("OnTooltipSetSpell", OnTooltipSetSpell)
 ItemRefTooltip:HookScript("OnTooltipSetSpell", OnTooltipSetSpell)
 
 -- or use lastUnit, lastSlot again
-GetInspectFrameVisualID = function(frame)
-	if not frame then return end
+-- GetInspectFrameVisualID = function(frame)
+-- 	if not frame then return end
 
-	--if UnitGUID("target") == UnitGUID("player") then return end
+-- 	--if UnitGUID("target") == UnitGUID("player") then return end
 
-	local _, _, slot = string.find(frame:GetName(), "Inspect(%a+Slot)")
-	if not slot then return end
+-- 	local _, _, slot = string.find(frame:GetName(), "Inspect(%a+Slot)")
+-- 	if not slot then return end
 
-	--local slotID = slotToID[slot] -- there is also Inspect*Slot:GetID()
-	--if not slotID then return end
+-- 	--local slotID = slotToID[slot] -- there is also Inspect*Slot:GetID()
+-- 	--if not slotID then return end
 
-	return GetInventoryVisualID("target", frame:GetID())
-end
+-- 	return core.GetInventoryVisualID("target", frame:GetID())
+-- end
 
 
  -- Original code of HandleModifiedItemClick:
@@ -222,14 +225,14 @@ core.PreHook_ModifiedItemClick = function()
 		end
 
 
+		-- local fakeOptionsOpenWadrobeWithAlt = true
 		-- if IsAltKeyDown() and fakeOptionsOpenWadrobeWithAlt then
-			--core.wardrobeFrame:OpenItem(link)
-			--ShowUIPanel(core.wardrobeFrame)
+		-- 	core.ShowItemInWardrobe(link) -- TODO: Find out slot from owner frame, modify func to convert links to ids and find slot automatically if no slot is provided
 		-- end
 
 		if IsModifiedClick("DRESSUP") and IsModifiedClick("CHATLINK") then
 			local lastUnit, lastSlot = OwnerFrame_GetUnitSlot(GetMouseFocus())
-			local visualID = lastUnit and GetInventoryVisualID(lastUnit, lastSlot) or core.API.GetVisualFromItemLink(link) -- Do we want to show transmog or skin for player?
+			local visualID = lastUnit and core.GetInventoryVisualID(lastUnit, lastSlot) or core.API.GetVisualFromItemLink(link) -- Do we want to show transmog or skin for player?
 			if visualID > 1 then
 				_, link = GetItemInfo(visualID)
 			elseif visualID == 1 then
@@ -240,7 +243,7 @@ core.PreHook_ModifiedItemClick = function()
 
 		-- if IsModifiedClick("DRESSUP") then	
 		-- 	if IsShiftKeyDown() then -- options for disable or reversed behaviour (show tmog as default and show base item with shift). use modifiers directly or use IsModifiedClick("DRESSUP")?
-		-- 		local visualID = lastUnit and GetInventoryVisualID(lastUnit, lastSlot) or core.API.GetVisualFromItemLink(link)
+		-- 		local visualID = lastUnit and core.GetInventoryVisualID(lastUnit, lastSlot) or core.API.GetVisualFromItemLink(link)
 				
 		-- 		if visualID == 0 then
 		-- 			return HandleModifiedItemClickOrig(link, ...)
@@ -264,10 +267,10 @@ core.PreHook_ModifiedItemClick = function()
 end
  
 -- Makes client show correct inventory item textures again instead of their tmog's texture. Gets more complicated when skins are in use, see below
-GetInventoryItemTextureOld = GetInventoryItemTexture
+local GetInventoryItemTextureOld = GetInventoryItemTexture
 GetInventoryItemTexture = function(unit, slotID)
 	local link = GetInventoryItemLink(unit, slotID)
-	if not link or not GetItemInfo(link) then
+	if (core.db and core.db.profile.General.useWrongTextures) or not link or not GetItemInfo(link) then
 		return GetInventoryItemTextureOld(unit, slotID)
 	else
 		return select(10, GetItemInfo(link))
@@ -305,7 +308,7 @@ _G.NotifyInspect = function(unit)
     local addon = string.match(str,'[%s%c]+([^:%s%c]*)\\[^\\:%s%c]+:')
     addon = string.gsub(addon or "unknown",'I?n?t?e?r?f?a?c?e\\AddOns\\',"")
 
-	if blockingActive and not strfind(addon, "Blizzard_InspectUI") then
+	if InspectFrame:IsShown() and not strfind(addon, "Blizzard_InspectUI") then
 		-- print("blocked notify from", addon)
 		return
 	end
@@ -343,15 +346,15 @@ f:SetScript("OnEvent", function(self, event, ...)
 		
 		-- local dummyFunction = function() end
 		
-		InspectFrame:HookScript("OnShow", function(self)
-			-- _G.NotifyInspect = dummyFunction
-			-- print("NO NOtifyrino")
-			blockingActive = true
-		end)
-		InspectFrame:HookScript("OnHide", function(self)
-			-- _G.NotifyInspect = core.NotifyInspectOld
-			blockingActive = false
-		end)
+		-- InspectFrame:HookScript("OnShow", function(self)
+		-- 	-- _G.NotifyInspect = dummyFunction
+		-- 	-- print("NO NOtifyrino")
+		-- 	blockingActive = true
+		-- end)
+		-- InspectFrame:HookScript("OnHide", function(self)
+		-- 	-- _G.NotifyInspect = core.NotifyInspectOld
+		-- 	blockingActive = false
+		-- end)
 	end
 end)
 

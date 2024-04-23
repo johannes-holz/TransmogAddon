@@ -1,4 +1,6 @@
+-----------------------------------------------
 -- Created by Qhoernchen - qhoernchen@gmail.com
+-----------------------------------------------
 
 local folder, core = ...
 
@@ -12,10 +14,12 @@ rAPI:debug(false)
 if not rAPI.Transmog then error(folder .. " missing RisingAPI transmog module."); return end
 core.API = rAPI.Transmog
 
--- Attempt at options implementation --
-core.title = "Transmoggy"
-core.titleFull = "Transmoggy V.1.0"
+---- Ace Options ----
+core.version = GetAddOnMetadata(folder, "Version")
+core.title = folder -- "Transmoggy"
+core.titleFull = folder .. " - V." .. core.version -- "Transmoggy V.1.0"
 core.addonDir = "Interface\\AddOns\\"..folder.."\\"
+core.minimapIcon = "Interface\\Icons\\Inv_chest_cloth_02"
 
 core.InitializeAce = function(self)	
 	self.db = LibStub('AceDB-3.0'):New('TransmoggyDB', self.defaults, true)
@@ -32,14 +36,13 @@ core.InitializeAce = function(self)
 	registry:RegisterOptionsTable("Transmoggy-Profiles", profile)
 	
 	self.optionsFrame = LibStub('AceConfigDialog-3.0'):AddToBlizOptions(self.title, self.title)
-	--LibStub('AceConfigDialog-3.0'):AddToBlizOptions("HPE-CCTracker", 'CCTracker', "self.ccOptions")
 	LibStub('AceConfigDialog-3.0'):AddToBlizOptions("Transmoggy-Profiles", 'Profiles', self.title)
 	
-	--self:RegisterChatCommand("HPE", function () InterfaceOptionsFrame_OpenToCategory(self.optionsFrame) end)
-	LibStub('AceConsole-3.0'):RegisterChatCommand("transmoggy", function () print("hi there") end) -- InterfaceOptionsFrame_OpenToCategory(self.optionsFrame) end)
+	LibStub('AceConsole-3.0'):RegisterChatCommand("transmoggy", function () InterfaceOptionsFrame_OpenToCategory(self.optionsFrame) end) -- InterfaceOptionsFrame_OpenToCategory(self.optionsFrame) end)
 end
 
 core.OnProfileChanged = function(self, ...)
+	core.OnSettingsUpdate()
 	print("OnProfileChanged", ...)
 end
 ---------------------------------------
@@ -51,6 +54,16 @@ core.TMOG_NPC_ID = 1010969
 --"inv_enchant_shardgleamingsmall"
 core.CURRENCY_ICON = "Interface\\Icons\\inv_misc_gem_sapphire_03"
 core.CURRENCY_FAKE_ITEMID = -1337
+
+-- 11755 -- SimonGame_Visual_LevelStart
+-- 4140	 -- HumanExploration
+-- 12891 -- AchievementSound
+-- 1202 -- "Sound\\interface\\PickUp\\PickUpParchment_Paper.wav"
+-- 1204 -- PutDownGems
+core.sounds = {
+	unlockVisual = 1202, 
+	gainBalance = 1204,
+}
 
 -- The following tables do not need to be localized manually. We overwrite these with the correct localized names using GetAuctionItemClasses() and GetAuctionItemSubClasses()
 core.ITEM_CLASSES = {
@@ -299,11 +312,9 @@ local itemSlots = {
 	"LegsSlot",
 	"FeetSlot",
 	"MainHandSlot",
-	--"SecondaryHandSlot",
+	-- "SecondaryHandSlot",
 	"ShieldHandWeaponSlot",
 	"OffHandSlot",
-	--"MainHandEnchantSlot", --TODO: erlaubt?
-	--"SecondaryHandEnchantSlot",
 	"RangedSlot",
 }
 core.itemSlots = itemSlots
@@ -327,12 +338,12 @@ core.allSlots = {
 	"LegsSlot",
 	"FeetSlot",
 	"MainHandSlot",
-	--"SecondaryHandSlot",
+	"MainHandEnchantSlot",
+	-- "SecondaryHandSlot",
 	"ShieldHandWeaponSlot",
+	"SecondaryHandEnchantSlot",
 	"OffHandSlot",
 	"RangedSlot",
-	"MainHandEnchantSlot",
-	"SecondaryHandEnchantSlot",
 }
 
 core.IsEnchantSlot = function(slot)
@@ -350,7 +361,9 @@ core.IsWeaponSlot = function(slot)
 	return slot and isWeaponSlot[slot]
 end
 
--- Although we save the collection status of every item, we still need to ask the server what items are available for a specific slot (for the currently equipped item)
+-- Although we save and track the collection status of every item, we still need to ask the server what items are available for a specific slot and item
+-- Currently we just always update these, when we click on a slot in the transmog interface
+-- Would be nice if we could cache this info to reduce server requests, but we have no reliable way to know when the available mogs change
 core.availableMogs = {
 	["HeadSlot"] = {},
 	["ShoulderSlot"] = {},
@@ -526,7 +539,7 @@ core.GetItemSlotInfo = function(itemSlot)
 end
 
 
-local invSlotToTransmogLocation = {
+local itemSlotToTransmogLocation = {
 	HeadSlot = "Head",
 	ShoulderSlot = "Shoulders",
 	BackSlot = "Back",
@@ -550,8 +563,8 @@ local invSlotToTransmogLocation = {
 ToTransmogLocation = function(itemSlot) --, special)
 	if type(itemSlot) == "number" then itemSlot = idToSlot[itemSlot] end
 
-	if invSlotToTransmogLocation[itemSlot] then
-		return API.Slot[invSlotToTransmogLocation[itemSlot]]
+	if itemSlotToTransmogLocation[itemSlot] then
+		return API.Slot[itemSlotToTransmogLocation[itemSlot]]
 	elseif itemSlot == "SecondaryHandSlot" then -- not sure if we still use this at all
 		local equipped = GetInventoryItemID("player", 17)
 		if not equipped then return API.Slot.ShieldHandWeapon end -- No offhand equipped, so the field will be nil anyway, but have to return something
@@ -565,10 +578,9 @@ ToTransmogLocation = function(itemSlot) --, special)
 end
 
 local transmogLocationToItemSlot = {}
-for itemSlot, transmogLocation in pairs(invSlotToTransmogLocation) do
+for itemSlot, transmogLocation in pairs(itemSlotToTransmogLocation) do
 	transmogLocationToItemSlot[core.API.Slot[transmogLocation]] = itemSlot
 end
-core.am(transmogLocationToItemSlot)
 
 core.GetSkinSlotVisualID = function(skinID, slotID)
 	if not skinID then return end
@@ -619,7 +631,7 @@ core.GetDefaultCategory = function(itemSlot)
 	local itemID = core.TransmogGetSlotInfo(itemSlot)
 	local itemCategory
 	if itemID then
-		local _, _, _, _, _, class, subclass = GetItemInfo(itemID) -- it is possible to force a situation, where equipped items are not cached for a short while
+		local _, _, _, _, _, class, subclass = GetItemInfo(itemID) -- it is possible, that equipped items are not cached for a short while
 		itemCategory = class and (class .. " " .. subclass) or nil
 	end
 
@@ -659,7 +671,7 @@ core.GetDefaultCategory = function(itemSlot)
 	end
 end
 
-core.HasRangeSlot = function()
+core.HasRangedSlot = function()
 	local _, class = UnitClass("player")	
 	return not (class == "PALADIN" or class == "DEATHKNIGHT" or class == "SHAMAN" or class == "DRUID")
 end
@@ -776,13 +788,12 @@ SetSlotAndCategory = function(slot, cat, updateList)
 	selectedSlot = slot
 	selectedCategory = cat
 
-	--core.itemCollectionFrame:UpdateDisplayList()
 	core.itemCollectionFrame:SetSlotAndCategory(slot, cat, updateList)
 	
 	CloseDropDownMenus()
 	
-	UpdateListeners("selectedSlot") --itemFrames, 
-	--UpdateListeners("selectedCategory") --
+	UpdateListeners("selectedSlot")
+	-- UpdateListeners("selectedCategory") --
 end
 core.SetSlotAndCategory = SetSlotAndCategory
 
@@ -797,39 +808,36 @@ end
 SetCurrentChanges = function(set)
 	assert(type(set) == "table")
 	for slot, id in pairs(set) do
-		assert(core.Contains(itemSlots, slot))
+		assert(core.Contains(itemSlots, slot) or core.Contains(core.enchantSlots, slot))
 		assert(type(id) == "number" or (type(id) == "boolean" and not id))
 	end
 
-	-- TransmoggyDB.currentChanges = {}
-	-- wipe(slotCostsCopper)
-	-- wipe(slotCostsShards)
-	-- wipe(slotReason)
-	-- SetCosts() -- clear slot costs and sum and trigger GUI Update
-
-	
-	-- for slot, id in pairs(set) do
-	-- 	SetCurrentChangesSlot(slot, id, true)
-	-- end
+	for _, slot in pairs(core.enchantSlots) do
+		-- not supported atm, just ignore?
+	end
 
 	for _, slot in pairs(itemSlots) do
 		SetCurrentChangesSlot(slot, set[slot], true)
 	end
 	
-	UpdateListeners("currentChanges") --itemslotframes, model, savebutton, applybutton?, savetosetbutton?, slotmodels (wenn border zur aktuellen auswahl eingebaut wird)
-	--core.RequestPriceTotal() -- TODO: Remove this and sum up our slot prices instead or keep this as safety?
+	UpdateListeners("currentChanges")
 end
 core.SetCurrentChanges = SetCurrentChanges
 
 core.GetCurrentChanges = function()
+	if not TransmoggyDB.currentChanges then TransmoggyDB.currentChanges = {} end
 	return TransmoggyDB.currentChanges
 end
 
 SetCurrentChangesSlot = function(slot, id, silent)
-	assert(core.Contains(itemSlots, slot))
+	-- core.am("SetCurrentChangesSlot:", slot, "to", id)
+	assert(core.Contains(itemSlots, slot) or core.Contains(core.enchantSlots, slot))
 	assert(id == nil or type(id) == "number") -- and GetItemData(id) or even GetItemInfo(id) to secure that id is valid item (that is cached?) and maybe even check slot?
 	if not TransmoggyDB.currentChanges then TransmoggyDB.currentChanges = {} end
-	--core.am("SetCurrentChangesSlot:", slot, "to", id)	
+
+	if core.Contains(core.enchantSlots, slot) then
+		return -- do not allow setting enchant slots atm
+	end
 
 	local itemID, visualID, skinVisualID = core.TransmogGetSlotInfo(slot)
 	local selectedSkin = core.GetSelectedSkin()
@@ -851,6 +859,10 @@ SetCurrentChangesSlot = function(slot, id, silent)
 
 	if slot == "ShieldHandWeaponSlot" and not core.HasShieldHandWeaponSlot() then
 		id = nil -- e.g. we tried copying an outfit with shieldhandweapon into skin on character without dualwield
+	end
+
+	if slot == "RangedSlot" and not core.HasRangedSlot() then
+		id = nil
 	end
 	
 	if TransmoggyDB.currentChanges[slot] == id then return end
@@ -952,26 +964,6 @@ core.IsAvailableSourceItem = function(item, slot)
 	return core.availableMogs[slot] and core.availableMogs[slot][item]
 end
 
-local transmogIDToInventorySlot = {
-	[1] = "HeadSlot",
-	[3] = "ShoulderSlot",
-	[16] = "BackSlot",
-	[5] = "ChestSlot",
-	[4] = "ShirtSlot",
-	[19] = "TabardSlot",
-	[9] = "WristSlot",
-	[10] = "HandsSlot",
-	[6] = "WaistSlot",
-	[7] = "LegsSlot",
-	[8] = "FeetSlot",
-	[12] = "MainHandSlot",
-	[13] = "SecondaryHandSlot",
-	[14] = "SecondaryHandSlot", -- -.-
-	--"MainHandEnchantSlot", --TODO: erlaubt?
-	--"SecondaryHandEnchantSlot",
-	[15] = "RangedSlot",
-}
-
 core.SetSkin = function(skin, silent)
 	local id = skin.id
 	
@@ -979,19 +971,9 @@ core.SetSkin = function(skin, silent)
 	skins[id].name = skin.name
 	skins[id].slots = {}
 
-	for slotID, itemID in pairs(skin.slots) do		
-		-- print(type(slotID))	
-		-- slotID = tonumber(slotID) -- is supposed to be numeric acoording to API doc, but is a string at time of writing
-		-- local slotName = transmogIDToInventorySlot[slotID]
-		-- if not slotName then
-		-- 	print("SetSets: Could not map " .. slotID .. " to an item slot name!")
-		-- --if itemID == 0 then itemID = false end
-		-- else
-		-- 	sets[id]["transmogs"][slotName] = itemID
-		-- end
-		--sets[id]["transmogs"][slotID] = nil
-		slotID = tonumber(slotID) -- should be numeric acoording to API doc, but is a string at time of writing
-		--local itemSlot = core.TransmogLocationToItemSlot(slotID)
+	for slotID, itemID in pairs(skin.slots) do
+		slotID = tonumber(slotID) -- should be numeric acoording to API doc, but is a string
+		-- local itemSlot = core.TransmogLocationToItemSlot(slotID)
 		skins[id].slots[slotID] = itemID
 	end
 
@@ -1002,7 +984,7 @@ core.SetSkin = function(skin, silent)
 	end
 end
 
--- SetData has now format: { {id: SkinID, name: String, slots: SlotMap} }
+-- SkinData now has format: { {id: SkinID, name: String, slots: SlotMap} }
 SetSkinData = function(skinData)
 	core.am("called set skin data!")
 
@@ -1049,8 +1031,8 @@ core.GetSelectedSkinName = function()
 end
 
 core.SetActiveSkin = function(skinID) -- Setter of internal var. Asking the server to change active Skin is done with Request...
-	if type(skinID) ~= "number" and skinID ~= nil then print("Error in SetActiveSkin: skinID has wrong type") end -- not using assert since API swallows up error message
-	activeSkin = skinID -- should our AddOn/GUI care about active skin? TODO: Add listeners
+	if type(skinID) ~= "number" and skinID ~= nil then print("Error in SetActiveSkin: skinID has wrong type") end
+	activeSkin = skinID
 	UpdateListeners("activeSkin")
 end
 
@@ -1068,8 +1050,11 @@ core.GetActiveSkinName = function()
 	end
 end
 
+-- This is used to modify behaviour of shared frames between the wardrobe and transmog frame
+-- (Could've probably just checked which frame is shown for that)
+-- It does not really say whether we are at the npc
 core.SetIsAtTransmogrifier = function(atNPC)
-	atTransmogrifier = atNPC -- TODO: trigger GUI update? probably better to just manually cause a fresh oder item tab
+	atTransmogrifier = atNPC
 end
 
 core.IsAtTransmogrifier = function()
@@ -1077,14 +1062,12 @@ core.IsAtTransmogrifier = function()
 end
 
 local OnVisualUnlocked = function(payload)
-	core.am("unlockevent", payload)
 	local itemID = payload.itemId
 	core.SetUnlocked(itemID)
-
-	-- local playUnlockSoundOption = 1202 -- "Sound\\interface\\PickUp\\PickUpParchment_Paper.wav"
-	-- if playUnlockSoundOption then
-	-- 	PlaySound(playUnlockSoundOption, "SFX")
-	-- end
+	
+	if core.db and core.db.profile.General.playSpecialSounds then
+		PlaySound(core.sounds.unlockVisual, "SFX")
+	end
 
 	UpdateListeners("unlocks")
 	print("OnVisualUnlock!", itemID, GetItemInfo(itemID))
@@ -1106,6 +1089,14 @@ rAPI:registerEvent("transmog/skin/changed", OnSkinChanged)
 
 local OnBalanceChanged = function(payload)
 	print("Balance Update!")
+	
+	if core.db and core.db.profile.General.playSpecialSounds then
+		local balance = core.GetBalance()
+		if payload and payload.shards and balance and balance.shards and payload.shards > balance.shards then
+			PlaySound(core.sounds.gainBalance, "SFX")
+		end
+	end
+
 	SetBalance(payload)
 end
 rAPI:registerEvent("transmog/balance/changed", OnBalanceChanged)
@@ -1242,19 +1233,16 @@ core.RequestUnlocksSlot = function(slot)
 	local requestID = requestCounterUS[transmogLocation]
 	f(unpack(p)):next(function(items)
 		if requestID == requestCounterUS[transmogLocation] then
-			-- Imo we still want our equipped item in our list of item transmogs to "deselect"? A bit confusing that tems with the same displayID as the equipped item also get hidden :/
+			-- Imo we still want our equipped item in our list of item transmogs to "deselect"? A bit confusing that items with the same displayID as the equipped item also get hidden
 			if itemID and not skin then
 				table.insert(items, itemID)
 			end
 			SetAvailableMogs(slot, items)
-		else
-			--core.am("This answer to RequestUnlocksSlot("..slot..") is outdated, a newer Update was already requested.")
 		end
 	end):catch(function(err)
 		print("RequestUnlocksSlot: An error occured:", err.message)
 	end)
 end
-
 
 -- Should only be called once on login, so we do not need to trigger updates to interface
 local requestCounterUA = 0
@@ -1302,16 +1290,16 @@ core.RequestBalance = function()
 	local requestID = requestCounterB
 	API.GetBalance():next(function(balance)
 		if requestID == requestCounterB then
-			print("Your balance is: " .. balance.shards .. " moggies.")
-			--balance = bal["points"] --TODO: listener + setter etc
-			--balanceFrame.update()
+			-- print("Your balance is: " .. balance.shards .. " moggies.")
 			SetBalance(balance)
 		end
 	end):catch(function(err)
+		SetBalance({})
 		print("RequestBalance: An error occured:", err.message)
 	end)
 end
 
+-- Instead of tracking the total price we keep track of the costs+validity of each slot
 local requestCounterPOA = 0
 core.RequestPriceTotal = function()
 	requestCounterPOA = requestCounterPOA + 1
@@ -1375,7 +1363,6 @@ core.RequestPriceSlot = function(itemSlot)
 	local requestID = requestCounterSlotPrices[itemSlot]
 	API.GetPriceAndCheck(pendingID, not selectedSkin and itemID or nil, location, selectedSkin):next(function(result)
 		if requestID == requestCounterSlotPrices[itemSlot] then
-			--print("Got an answer Poggers Prices", itemSlot, price.copper, price.shards)
 			core.am(result)
 			SetSlotCostsAndReason(itemSlot, result.copper, result.shards, result.valid, result.message)
 		end
@@ -1443,10 +1430,6 @@ core.EquipOffhandNext = function(model)
 	core.DUMMY_MODEL:Hide()
 end
 
--- Should probably do a full rework of this at some point with all the newfound tricks
--- The EquipToOffhand trick relies on weaponslots being cleared, which breaks the way previewmodel uses this function, so I removed it for now in case where only an offHand is equipped.
--- still has the problem for chars without titangrip that we cant put 2h into offhand there and either have to do another error message or try to fake this with animations or both...
-
 -- Displays weapons mainHand and offHand on DressUpModel mod as well as possible (i.e. can't display dualwielding weapons, if the player can't dualwield (and wasn't logged into a dualwielding char earlier in the session))
 -- the "logged in on dualwielder before" thing is just another DressUpModel weirdness, since it would be confusing and we can't track it anyway, we don't try to use that feature
 -- requires an undress of the weapons before usage, now that we use that EquipToOffhand trick sometimes instead of always using an "invisible" weapon in MH
@@ -1468,8 +1451,8 @@ core.ShowMeleeWeapons = function(mod, mainHand, offHand, callID)
 		-- print(folder, "- Error/wrong usage of ShowMeleeWeapons. Please assure the weapons are cached before using ShowMeleeWeapons!") -- should be fine now
 		if mainHand then core.QueryItem(mainHandID) end
 		if offHand then core.QueryItem(offHandID) end
-		local uncached = (mainHand and not mhSubType) and mainHand or offHand
-		core.FunctionOnItemInfo(uncached, core.ShowMeleeWeapons, mod, mainHand, offHand, currentID[mod]) -- Retry after item info got retrieved for a missing item
+		local missingID = (mainHand and not mhSubType) and mainHandID or offHandID
+		core.FunctionOnItemInfo(missingID, core.ShowMeleeWeapons, mod, mainHand, offHand, currentID[mod]) -- Retry after item info got retrieved for a missing item
 	end
 	
 	local TryOn = mod.TryOnOld or mod.TryOn -- Incase our model has modified TryOn. Hacky as fuck, probably better to take the correct TryOn method as optional parameter?
@@ -1559,9 +1542,10 @@ core.IsOffHandItemType = function(itemType)
 	return itemType == "INVTYPE_SHIELD" or itemType == "INVTYPE_HOLDABLE"
 end
 
-core.OpenTransmogWindow = function()
+core.OpenTransmogWindow = function(fromGossip)
 	core.wardrobeFrame:Hide()	
 	core.SetIsAtTransmogrifier(true)
+	core.SetShown(core.transmogFrame.minimizeButton, fromGossip)
 	core.transmogFrame:Show()
 end
 
@@ -1592,7 +1576,7 @@ end
 core.gossipOpenTransmogButton = core.CreateMeATextButton(GossipFrame, 112, 24, "Transmogrify")
 core.gossipOpenTransmogButton:SetScript("OnClick", function()	
 	core.HideGossipFrame()
-	core.OpenTransmogWindow()
+	core.OpenTransmogWindow(true)
 end)
 core.gossipOpenTransmogButton:SetPoint("TOP", GossipNpcNameFrame, "BOTTOM", 0, -10)
 
@@ -1606,8 +1590,11 @@ a:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 a:RegisterEvent("GOSSIP_SHOW")
 a:RegisterEvent("GOSSIP_CLOSED")
 a:RegisterEvent("PLAYER_MONEY")
+a:RegisterEvent("PLAYER_REGEN_ENABLED")
 
+local lastClosed = 0
 a:SetScript("OnEvent", function(self, event, ...)
+	print(event, ...)
 	if event == "PLAYER_ENTERING_WORLD" then
 		self:UnregisterEvent("PLAYER_ENTERING_WORLD")
 
@@ -1627,7 +1614,7 @@ a:SetScript("OnEvent", function(self, event, ...)
 		core.RequestGetConfig()
 
 		core.PreHook_ModifiedItemClick()
-		--BackgroundItemInfoWorker.Start()
+		-- BackgroundItemInfoWorker.Start()
 		
 		core.FixTooltip(core.extraItemTooltip)
 
@@ -1653,15 +1640,6 @@ a:SetScript("OnEvent", function(self, event, ...)
 		core.CreateUnlocksOverviewFrame = nil
 		core.CreateUnlockedBar = nil
 
-
-		-- core.transmogFrame:HookScript("OnShow", function()
-		-- 	local unpushable = { area = "doublewide", pushable = 0, width = 840, xoffset = 80}
-		-- 	for attribute, value in pairs(unpushable) do
-		-- 		GossipFrame:SetAttribute("UIPanelLayout-" .. attribute, value)
-		-- 	end
-		-- 	UpdateUIPanelPositions(GossipFrame)
-		-- end)
-
 	elseif event == "PLAYER_EQUIPMENT_CHANGED" then
 		local inventorySlotID, itemEquipped = ...
 		local itemSlot = idToSlot[inventorySlotID]
@@ -1677,17 +1655,17 @@ a:SetScript("OnEvent", function(self, event, ...)
 			core.OnEquippedItemChange(itemSlot, itemEquipped)
 		end
 
-	elseif event == "GOSSIP_SHOW" then --TODO: Alternatively could hook gossipframe stuff and check the button names or smth to see if its the tmog npc?
+	elseif event == "GOSSIP_SHOW" then -- TODO: Alternatively could hook gossipframe stuff and check the button names or smth to see if its the tmog npc?
+		if GetTime() - lastClosed < 0.2 then return end -- ignore refresh, when clicking around the menu
 		local npcID = core.GetNPCID(UnitGUID("target"))
 		core.SetShown(core.gossipOpenTransmogButton, npcID == core.TMOG_NPC_ID)
-		
-		local autoOpen = true
 
-		if autoOpen and core.gossipOpenTransmogButton:IsShown() then
+		if core.db.profile.General.autoOpen and core.gossipOpenTransmogButton:IsShown() then
 			core.gossipOpenTransmogButton:Click()
 		end
 
 	elseif event == "GOSSIP_CLOSED" then
+		lastClosed = GetTime()
 		--GossipFrame:SetWidth(gossipFrameWidthBackup)
 		GossipFrame:SetAlpha(1)
 		core.gossipBlocker:Hide()
@@ -1698,6 +1676,13 @@ a:SetScript("OnEvent", function(self, event, ...)
 
 	elseif event == "PLAYER_MONEY" then
 		UpdateListeners("money")
+	
+	-- Do this to assure we restore the tab bind as soon as we can, if we happened to come infight while the mannequin override binding was active?
+	-- Or give option for the tab bind and skip this?
+	elseif event == "PLAYER_REGEN_ENABLED" then
+		for _, mannequin in pairs(core.itemCollectionFrame.mannequins) do
+			ClearOverrideBindings(mannequin)
+		end
 	end
 end)
 
@@ -1730,54 +1715,3 @@ GossipFrame:HookScript("OnHide", function()
 	GossipFrame:SetAlpha(1)
 	GossipFrameNpcNameText:SetText("Not Warpi")
 end)]]
-
-
--- DEBUG
-
-
-
-
--- local f = CreateFrame("Frame")
--- f:RegisterEvent("CHAT_MSG_ADDON")
--- f:SetScript("OnEvent", function(self, event, ...)
--- 	if event == "CHAT_MSG_ADDON" then
--- 		local _, prefix, msg, channel, source = ...
--- 		if source == "Server" then
--- 			self.rLen = (self.rLen or 0) + strlen(msg)
--- 			print(msg)
--- 			self.rCount = (self.rCount or 0) + 1
--- 		else
--- 			print(...)
--- 		end
--- 	end
--- end)
--- f:SetScript("OnUpdate", function(self, e)
--- 	self.e = (self.e or 0) + e
--- 	if self.e > 3 then
--- 		self.e = self.e - 1
--- 		if self.rLen ~= self.rLenOld then
--- 			print("Received:", self.rLen - (self.rLenOld or 0), "length", self.rCount - (self.rCountOld or 0), "count")
--- 			self.rLenOld = self.rLen
--- 			self.rCountOld = self.rCount
--- 		end
--- 	end
--- end)
-
--- local g = CreateFrame("Frame")
--- g:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
--- g:RegisterEvent("UNIT_INVENTORY_CHANGED")
--- g:RegisterEvent("INSPECT_READY")
--- g:SetScript("OnEvent", function(self, event, ...)
--- 	local slot, isEquipped = ...
-
--- 	print(event, slot, isEquipped and core.GetTextureString(GetInventoryItemTexture("player", slot), 12))
--- end)
-
--- PaperDollItemSlotButton_UpdateOld = PaperDollItemSlotButton_Update 
--- PaperDollItemSlotButton_Update = function(self)
--- 	PaperDollItemSlotButton_UpdateOld(self)
--- 	if self:GetID() > 19 then return end
-
--- 	print("UWU", self:GetID(), core.GetTextureString(GetInventoryItemTexture("player", self:GetID()) or "", 12))
--- end
-

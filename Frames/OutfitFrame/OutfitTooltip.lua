@@ -15,10 +15,18 @@ core.ItemRefTooltipTryOnButton:SetScript("OnHide", function(self)
     self.set = nil
 end)
 
--- TODO: refresh on iteminfo with second parameter, that indicates that this is a refresh and should not show, if tooltip is set to something else?
-core.ShowOutfitTooltip = function(set)
+local counter = 0
+core.ShowOutfitTooltip = function(set, isRefreshOf)
+    if isRefreshOf then
+        if counter > isRefreshOf then
+            return
+        end
+    else
+        counter = counter + 1
+    end
+    
     -- Imitate item tooltip behaviour and hide tooltip, if we click on same outfit again?
-    if core.DeepCompare(set, core.ItemRefTooltipTryOnButton.set) then
+    if not isRefreshOf and core.DeepCompare(set, core.ItemRefTooltipTryOnButton.set) then
         HideUIPanel(ItemRefTooltip)
         return
     end
@@ -35,19 +43,35 @@ core.ShowOutfitTooltip = function(set)
     if not core.IsValidSet(set) then
         ItemRefTooltip.AddDoubleLine("Invalid Outfit data or format.")
     else
-        for _, slot in pairs(core.itemSlots) do            
-            local itemID = set[slot]
-            if itemID and itemID > 1 then
-                local texture = GetItemIcon(itemID)
-                local _, link = GetItemInfo(itemID)
-                -- link = link and core.GetShortenedString(core.LinkToColoredString(link), 42) or nil
-                link = link and core.LinkToColoredString(link) or nil
-                ItemRefTooltip:AddLine(core.GetTextureString(texture, 16) .. " " .. (link or core.LOADING2))
+        local needsRefresh
+        for _, slot in pairs(core.allSlots) do
+            if core.IsEnchantSlot(slot) then
+                local enchantID = set[slot]
+                if enchantID and enchantID > 0 then
+                    local name, _, tex = core.GetEnchantInfo(enchantID)
+                    ItemRefTooltip:AddLine("      " .. (name and (core.GetTextureString(tex) .. " " .. name) or "unknown enchant localize me"))
+                else
+                    ItemRefTooltip:AddLine("      " .. (itemID == -1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
+                                                                    or core.GetColoredString("(" .. core.SLOT_NAMES[slot] .. ")", core.greyTextColor.hex)))
+                end
             else
-                ItemRefTooltip:AddLine("      " .. (itemID == 1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
-                                                                or core.GetColoredString("(" .. core.SLOT_NAMES[slot] .. ")", core.greyTextColor.hex)))
+                local itemID = set[slot]
+                if itemID and itemID > 1 then
+                    local texture = GetItemIcon(itemID)
+                    local _, link = GetItemInfo(itemID)
+                    -- link = link and core.GetShortenedString(core.LinkToColoredString(link), 42) or nil
+                    link = link and core.LinkToColoredString(link)
+                    ItemRefTooltip:AddLine(core.GetTextureString(texture, 16) .. " " .. (link or core.LOADING2))
+                    -- if not link then core.FunctionOnItemInfo(itemID, core.ShowOutfitTooltip, set, counter) end
+                    if not link then core.QueryItem(itemID); needsRefresh = itemID end
+                else
+                    ItemRefTooltip:AddLine("      " .. (itemID == 1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
+                                                                    or core.GetColoredString("(" .. core.SLOT_NAMES[slot] .. ")", core.greyTextColor.hex)))
+                end
             end
+            if needsRefresh then core.FunctionOnItemInfo(needsRefresh, core.ShowOutfitTooltip, set, counter) end
         end
+
         ItemRefTooltip:AddLine(" ")
         ItemRefTooltip:AddLine(" ")
 
@@ -59,6 +83,7 @@ end
 
 core.HideOutfitTooltipStuff = function()
     core.ItemRefTooltipTryOnButton:Hide()
+    counter = counter + 1
 end
 
 ItemRefTooltip:HookScript("OnHide", core.HideOutfitTooltipStuff)

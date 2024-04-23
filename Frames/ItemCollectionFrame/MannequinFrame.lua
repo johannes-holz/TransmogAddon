@@ -178,8 +178,9 @@ local LoadingFrame_OnUpdate = function(self, e)
 	if self.elapsed > UPDATE_INTERVAL then
 		self.elapsed = self.elapsed - UPDATE_INTERVAL
 		local itemID = self:GetParent().itemID
+		local slot = self:GetParent().slot
 		if GetItemInfo(itemID) then
-			self:GetParent():TryOn(itemID)
+			self:GetParent():TryOn(itemID, slot)
 			self:Hide()
 		end
 	end
@@ -203,14 +204,14 @@ core.CreateMannequinFrame = function(parent, id, width, height)
 	-- m.borderFrame = CreateFrame("Frame", nil, m)
 	-- m.borderFrame:SetAllPoints()
 	
-	m.backgroundTexture = m:CreateTexture(nil, "BACKGROUND")
-	m.backgroundTexture:SetTexture(0.15, 0.15, 0.15)
-	m.backgroundTexture:SetPoint("BOTTOMLEFT", 1, 1)
-	m.backgroundTexture:SetPoint("TOPRIGHT", -1, -1)
+	m.opaqueBGTex = m:CreateTexture(nil, "BACKGROUND")
+	m.opaqueBGTex:SetTexture(0.1, 0.1, 0.1)
+	m.opaqueBGTex:SetPoint("BOTTOMLEFT", 1, 1)
+	m.opaqueBGTex:SetPoint("TOPRIGHT", -1, -1)
 
 	local offset = 0.05 * height
 
-	m.backTex = m:CreateTexture(nil, "BACKGROUND")
+	m.backTex = m:CreateTexture(nil, "BORDER")
 	m.backTex:SetTexture("Interface\\AddOns\\".. folder .."\\images\\Transmogrify")
 	m.backTex:SetTexCoord(5/512, 95/512, 131/512, 247/512)
 	m.backTex:SetPoint("TOPLEFT", -offset, offset)

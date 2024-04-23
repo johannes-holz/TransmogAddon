@@ -289,16 +289,18 @@ itemCollectionFrame.UpdateMannequins = function(self)
 		if not itemID then
 			mannequin:Hide()
 		else			
-			local itemCategory
+			local itemCategory, itemEquipLoc
 			if not isEnchantSlot then
-				local _, _, _, class, subClass = core.GetItemData(itemID)
+				local _, _, inventoryType, class, subClass = core.GetItemData(itemID)
 				itemCategory = class and subClass and core.classSubclassToType[class][subClass]
+				itemEquipLoc = inventoryType and core.inventoryTypes[inventoryType]
 			end
-			local isTwoHand = itemCategory and core.CanBeTitanGripped(itemCategory) -- those are the only 2H in offhand slot
+			local isTwoHand = itemEquipLoc == "INVTYPE_2HWEAPON"
+			local canBeTitanGripped = core.CanBeTitanGripped(itemCategory)
 			local displaySlot = slot
 			-- scuffed fix for offhand weapon display
-			-- TODO: find and add animation pose, where the weapon is gripped by both hands or the weapon arm is stretched out
-			if (slot == "ShieldHandWeaponSlot") and ((isTwoHand and not hasTitanGrip) or not canDualWield) then
+			-- TODO: find and implement animation pose, where the weapon is gripped by both hands or the weapon arm is stretched out
+			if (slot == "ShieldHandWeaponSlot") and (not canDualWield or (isTwoHand and (not canBeTitanGripped or not hasTitanGrip))) then
 				displaySlot = "MainHandSlot"
 				y = -y + 0.2
 			end
@@ -418,6 +420,8 @@ local itemCount = 0
 local TooltipAddItemLineHelper = function(mannequin, itemID)
 	itemCount = itemCount + 1
 	local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
+	local atTransmogrifier = core.IsAtTransmogrifier()
+	local isAvailable = core.IsAvailableSourceItem(itemID, itemCollectionFrame.selectedSlot)
 
 	local itemName, itemLink = GetItemInfo(itemID)
 	-- local tmpItemType, _, invType = select(7, GetItemInfo(itemID))
@@ -426,10 +430,11 @@ local TooltipAddItemLineHelper = function(mannequin, itemID)
 
 	if unlocked == 1 and itemLink then
 		GameTooltip:AddDoubleLine(leftText, core.COLLECTED, nil, nil, nil, 0.1, 1, 0.1)
+	elseif unlocked == 0 and itemLink and atTransmogrifier and isAvailable then
+		GameTooltip:AddDoubleLine(leftText, "Available*", nil, nil, nil, 0.6, 0.7, 0.1)
 	else		
 		GameTooltip:AddDoubleLine(leftText, "           ", nil, nil, nil, 0.1, 1, 0.1)
 	end
-	--if unlocked ~= 1 then _G["GameTooltipTextLeft"..GameTooltip:NumLines()]:SetAlpha(lockedAlpha) end
 end
 
 local lastItem
@@ -448,14 +453,16 @@ local Mannequin_OnEnter = function(self)
 
 	if itemID then
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-        SetOverrideBindingClick(self, true, "TAB", self:GetName(), "RightButton") -- TODO: NO COMBAT. Any other way to avoid possibly breaking binds in combat while still allowing normal movement?
-		SetOverrideBindingClick(self, true, "SHIFT-TAB", self:GetName(), "SHIFT-RightButton")
+		-- TODO: Can't set or clear override bindings in combat. Any other way to avoid possibly breaking binds in combat while still allowing normal movement?
+		if not InCombatLockdown() then
+			SetOverrideBindingClick(self, true, "TAB", self:GetName(), "RightButton")
+			SetOverrideBindingClick(self, true, "SHIFT-TAB", self:GetName(), "SHIFT-RightButton")
+		end
 		itemCount = 0
 
 		GameTooltip:AddLine(atTransmogrifier and core.APPEARANCE_TOOLTIP_TEXT1B or core.APPEARANCE_TOOLTIP_TEXT1A, 1, 1, 1, nil)
 		GameTooltip:AddLine(" ")
 		
-		local _, displayGroup = core.GetItemData(itemID)
 		if isEnchantSlot then
 			if itemID == 0 then
 				GameTooltip:AddLine("No/Hidden Enchant localize me")
@@ -465,29 +472,48 @@ local Mannequin_OnEnter = function(self)
 					GameTooltip:AddLine(core.GetTextureString(tex) .. " " .. name)
 				end
 			end
-		elseif itemCollectionFrame.displayGroups[displayGroup] then
-			for _, alternativeItemID in pairs(itemCollectionFrame.displayGroups[displayGroup]) do
-				TooltipAddItemLineHelper(self, alternativeItemID)
+		else
+			local _, displayGroupID = core.GetItemData(itemID)
+			local displayGroup = displayGroupID and itemCollectionFrame.displayGroups[displayGroupID]
+			local hasNotUnlockedItems
+			if displayGroup then
+				for _, alternativeItemID in pairs(displayGroup) do
+					TooltipAddItemLineHelper(self, alternativeItemID)
+					local unlocked = core.GetItemData(alternativeItemID)
+					hasNotUnlockedItems = hasNotUnlockedItems or (unlocked == 0)
+				end
+				if #displayGroup > 1 then
+					GameTooltip:AddLine(" ")
+					GameTooltip:AddLine(core.APPEARANCE_TOOLTIP_TEXT2, 0.5, 0.5, 0.5, 1)
+				end
+			else			
+				TooltipAddItemLineHelper(self, itemID)
+				local unlocked = core.GetItemData(itemID)
+				hasNotUnlockedItems = hasNotUnlockedItems or (unlocked == 0)
 			end
-			if #itemCollectionFrame.displayGroups[displayGroup] > 1 then
+			if not atTransmogrifier and core.GetDisplayGroupSize(itemID) > (displayGroup and #displayGroup or 1) then
 				GameTooltip:AddLine(" ")
-				GameTooltip:AddLine(core.APPEARANCE_TOOLTIP_TEXT2, 0.5, 0.5, 0.5, 1)
+				GameTooltip:AddLine(core.APPEARANCE_TOOLTIP_TEXT3, 0.5, 0.5, 0.5, 1)
 			end
-		else			
-			TooltipAddItemLineHelper(self, itemID)
+			if atTransmogrifier and hasNotUnlockedItems then
+				GameTooltip:AddLine(" ")
+				GameTooltip:AddLine(core.APPEARANCE_TOOLTIP_TEXT4, 0.5, 0.5, 0.5, 1)
+			end
 		end
 		GameTooltip:Show()
 		if isEnchantSlot then
 			-- TODO: maybe: ExtraTooltip Enchant Spell Tooltip?
 		else
-			core.SetExtraItemTooltip(displayGroup and itemCollectionFrame.displayGroups[displayGroup] and itemCollectionFrame.displayGroups[displayGroup][selected] or itemID, "RIGHT")
+			core.SetExtraItemTooltip(displayGroup and displayGroup[selected] or itemID, "RIGHT")
 		end
 	end
 end
 
 local Mannequin_OnLeave = function(self)
 	selected = 1
-	ClearOverrideBindings(self)
+	if not InCombatLockdown() then
+		ClearOverrideBindings(self)
+	end
 	GameTooltip:Hide()
 end
 
