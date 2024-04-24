@@ -289,6 +289,7 @@ itemCollectionFrame.UpdateMannequins = function(self)
 		if not itemID then
 			mannequin:Hide()
 		else			
+			mannequin:Show()
 			local itemCategory, itemEquipLoc
 			if not isEnchantSlot then
 				local _, _, inventoryType, class, subClass = core.GetItemData(itemID)
@@ -309,9 +310,8 @@ itemCollectionFrame.UpdateMannequins = function(self)
 			mannequin:SetPosition(x, y, z)
 			mannequin:SetFacing(itemCategory == core.CATEGORIES.WEAPON_BOWS and -facing or facing) -- bows are held in the left hand
 			mannequin:SetAnimation(sequenceID, sequenceTime)
-			mannequin:Undress()			
+			mannequin:Undress()
 			mannequin:TryOn(itemID, displaySlot)
-			mannequin:Show()
 		end
 		-- if slot == "MainHandSlot" then DEB(mannequin) end -- Was used for tests showing weapons with greyed out model
 	end
@@ -321,8 +321,15 @@ end
 local selected = 1
 local Mannequin_SelectNextSourceItem = function(self, backwards)
 	local itemID = itemCollectionFrame.displayList[mannequinCount * (itemCollectionFrame.page - 1) + self:GetID()]
-	local _, displayGroup = core.GetItemData(itemID)
-	local n = itemCollectionFrame.displayGroups[displayGroup] and #itemCollectionFrame.displayGroups[displayGroup] or 1
+	local isEnchantSlot = core.IsEnchantSlot(itemCollectionFrame.selectedSlot)
+	local n = 1
+
+	if isEnchantSlot then
+		n = core.enchants[itemID] and #core.enchants[itemID].enchantIDs or 1
+	else
+		local _, displayGroup = core.GetItemData(itemID)
+		n = itemCollectionFrame.displayGroups[displayGroup] and #itemCollectionFrame.displayGroups[displayGroup] or 1
+	end
 
 	selected = (selected + n - 1 + (backwards and -1 or 1)) % n + 1 -- modulo in 1-based indexing: add (n - 1) to convert to 0-based index, do modulo, add 1 to get back to 1-based index
 	self:GetScript("OnEnter")(self)
@@ -355,7 +362,7 @@ local Mannequin_OnMouseDown = function(self, button)
 
 			if core.IsAtTransmogrifier() then
 				-- core.SetPending(core.GetSelectedSlot(), itemID)
-				print("Enchant transmog not supported yet. localize me")
+				print("Enchant transmog not supported yet.")
 			else
 				if not DressUpFrame:IsShown() then
 					ShowUIPanel(DressUpFrame)
@@ -431,7 +438,7 @@ local TooltipAddItemLineHelper = function(mannequin, itemID)
 	if unlocked == 1 and itemLink then
 		GameTooltip:AddDoubleLine(leftText, core.COLLECTED, nil, nil, nil, 0.1, 1, 0.1)
 	elseif unlocked == 0 and itemLink and atTransmogrifier and isAvailable then
-		GameTooltip:AddDoubleLine(leftText, "Available*", nil, nil, nil, 0.6, 0.7, 0.1)
+		GameTooltip:AddDoubleLine(leftText, core.AVAILABLE .. "*", nil, nil, nil, 0.6, 0.7, 0.1)
 	else		
 		GameTooltip:AddDoubleLine(leftText, "           ", nil, nil, nil, 0.1, 1, 0.1)
 	end
@@ -465,13 +472,19 @@ local Mannequin_OnEnter = function(self)
 		
 		if isEnchantSlot then
 			if itemID == 0 then
-				GameTooltip:AddLine("No/Hidden Enchant localize me")
+				GameTooltip:AddLine("> " .. "No/Hidden Enchant localize me")
 			else
-				for _, id in pairs(core.enchants[itemID].enchantIDs) do
+				for i, id in pairs(core.enchants[itemID].enchantIDs) do
 					local name, _, tex = core.GetEnchantInfo(id)
-					GameTooltip:AddLine(core.GetTextureString(tex) .. " " .. name)
+					GameTooltip:AddLine((i == selected and "> " or "- ") .. core.GetTextureString(tex) .. " " .. name)
+				end
+				
+				if #core.enchants[itemID].enchantIDs > 1 then
+					GameTooltip:AddLine(" ")
+					GameTooltip:AddLine(core.APPEARANCE_TOOLTIP_TEXT2, 0.5, 0.5, 0.5, 1)
 				end
 			end
+			-- TODO: ExtraTooltip Enchant Spell Tooltip?
 		else
 			local _, displayGroupID = core.GetItemData(itemID)
 			local displayGroup = displayGroupID and itemCollectionFrame.displayGroups[displayGroupID]
@@ -499,13 +512,9 @@ local Mannequin_OnEnter = function(self)
 				GameTooltip:AddLine(" ")
 				GameTooltip:AddLine(core.APPEARANCE_TOOLTIP_TEXT4, 0.5, 0.5, 0.5, 1)
 			end
-		end
-		GameTooltip:Show()
-		if isEnchantSlot then
-			-- TODO: maybe: ExtraTooltip Enchant Spell Tooltip?
-		else
 			core.SetExtraItemTooltip(displayGroup and displayGroup[selected] or itemID, "RIGHT")
 		end
+		GameTooltip:Show()
 	end
 end
 
@@ -633,7 +642,7 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 	local isEnchantSlot = core.IsEnchantSlot(slot)
 	local hiddenID = isEnchantSlot and 0 or 1
 
-	print("atNPC:", atTransmogrifier, "slot:", slot, "cat:", category)
+	-- print("atNPC:", atTransmogrifier, "slot:", slot, "cat:", category)
 
 	local t1 = GetTime()
 
@@ -703,7 +712,7 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 			end
 		end
 
-		print("itemCount:", itemCount, "total item count, hardcoded atm:", 22420)
+		-- print("itemCount:", itemCount, "total item count, hardcoded atm:", 22420)
 
 		for displayID, items in pairs(self.displayGroups) do
 			local visualUnlocked = 0
@@ -743,7 +752,7 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 		-- print("garbage:", collectgarbage("count") - memCount)
 		collectgarbage("collect")
 		local t4 = GetTime()
-		print("Time for BuildList:", t2 - t1, "Time for Sort:", t3 - t2, "Time for collect:", t4 - t3)
+		-- print("Time for BuildList:", t2 - t1, "Time for Sort:", t3 - t2, "Time for collect:", t4 - t3)
 	end
 
 	itemCollectionFrame.unlockedStatusBar:SetMinMaxValues(0, table.getn(self.displayList))

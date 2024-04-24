@@ -1617,7 +1617,7 @@ a:SetScript("OnEvent", function(self, event, ...)
 		
 		core.FixTooltip(core.extraItemTooltip)
 
-		-- Clear up Space from the CreateXFrame functions:
+		-- Remove unneeded stuff
 
 		-- ItemCollection
 		core.CreateSlotButtonFrame = nil

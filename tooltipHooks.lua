@@ -308,7 +308,7 @@ _G.NotifyInspect = function(unit)
     local addon = string.match(str,'[%s%c]+([^:%s%c]*)\\[^\\:%s%c]+:')
     addon = string.gsub(addon or "unknown",'I?n?t?e?r?f?a?c?e\\AddOns\\',"")
 
-	if InspectFrame:IsShown() and not strfind(addon, "Blizzard_InspectUI") then
+	if InspectFrame and InspectFrame:IsShown() and not strfind(addon, "Blizzard_InspectUI") then
 		-- print("blocked notify from", addon)
 		return
 	end

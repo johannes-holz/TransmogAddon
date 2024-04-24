@@ -181,7 +181,6 @@ DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
         if itemSlot == "ShieldHandWeaponSlot" and itemID > 1 then
             if not itemSubType or (not core.CanDualWield() or (itemEquipLoc == "INVTYPE_2HWEAPON" and not (core.HasTitanGrip() and core.CanBeTitanGripped(itemSubType)))) then
                 -- Allow OH-only weapons so non-dualwielders can still preview, like the original DressUpModel does?
-                print(itemEquipLoc)
                 if itemEquipLoc == "INVTYPE_WEAPONOFFHAND" then
                     items["MainHandSlot"] = nil
                 else
@@ -263,7 +262,7 @@ DressUpModel.TryOn = function(self, itemLink, itemSlot)
         return
     end
 
-    print("DressUp", itemLink, itemSlot, itemEquipLoc, itemID, enchantID)
+    -- print("DressUp", itemLink, itemSlot, itemEquipLoc, itemID, enchantID)
 
     itemSlot = itemSlot or core.equipLocToInventorySlot[itemEquipLoc]
     if not itemSlot then
@@ -284,7 +283,7 @@ DressUpModel.TryOn = function(self, itemLink, itemSlot)
     end
                 
     if not itemSlot then
-        print("Could not find proper Inventory Slot for " .. itemLink .. ". Maybe it is an invisible inventory item like rings or trinkets.")
+        -- print("Could not find proper Inventory Slot for " .. itemLink .. ". Maybe it is an invisible inventory item like rings or trinkets.")
         return
     end
 
@@ -390,7 +389,7 @@ DressUpModel.update = function(self)
             if itemID and itemID > 1 then
                 if core.IsEnchantSlot(slot) then
                     local name, _, tex = core.GetEnchantInfo(itemID)
-                    DressUpFrame.itemListFrame.slotButtons[slot]:SetText("      " .. (name and (core.GetTextureString(tex) .. " " .. name) or "unknown enchant localize me")) -- core.GetTextureString(texture, 16) .. " " .. (link or core.LOADING2))
+                    DressUpFrame.itemListFrame.slotButtons[slot]:SetText("      " .. (name and (core.GetTextureString(tex) .. " " .. NORMAL_FONT_COLOR_CODE .. name .. FONT_COLOR_CODE_CLOSE) or "unknown enchant localize me")) -- core.GetTextureString(texture, 16) .. " " .. (link or core.LOADING2))
                 else
                     local texture = GetItemIcon(itemID)
                     local _, link = GetItemInfo(itemID)

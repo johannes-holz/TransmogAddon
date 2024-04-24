@@ -70,10 +70,11 @@ local Model_TryOn = function(self, itemID, slot)
 		local itemString = "item:" .. dummyWeapon .. ":" .. (itemID == 0 and 0 or core.enchants[itemID]["enchantIDs"][1]) -- itemID is the enchantID in this case
 		-- self:TryOnOld(1485) -- TODO: use equip to slot functionality instead of doing the weapon slot manipulation manually like this?
 		-- self:TryOnOld("item:2000:" .. (itemID == 0 and 0 or core.enchants[itemID]["enchantIDs"][1]))
+		self:Undress()
 		if slot == "MainHandEnchantSlot" then 
 			core.ShowMeleeWeapons(self, itemString, nil)
 		elseif slot == "SecondaryHandEnchantSlot" then
-			core.ShowMeleeWeapons(self, nil, itemString) -- TODO: fails for 2H weapons without titangrip. would need to find a good model animation + position, where both hands are on the weapon
+			core.ShowMeleeWeapons(self, nil, itemString)
 		end
 		self:SetLoading(false)
 	elseif GetItemInfo(itemID) then
