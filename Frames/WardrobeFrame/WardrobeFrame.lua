@@ -6,8 +6,8 @@ local HEADER_HEIGHT = 68
 core.OpenWardrobe = function()
     core.transmogFrame:Hide()
 	core.SetIsAtTransmogrifier(false)
-	core.wardrobeFrame:Show()
     core.wardrobeFrame:Raise()
+	core.wardrobeFrame:Show() -- order is important here?! with raise after show (and onshow/item tab stuff), sometimes the frame level of the item collection stays low (usually happens for frame levels > 128)
 end
 
 local WardrobeFrame_OnShow = function(self)
