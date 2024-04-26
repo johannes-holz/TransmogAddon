@@ -37,15 +37,16 @@ core.CreateOptionsDDM = function(parent)
 		local info
 		if level == 1 then
 			-- enchant preview
-			info = UIDropDownMenu_CreateInfo()
-			info.text = core.ENCHANT_PREVIEW
-			info.arg1 = nil
-			info.arg2 = nil
-			info.padding = 0
-            info.notCheckable = true
-            info.hasArrow = true
-            info.value = { levelOneKey = keys.ENCHANT}
-			UIDropDownMenu_AddButton(info, level)
+            -- now done thourgh enchant slot, but keeping the code for now
+			-- info = UIDropDownMenu_CreateInfo()
+			-- info.text = core.ENCHANT_PREVIEW
+			-- info.arg1 = nil
+			-- info.arg2 = nil
+			-- info.padding = 0
+            -- info.notCheckable = true
+            -- info.hasArrow = true
+            -- info.value = { levelOneKey = keys.ENCHANT}
+			-- UIDropDownMenu_AddButton(info, level)
 
             -- unlocked filter
 			info = UIDropDownMenu_CreateInfo()

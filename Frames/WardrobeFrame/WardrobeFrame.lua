@@ -7,7 +7,12 @@ core.OpenWardrobe = function()
     core.transmogFrame:Hide()
 	core.SetIsAtTransmogrifier(false)
     core.wardrobeFrame:Raise()
-	core.wardrobeFrame:Show() -- order is important here?! with raise after show (and onshow/item tab stuff), sometimes the frame level of the item collection stays low (usually happens for frame levels > 128)
+	core.wardrobeFrame:Show()
+    -- sometimes the frame level of the item collection stays low (usually happens for frame levels > 128). not sure how to fix. try dirty fix with manually setting frame level
+    if core.itemCollectionFrame:GetFrameLevel() <= core.wardrobeFrame:GetFrameLevel() then
+        core.itemCollectionFrame:SetFrameLevel(core.wardrobeFrame:GetFrameLevel() + 1)
+        core.itemCollectionFrame:SetFrameLevel(core.wardrobeFrame:GetFrameLevel() + 1)
+    end
 end
 
 local WardrobeFrame_OnShow = function(self)

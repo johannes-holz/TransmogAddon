@@ -15,7 +15,6 @@ SlotButton_UpdateIcon = function(self)
     local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(self.itemSlot)
 	local selectedSkin = core.GetSelectedSkin()
 
-
 	local shown = (pendingID and pendingID > 1) and pendingID
 				or (not pendingID and skinVisualID and skinVisualID > 1) and skinVisualID
 				or (not selectedSkin and not pendingID and not skinVisualID and visualID and visualID > 1) and visualID
@@ -124,6 +123,16 @@ local SlotButton_OnEnter = function(self)
 		GameTooltip:AddLine(" ")
 		GameTooltip:AddLine("Error: " .. cannotTransmogrifyReason, 1, 0, 0, 1)
 	end
+
+	if not (core.db and core.db.profile.General.hideControlHints) then
+        local rL, gL, bL = GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b
+        local rR, gR, bR = GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddDoubleLine(core.LEFT_CLICK, core.SELECT, rL, gL, bL, rR, gR, bR)
+        GameTooltip:AddDoubleLine(core.SHIFT_LEFT_CLICK, core.HIDE, rL, gL, bL, rR, gR, bR)
+        GameTooltip:AddDoubleLine(core.CONTROL_LEFT_CLICK, core.UNMOG, rL, gL, bL, rR, gR, bR)
+        GameTooltip:AddDoubleLine(core.ALT_LEFT_CLICK, core.CLEAR_PENDING, rL, gL, bL, rR, gR, bR)
+    end
 		
 	GameTooltip:Show()
 end
@@ -444,6 +453,14 @@ core.CreateItemSlotOptionsFrame = function(parent)
 
 	itemSlotOptionsFrame.removeMogButton:SetScript("OnClick", function()
 		core.UnmogSlot(itemSlotOptionsFrame.owner.itemSlot)
+	end)
+
+	itemSlotOptionsFrame.clearPendingButton = core.CreateMeACustomTexButton(itemSlotOptionsFrame, itemSlotWidth / 2, itemSlotWidth / 2, "Interface\\PaperDollInfoFrame\\UI-GearManager-LeaveItem-Transparent", 0, 0, 1, 1)
+	itemSlotOptionsFrame.clearPendingButton:SetPoint("TOPRIGHT", itemSlotOptionsFrame.removeMogButton, "BOTTOMRIGHT")
+	core.SetTooltip(itemSlotOptionsFrame.clearPendingButton, core.CLEAR_PENDING)
+
+	itemSlotOptionsFrame.clearPendingButton:SetScript("OnClick", function()
+		core.SetPending(itemSlotOptionsFrame.owner.itemSlot)
 	end)
 	
 	itemSlotOptionsFrame.SetOwner = function(self, frame)

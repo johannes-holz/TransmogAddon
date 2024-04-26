@@ -37,8 +37,12 @@ core.InitializeAce = function(self)
 	
 	self.optionsFrame = LibStub('AceConfigDialog-3.0'):AddToBlizOptions(self.title, self.title)
 	LibStub('AceConfigDialog-3.0'):AddToBlizOptions("Transmoggy-Profiles", 'Profiles', self.title)
+
+	core.OpenOptions = function()
+		InterfaceOptionsFrame_OpenToCategory(core.optionsFrame)
+	end
 	
-	LibStub('AceConsole-3.0'):RegisterChatCommand("transmoggy", function () InterfaceOptionsFrame_OpenToCategory(self.optionsFrame) end) -- InterfaceOptionsFrame_OpenToCategory(self.optionsFrame) end)
+	LibStub('AceConsole-3.0'):RegisterChatCommand("transmoggy", core.OpenOptions) -- InterfaceOptionsFrame_OpenToCategory(self.optionsFrame) end)
 end
 
 core.OnProfileChanged = function(self, ...)

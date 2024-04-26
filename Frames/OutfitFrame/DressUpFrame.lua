@@ -402,26 +402,34 @@ DressUpModel.update = function(self)
                                                                                             or core.GetColoredString("(" .. core.SLOT_NAMES[slot] .. ")", core.greyTextColor.hex)))
             end
         end
+         -- unsure what to do with these. for now just lower alpha to show they have no effect without a corresponding weapon?
+        DressUpFrame.itemListFrame.slotButtons["MainHandEnchantSlot"]:SetAlpha(mh and 1.0 or 0.3)
+        DressUpFrame.itemListFrame.slotButtons["SecondaryHandEnchantSlot"]:SetAlpha(oh and 1.0 or 0.3)
     end
 end
 core.RegisterListener("dressUpModel", DressUpModel)
 
 -- TODO: is this the way to do this? basically have to do Dress() OnShow, but that overwrites the TryOn item, which triggered the OnShow in the first place
     -- Another way could be to call show (maybe with tryonold), dress and update from SetSlot, if the model is not shown?
+local lastItems
 DressUpModel:HookScript("OnShow", function(self)
-    local tmp = core.DeepCopy(items) -- if we clear items on hide, tmp only contains the item from the DressUpItemLink call
-    self:Dress()
+    local tmp = core.DeepCopy(items) -- this only contains the item from the DressUpItemLink call
+    if lastItems and core.db and core.db.profile.General.doNotResetDressUp then
+        self:SetAll(lastItems)
+    else
+        self:Dress()
+    end
     for slot, itemID in pairs(tmp) do
         self:SetSlot(slot, itemID, true)
     end
-    self:update()    
+    self:update()
     core.SetShown(DressUpFrame.itemListFrame, TransmoggyDB.ShowItemListFrame)
-    -- self:SetShadowForm(self:GetShadowForm()) -- Alpha gets overwritten, if we do not delay this -.-
-    core.MyWaitFunction(0.01, self.SetShadowForm, self, self:GetShadowForm())
+    core.MyWaitFunction(0.01, self.SetShadowForm, self, self:GetShadowForm()) -- model alpha gets overwritten, if we do not delay this -.-
 end)
 
 DressUpModel:HookScript("OnHide", function(self)
-    items = {} -- TODO: make optional if we wanna reset our model or remember our last state, so we dont loose changes on accident. Not resetting can be confusing tho
+    lastItems = core.DeepCopy(items)
+    items = {}
 end)
 
 
@@ -505,6 +513,21 @@ local SlotListButton_OnEnter = function(self)
     else
         GameTooltip:SetText((itemID and (core.HIDDEN .. " - ") or "") .. core.SLOT_NAMES[self.slot])
     end
+
+    if not (core.db and core.db.profile.General.hideControlHints) then
+        local rL, gL, bL = GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b
+        local rR, gR, bR = GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b
+        GameTooltip:AddLine(" ")
+        GameTooltip:AddDoubleLine(core.LEFT_CLICK, core.SHOW_IN_WARDROBE, rL, gL, bL, rR, gR, bR)
+        GameTooltip:AddDoubleLine(core.SHIFT_LEFT_CLICK, core.HIDE, rL, gL, bL, rR, gR, bR)
+        GameTooltip:AddDoubleLine(core.CONTROL_LEFT_CLICK, EMPTY, rL, gL, bL, rR, gR, bR)
+        GameTooltip:AddDoubleLine(core.ALT_LEFT_CLICK, core.RESET, rL, gL, bL, rR, gR, bR)
+        -- GameTooltip:AddLine(GRAY_FONT_COLOR_CODE .. "Left Click: Open in Wardrobe." .. FONT_COLOR_CODE_CLOSE)
+        -- GameTooltip:AddLine(GRAY_FONT_COLOR_CODE .. "Shift + Left Click: Set to hidden." .. FONT_COLOR_CODE_CLOSE)
+        -- GameTooltip:AddLine(GRAY_FONT_COLOR_CODE .. "Control + Left Click: Set to empty." .. FONT_COLOR_CODE_CLOSE)
+        -- GameTooltip:AddLine(GRAY_FONT_COLOR_CODE .. "Alt + Left Click: Reset changes." .. FONT_COLOR_CODE_CLOSE)
+    end
+
     GameTooltip:Show()
     for i = 1, 3 do
         _G["ShoppingTooltip" .. i]:Hide()

@@ -28,11 +28,15 @@ L.deDE = {
     SELECT_ITEM_TYPE = "Gegenstandsarten", -- "Gegenstandsart auswählen",
     OVERVIEW = "Übersicht",
 
+    COLLECTED_ITEMS = "Gesammelte Gegenstände",
+    COLLECTED_VISUALS = "Gesammelte Aussehen",
+
     HIDE = "Verstecken",
-    UNMOG = "Entmogrifizieren",
+    UNMOG = "Transmogrifikation entfernen",
+    CLEAR_PENDING = "Änderung verwerfen",
     HIDE_ALL = "Alles verstecken",
     UNMOG_ALL = "Alle Transmogrifikationen entfernen",
-    RESET_ALL = "Alle Änderungen verwerfen",    
+    RESET_ALL = "Alle Änderungen verwerfen",
 
     SELECT = "Auswählen",
     ACTIVATE = "Aktivieren",
@@ -60,6 +64,8 @@ L.deDE = {
     DELETE_OUTFIT_TEXT2 = " löschen wollt?",
     OVERWRITE_OUTFIT_TEXT1 = "Seid ihr sicher, dass ihr Outfit ",
     OVERWRITE_OUTFIT_TEXT2 = " überschreiben wollt?",
+    
+    SHOW_IN_WARDROBE = "In Sammlung zeigen",
 
     CURRENCY_TOOLTIP_TEXT1 = "Splitter der Illusion werden für besondere Transmogrifizierungen benötigt.",
     CURRENCY_TOOLTIP_TEXT2 = "Insgesamt habt ihr aktuell:",
@@ -89,7 +95,6 @@ L.deDE = {
     TRANSMOG_TOOLTIP_PENDING_CHANGE = "Wird geändert zu:",
     TRANSMOG_TOOLTIP_CURRENT_MOG = "Aktuelle Transmogrifikation:",
     TRANSMOG_TOOLTIP_REMOVE_MOG = "Transmogrifikation entfernen",
-    TRANSMOG_TOOLTIP_CURRENT_SKIN = "Aktuell ausgewählt:",
     TRANSMOG_TOOLTIP_REMOVE_SKIN = "Leerer Slot",
 
     CAN_NOT_PREVIEW = "Waffenkombination kann in Vorschau nicht angezeigt werden", -- "Cannot preview current melee weapons together."
@@ -98,9 +103,13 @@ L.deDE = {
     MH_APPEARANCE_WONT_BE_SHOWN = "Transmog auf Waffenhand wird nicht angezeigt",
     MH_OH_APPEARANCE_WONT_BE_SHOWN = "Transmog auf beiden Händen wird nicht angezeigt",
 
-    MINIMAP_TOOLTIP_TEXT1 = "Linksklick: Sammlung öffnen", -- "Left-click: Open Wardrobe"
-    MINIMAP_TOOLTIP_TEXT2 = "Umschalt + Linksklick: Transmogfenster öffnen", -- "Shift + Left-click: Open Transmog Interface"
-    MINIMAP_TOOLTIP_TEXT3 = "Rechtsklick: Transmog Sichtbarkeit umschalten", -- "Right-click: Toggle through visibility options"
+    -- MINIMAP_TOOLTIP_TEXT1 = "Linksklick: Sammlung öffnen", -- "Left-click: Open Wardrobe"
+    -- MINIMAP_TOOLTIP_TEXT2 = "Umschalt + Linksklick: Transmogfenster öffnen", -- "Shift + Left-click: Open Transmog Interface"
+    -- MINIMAP_TOOLTIP_TEXT3 = "Rechtsklick: Transmog Sichtbarkeit umschalten", -- "Right-click: Toggle through visibility options"
+    OPEN_WARDROBE = "Sammlung öffnen",
+    OPEN_TRANSMOG = "Transmogfenster öffnen",
+    OPEN_OPTIONS = "Optionen öffnen",
+    TOGGLE_VISIBILITY = "Transmogsichtbarkeit umschalten",
 
     TRANSMOG_STATUS = "Transmog Sichtbarkeit: ",
     TRANSMOG_STATUS_UNKNOWN = "Transmog Sichtbarkeit konnte nicht abgefragt werden.",
@@ -150,6 +159,12 @@ L.deDE = {
     
     SHADOW_FORM_TOOLTIP_TITLE = "Simuliere Schattengestalt",
     SHADOW_FORM_TOOLTIP_TEXT = "Emissionstexturen und Gegenstände mit Lichtquellen werden anders aussehen als in der richtigen Schattengestalt.",
+
+    LEFT_CLICK = "Linksklick:",
+    SHIFT_LEFT_CLICK = "Umschalt + Linksklick:",
+    CONTROL_LEFT_CLICK = "Steuerung + Linksklick:",
+    ALT_LEFT_CLICK = "Alt + Linksklick:",
+    RIGHT_CLICK = "Rechtsklick:",
 
     CONFIG_NAMES = {
         [1] = "An",
@@ -206,8 +221,12 @@ L.enEU = {
     SELECT_ITEM_TYPE = "Item types", -- "Select item type",
     OVERVIEW = "Overview",
 
+    COLLECTED_ITEMS = "Collected items",
+    COLLECTED_VISUALS = "Collected visuals",
+
     HIDE = "Hide",
-    UNMOG = "Unmog",
+    UNMOG = "Remove transmogrification",
+    CLEAR_PENDING = "Clear pending change",
     HIDE_ALL = "Hide all",
     UNMOG_ALL = "Remove all transmogrifications",
     RESET_ALL = "Clear all changes",    
@@ -239,6 +258,8 @@ L.enEU = {
     OVERWRITE_OUTFIT_TEXT1 = "Are u sure you want to overwrite outfit ",
     OVERWRITE_OUTFIT_TEXT2 = "?",
 
+    SHOW_IN_WARDROBE = "Open in wardrobe",    
+
     CURRENCY_TOOLTIP_TEXT1 = "Shards of Illusion are used for special transmogrifications.",
     CURRENCY_TOOLTIP_TEXT2 = "You currently have a total of:",
     CURRENCY_TOOLTIP_TEXT3 = "Already earned this week:",
@@ -267,7 +288,6 @@ L.enEU = {
     TRANSMOG_TOOLTIP_PENDING_CHANGE = "Pending change:",
     TRANSMOG_TOOLTIP_CURRENT_MOG = "Currently transmogrified to:",
     TRANSMOG_TOOLTIP_REMOVE_MOG = "Remove transmogrification",
-    TRANSMOG_TOOLTIP_CURRENT_SKIN = "Aktuell ausgewählt:",
     TRANSMOG_TOOLTIP_REMOVE_SKIN = "Empty slot",
 
     CAN_NOT_PREVIEW = "Cannot preview current melee weapons together.",
@@ -276,9 +296,13 @@ L.enEU = {
     MH_APPEARANCE_WONT_BE_SHOWN = "Main hand appearance will not be shown while in this slot.",
     MH_OH_APPEARANCE_WONT_BE_SHOWN = "Main and off hand appearance incompatible with slo.t",
 
-    MINIMAP_TOOLTIP_TEXT1 = "Left click: Open wardrobe", -- "Left-click: Open Wardrobe"
-    MINIMAP_TOOLTIP_TEXT2 = "Shift + left click: Open transmogrification", -- "Shift + Left-click: Open Transmog Interface"
-    MINIMAP_TOOLTIP_TEXT3 = "Right click: Change transmog visibility", -- "Right-click: Toggle through visibility options"
+    -- MINIMAP_TOOLTIP_TEXT1 = "Left click: Open wardrobe",
+    -- MINIMAP_TOOLTIP_TEXT2 = "Shift + left click: Open transmog window",
+    -- MINIMAP_TOOLTIP_TEXT3 = "Right click: Change transmog visibility",
+    OPEN_WARDROBE = "Open Wardrobe",
+    OPEN_TRANSMOG = "Open Transmog Window",
+    OPEN_OPTIONS = "Open Options",
+    TOGGLE_VISIBILITY = "Change Transmog Visibility",
 
     TRANSMOG_STATUS = "Transmog status: ",
     TRANSMOG_STATUS_UNKNOWN = "Could not retrieve transmog configuration from server.",
@@ -328,6 +352,12 @@ L.enEU = {
 
     SHADOW_FORM_TOOLTIP_TITLE = "Shadow form simulation",
     SHADOW_FORM_TOOLTIP_TEXT = "Does not give correct results for emissive textures or items with light sources.",
+    
+    LEFT_CLICK = "Left Click:",
+    SHIFT_LEFT_CLICK = "Shift + Left Click:",
+    CONTROL_LEFT_CLICK = "Control + Left Click:",
+    ALT_LEFT_CLICK = "Alt + Left Click:",
+    RIGHT_CLICK = "Right Click:",
 
     CONFIG_NAMES = {
         [1] = "Enabled",

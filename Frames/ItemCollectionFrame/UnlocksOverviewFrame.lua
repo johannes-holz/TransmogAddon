@@ -132,7 +132,7 @@ core.CreateUnlocksOverviewFrame = function(parent)
 
     frame.title = frame:CreateFontString()
     frame.title:SetFontObject(GameFontNormal)
-    frame.title:SetText("Unlocked Visuals")
+    frame.title:SetText(core.COLLECTED_VISUALS)
     frame.title:SetJustifyH("CENTER")
     frame.title:SetJustifyV("MIDDLE")
     -- frame.title:SetPoint("TOPLEFT", SPACING_LEFT, -50)
@@ -194,7 +194,7 @@ core.CreateUnlocksOverviewFrame = function(parent)
             bar:SetValue(self.unlocks[bar.slot][self.showItems and "iUnlocked" or "vUnlocked"])
         end
 
-        self.title:SetText(self.showItems and "Unlocked Items" or "Unlocked Visuals")
+        self.title:SetText(self.showItems and core.COLLECTED_ITEMS or core.COLLECTED_VISUALS)
     end
 
     frame.Toggle = function(self)

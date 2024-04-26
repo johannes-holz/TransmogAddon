@@ -33,12 +33,26 @@ core.InitLDB = function()
 		OnClick = function(_, msg)
 			if msg == "LeftButton" then
 				if IsShiftKeyDown() then
+					if InterfaceOptionsFrame:IsShown() then
+						InterfaceOptionsFrame:Hide()
+					end
 					if core.transmogFrame:IsShown() then
 						core.transmogFrame:Hide()
 					else
 						core.OpenTransmogWindow()
 					end
+				elseif IsControlKeyDown() then
+					core.transmogFrame:Hide()
+					core.wardrobeFrame:Hide()
+					if InterfaceOptionsFrame:IsShown() and InterfaceOptionsFramePanelContainer.displayedPanel and InterfaceOptionsFramePanelContainer.displayedPanel.name == core.title then
+						InterfaceOptionsFrame:Hide()
+					else
+						core.OpenOptions()
+					end
 				elseif not IsModifierKeyDown() then
+					if InterfaceOptionsFrame:IsShown() then
+						InterfaceOptionsFrame:Hide()
+					end
 					if core.wardrobeFrame:IsShown() then
 						core.wardrobeFrame:Hide()
 					else
@@ -63,12 +77,17 @@ core.InitLDB = function()
 			end
 
 			local config = core.GetConfig()
+			local cl, cr = ORANGE_FONT_COLOR, RAID_CLASS_COLORS.PRIEST
 
 			tooltip:AddLine(folder)
 			tooltip:AddLine(" ")
-			tooltip:AddLine(core.MINIMAP_TOOLTIP_TEXT1, 1, 1, 1)
-			tooltip:AddLine(core.MINIMAP_TOOLTIP_TEXT2, 1, 1, 1)
-			tooltip:AddLine(core.MINIMAP_TOOLTIP_TEXT3, 1, 1, 1)
+			GameTooltip:AddDoubleLine(core.LEFT_CLICK, core.OPEN_WARDROBE, cl.r, cl.g, cl.b, cr.r, cr.g, cr.b)
+			GameTooltip:AddDoubleLine(core.SHIFT_LEFT_CLICK, core.OPEN_TRANSMOG, cl.r, cl.g, cl.b, cr.r, cr.g, cr.b)
+			GameTooltip:AddDoubleLine(core.CONTROL_LEFT_CLICK, core.OPEN_OPTIONS, cl.r, cl.g, cl.b, cr.r, cr.g, cr.b)
+			GameTooltip:AddDoubleLine(core.RIGHT_CLICK, core.TOGGLE_VISIBILITY, cl.r, cl.g, cl.b, cr.r, cr.g, cr.b)
+			-- tooltip:AddLine(core.MINIMAP_TOOLTIP_TEXT1, 1, 1, 1)
+			-- tooltip:AddLine(core.MINIMAP_TOOLTIP_TEXT2, 1, 1, 1)
+			-- tooltip:AddLine(core.MINIMAP_TOOLTIP_TEXT3, 1, 1, 1)
 			tooltip:AddLine(" ")
 			local text = RED_FONT_COLOR_CODE .. core.TRANSMOG_STATUS_UNKNOWN .. FONT_COLOR_CODE_CLOSE 
 			if config then
