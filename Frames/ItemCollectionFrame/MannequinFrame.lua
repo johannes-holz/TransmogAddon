@@ -33,12 +33,14 @@ end
 
 local Model_OnHide = function(self)
 	self:SetPosition(0, 0, 0)
+	self.slot = nil
+	self.itemID = nil
 end
 
 local Model_OnShow = function(self)
 	self:SetUnit("player")
 	self:Undress()
-	if self.itemID then self:TryOn(self.itemID) end
+	if self.itemID and self.slot then self:TryOn(self.itemID, self.slot) end
 end
 
 local Model_GetID = function(self)
@@ -59,17 +61,21 @@ local Model_SetLoading = function(self, loading)
 end
 
 -- Set and show display item. If we don't have the item cached, we query it and show a loading frame. The loading frame also periodically checks, if the item has been loaded
+-- TODO: might wanna move most of this into UpdateMannequins and just tell the model to show item X, enchant Y in slot Z ...
 local Model_TryOn = function(self, itemID, slot)
 	assert(type(itemID) == "number")  -- expects clean numerical itemID!
 	self.itemID = itemID
 	self.slot = slot
 	-- slot = slot or self:GetParent():GetParent().selectedSlot
 
+	local atTransmogrifier = core.IsAtTransmogrifier()
+
 	if core.IsEnchantSlot(slot) then
 		local dummyWeapon = (slot == "MainHandEnchantSlot" or core.CanDualWield()) and core.DUMMY_WEAPONS.ENCHANT_PREVIEW_WEAPON or core.DUMMY_WEAPONS.ENCHANT_PREVIEW_OFFHAND_WEAPON
 		local itemString = "item:" .. dummyWeapon .. ":" .. (itemID == 0 and 0 or core.enchants[itemID]["enchantIDs"][1]) -- itemID is the enchantID in this case
 		-- self:TryOnOld(1485) -- TODO: use equip to slot functionality instead of doing the weapon slot manipulation manually like this?
 		-- self:TryOnOld("item:2000:" .. (itemID == 0 and 0 or core.enchants[itemID]["enchantIDs"][1]))
+		-- print("enchant", itemString)
 		self:Undress()
 		if slot == "MainHandEnchantSlot" then 
 			core.ShowMeleeWeapons(self, itemString, nil)
@@ -78,7 +84,20 @@ local Model_TryOn = function(self, itemID, slot)
 		end
 		self:SetLoading(false)
 	elseif GetItemInfo(itemID) then
-		local enchant = core.itemCollectionFrame.previewWeaponEnchants and core.itemCollectionFrame.enchant
+		local enchant
+		if core.itemCollectionFrame.previewWeaponEnchants then
+			if not atTransmogrifier then
+				enchant = core.itemCollectionFrame.previewWeaponEnchants and core.itemCollectionFrame.enchant
+			else
+				local realSlot = core.GetSelectedSlot()
+				local correspondingEnchantSlot = (realSlot == "MainHandSlot" and "MainHandEnchantSlot") or (realSlot == "ShieldHandWeaponSlot" and "SecondaryHandEnchantSlot")
+				if correspondingEnchantSlot then
+					local skin = core.GetSelectedSkin()
+					local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(correspondingEnchantSlot, skin)
+					enchant = pendingID or (skin and skinVisualID) or (not skin and (visualID or itemID)) or nil
+				end
+			end
+		end
 		local itemString = enchant and "item:" .. itemID .. ":" .. enchant or itemID
 		self:Undress()
 		if core.db.profile.General.clothedMannequins then
@@ -100,10 +119,11 @@ local Model_TryOn = function(self, itemID, slot)
 				self:TryOnOld(6835) -- Black Leggings
 			end
 		end
+		-- print("item", itemString)
 		if slot == "MainHandSlot" then 
 			core.ShowMeleeWeapons(self, itemString, nil)
 		elseif slot == "ShieldHandWeaponSlot" then
-			core.ShowMeleeWeapons(self, nil, itemString) -- TODO: fails for 2H weapons without titangrip. would need to find a good model animation + position, where both hands are on the weapon
+			core.ShowMeleeWeapons(self, nil, itemString)
 		else
 			self:TryOnOld(itemString)
 		end
@@ -121,14 +141,21 @@ local Model_UpdateBorders = function(self)
 	local isEnchantSlot = slot and core.IsEnchantSlot(slot)
 
 	if slot and self.itemID and core.IsAtTransmogrifier() then
-		local _, displayGroup = core.GetItemData(self.itemID)
 		local skinID = core.GetSelectedSkin()
 		local equippedID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot)
-
-		core.SetShown(self.equippedTexture, not skinID and ((self.itemID == equippedID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(equippedID))))))
-		core.SetShown(self.visualTexture, not skinID and ((self.itemID == visualID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(visualID))))))
-		core.SetShown(self.skinVisualTexture, (self.itemID == skinVisualID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(skinVisualID)))))
-		core.SetShown(self.pendingTexture, (self.itemID == pendingID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(pendingID)))))
+		if not isEnchantSlot then
+			local _, displayGroup = core.GetItemData(self.itemID)
+			core.SetShown(self.equippedTexture, not skinID and ((self.itemID == equippedID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(equippedID))))))
+			core.SetShown(self.visualTexture, not skinID and ((self.itemID == visualID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(visualID))))))
+			core.SetShown(self.skinVisualTexture, (self.itemID == skinVisualID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(skinVisualID)))))
+			core.SetShown(self.pendingTexture, (self.itemID == pendingID) or (displayGroup and (displayGroup > 0) and (displayGroup == select(2, core.GetItemData(pendingID)))))
+		else
+			local enchantGroup = core.enchants[self.itemID]["enchantIDs"]
+			core.SetShown(self.equippedTexture, not skinID and core.Contains(enchantGroup, equippedID))
+			core.SetShown(self.visualTexture, not skinID and core.Contains(enchantGroup, visualID))
+			core.SetShown(self.skinVisualTexture, core.Contains(enchantGroup, skinVisualID))
+			core.SetShown(self.pendingTexture, core.Contains(enchantGroup, pendingID))
+		end
 		if self.pendingTexture:IsShown() then
 			if skinID then 
 				self.pendingTexture:SetTexCoord(196/512, 292/512, 218/512, 342/512)
@@ -143,8 +170,9 @@ local Model_UpdateBorders = function(self)
 		self.pendingTexture:Hide()
 
 		if isEnchantSlot and self.itemID then
-			local enchant = self.itemID ~= 0 and core.enchants[self.itemID].enchantIDs[1] or nil
-			if enchant == self:GetParent():GetParent().enchant then
+			local previewEnchant = self:GetParent():GetParent().enchant
+			if previewEnchant and core.Contains(core.enchants[self.itemID].enchantIDs, previewEnchant)
+					or not previewEnchant and self.itemID == 0 then
 				self.equippedTexture:Show()
 			end
 		end
@@ -300,7 +328,6 @@ core.CreateMannequinFrame = function(parent, id, width, height)
 
 	m.SetLoading = Model_SetLoading
 
-	-- TODO: Display of 2H in offhand without titangrip
 	m.TryOnOld = m.TryOn
 	m.TryOn = Model_TryOn
 

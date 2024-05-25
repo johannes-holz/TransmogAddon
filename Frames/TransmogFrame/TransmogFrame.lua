@@ -104,8 +104,9 @@ local TransmogFrame_OnShow = function(self)
 		core.RequestBalance()
 	end
     -- core.RequestPriceTotal()
-    
-	if UnitExists("target") then
+	local npcID = UnitExists("target") and core.GetNPCID(UnitGUID("target"))
+
+	if npcID == core.TMOG_NPC_ID then
     	SetPortraitTexture(f.portraitTexture, "target")
 	else
 		SetPortraitToTexture(f.portraitTexture, "interface/icons/inv_mushroom_11")
@@ -179,11 +180,13 @@ do
 		if not core.GetBalance().shards then
 			core.RequestBalance()
 		end
-		
-		if UnitExists("target") then
+
+		local npcID = UnitExists("target") and core.GetNPCID(UnitGUID("target"))
+
+		if npcID == core.TMOG_NPC_ID then
 			SetPortraitTexture(f.portraitTexture, "target")
 		else
-			SetPortraitToTexture(f.portraitTexture, "Interface/Icons/Achievement_Boss_Algalon_01")
+			SetPortraitToTexture(f.portraitTexture, "interface/icons/inv_mushroom_11") -- "Interface/Icons/Achievement_Boss_Algalon_01"
 		end
 
 		f:update()
@@ -321,7 +324,7 @@ do
 		model.showItemsUnderSkin = self:GetChecked()
 		model:update()
 	end)
-	getglobal(f.showItemsUnderSkinCheckButton:GetName() .. "Text"):SetText("Equip preview")
+	getglobal(f.showItemsUnderSkinCheckButton:GetName() .. "Text"):SetText(core.EQUIP_PREVIEW)
 	core.SetTooltip(f.showItemsUnderSkinCheckButton, core.SHOW_ITEMS_UNDER_SKIN_TOOLTIP_TEXT, nil, nil, nil, nil, 1)
 	f.showItemsUnderSkinCheckButton.update = function(self)
 		core.SetShown(self, core.GetSelectedSkin())
@@ -331,6 +334,10 @@ do
 
 	for _, itemSlot in pairs(core.itemSlots) do
 		itemSlotFrames[itemSlot] = core.CreateSlotButton(model, itemSlotWidth * SCALE, itemSlot)
+	end
+
+	for _, enchantSlot in pairs(core.enchantSlots) do
+		itemSlotFrames[enchantSlot] = core.CreateSlotButton(model, 0.7 * itemSlotWidth * SCALE, enchantSlot)
 	end
 
 	itemSlotOptionsFrame = core.CreateItemSlotOptionsFrame(itemSlotFrames["HeadSlot"])
@@ -354,10 +361,12 @@ do
 	itemSlotFrames["OffHandSlot"]:SetPoint("LEFT", itemSlotFrames["MainHandSlot"], "RIGHT", itemSlotDistance * SCALE, 0)
 
 	itemSlotFrames["RangedSlot"]:SetPoint("LEFT", itemSlotFrames["OffHandSlot"], "RIGHT", itemSlotDistance * 2 * SCALE, 0)
-	if not core.HasRangedSlot() then itemSlotFrames["RangedSlot"]:Hide() end -- TODO: remove rangeslot from core.itemSlots instead?
+	if not core.HasRangedSlot() then itemSlotFrames["RangedSlot"]:Hide() end
 	
---	itemSlotFrames["MainHandEnchantSlot"]:SetPoint("RIGHT", itemSlotFrames["MainHandSlot"], "BOTTOMLEFT", -12, 0)
---	itemSlotFrames["SecondaryHandEnchantSlot"]:SetPoint("RIGHT", itemSlotFrames["SecondaryHandSlot"], "BOTTOMLEFT", -12, 0)
+	itemSlotFrames["MainHandEnchantSlot"]:SetPoint("BOTTOM", itemSlotFrames["MainHandSlot"], "TOP", 0, 5)
+	itemSlotFrames["SecondaryHandEnchantSlot"]:SetPoint("BOTTOM", itemSlotFrames["ShieldHandWeaponSlot"], "TOP", 0, 5)
+	itemSlotFrames["MainHandEnchantSlot"]:SetParent(itemSlotFrames["MainHandSlot"])
+	itemSlotFrames["SecondaryHandEnchantSlot"]:SetParent(itemSlotFrames["ShieldHandWeaponSlot"])
 	
 	
 	skinDropDown = core.CreateSkinDropDown(f)
@@ -587,6 +596,7 @@ do
 			itemSlotFrames["OffHandSlot"]:SetPoint("LEFT", itemSlotFrames["MainHandSlot"], "RIGHT", (itemSlotWidth * (i - 1) + itemSlotDistance * i) * SCALE, 0)
 			itemSlotFrames["RangedSlot"]:SetPoint("LEFT", itemSlotFrames["MainHandSlot"], "RIGHT", (itemSlotWidth * i + itemSlotDistance * (i + 2)) * SCALE, 0)
 			core.SetShown(itemSlotFrames["ShieldHandWeaponSlot"], hasShieldHandWeaponSlot)
+			core.SetShown(itemSlotFrames["SecondaryHandEnchantSlot"], hasShieldHandWeaponSlot)
 			itemSlotFrames["OffHandSlot"]:Show()
 		else
 			local ohItemID = core.GetInventoryItemID("player", 17)
@@ -597,6 +607,7 @@ do
 			itemSlotFrames["OffHandSlot"]:SetPoint("LEFT", itemSlotFrames["MainHandSlot"], "RIGHT", itemSlotDistance * SCALE, 0)
 			itemSlotFrames["RangedSlot"]:SetPoint("LEFT", itemSlotFrames["MainHandSlot"], "RIGHT", (itemSlotWidth + itemSlotDistance * 3) * SCALE, 0)
 			core.SetShown(itemSlotFrames["ShieldHandWeaponSlot"], not showOffHandSlot)
+			core.SetShown(itemSlotFrames["SecondaryHandEnchantSlot"], not showOffHandSlot)
 			core.SetShown(itemSlotFrames["OffHandSlot"], showOffHandSlot)
 		end
 		

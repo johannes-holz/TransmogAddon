@@ -120,7 +120,6 @@ core.CreatePreviewModel = function(parent, width, height)
 	model:SetScript("OnHide", function(self)
 		model.isTurning, model.isDragging = false, false
 		model.posBackup[1], model.posBackup[2], model.posBackup[3] = model:GetPosition()
-		core.am(model.posBackup)
 		model:SetPosition(0, 0, 0)
 		--[[model.texRatio, model.texCutoff = 3/4, 0
 		model.BGTopLeft:SetHeight(model:GetHeight()*model.texRatio)		
@@ -238,7 +237,7 @@ core.CreatePreviewModel = function(parent, width, height)
 		local selectedSlot = core.GetSelectedSlot()
 
 		local itemsToShow = {}
-		for _, slot in pairs(core.itemSlots) do        
+		for _, slot in pairs(core.allSlots) do        
             local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot)
 
 			local show = pendingID or (skin and skinVisualID) or ((not skin or self.showItemsUnderSkin) and (visualID or itemID)) or nil
@@ -273,9 +272,9 @@ core.CreatePreviewModel = function(parent, width, height)
 
 		model:Undress()
 		
-		for k, v in pairs(itemsToShow) do
-			if not core.Contains({"MainHandSlot", "MainHandEnchantSlot", "SecondaryHandEnchantSlot", "SecondaryHandSlot", "RangedSlot", "OffHandSlot", "ShieldHandWeaponSlot"}, k) then
-				model:TryOn(v)
+		for slot, item in pairs(itemsToShow) do
+			if not (core.IsEnchantSlot(slot) or core.IsWeaponSlot(slot)) then
+				model:TryOn(item)
 			end
 		end
 
@@ -300,11 +299,13 @@ core.CreatePreviewModel = function(parent, width, height)
 		oh = ohTransmogHidden and core.TransmogGetSlotInfo("SecondaryHandSlot") or oh
 		
 		-- How to handle enchants? :)
-		local showInventoryEnchants = not skin or self.showItemsUnderSkin
-		local mhEnchant = showInventoryEnchants and core.GetInventoryEnchantID("player", 16)
-		local ohEnchant = showInventoryEnchants and core.GetInventoryEnchantID("player", 17)
+		-- local showInventoryEnchants = not skin or self.showItemsUnderSkin
+		-- local mhEnchant = showInventoryEnchants and core.GetInventoryEnchantID("player", 16)
+		-- local ohEnchant = showInventoryEnchants and core.GetInventoryEnchantID("player", 17)
+		local mhEnchant = itemsToShow["MainHandEnchantSlot"]
+		local ohEnchant = itemsToShow["SecondaryHandEnchantSlot"]
 		if mh and mh > 1 and mhEnchant and mhEnchant > 0 then mh = "item:" .. mh .. ":" .. mhEnchant end
-		if oh and ohEnchant then oh = "item:" .. oh .. ":" .. ohEnchant end
+		if oh and oh > 1 and ohEnchant and ohEnchant > 0 then oh = "item:" .. oh .. ":" .. ohEnchant end
         
 		model.ohAppearanceNotShown:SetText((mhTransmogHidden and ohTransmogHidden) and core.MH_OH_APPEARANCE_WONT_BE_SHOWN or
 											mhTransmogHidden and core.MH_APPEARANCE_WONT_BE_SHOWN or core.OH_APPEARANCE_WONT_BE_SHOWN)
@@ -414,6 +415,12 @@ core.CreatePreviewModel = function(parent, width, height)
 		model.GetShadowForm = function(self)
 			return self.shadowFormEnabled
 		end
+	end
+
+	model.too = model.TryOn
+	model.TryOn = function(self, ...)
+		-- print("previeModel", ...)
+		self:too(...)
 	end
 
 	-----------------------------------

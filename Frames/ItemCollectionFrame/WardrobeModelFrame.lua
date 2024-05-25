@@ -256,7 +256,7 @@ core.CreateWardrobeModelFrame = function(parent)
         local speed = model.speed
         
         local _, race = UnitRace("player")
-        -- local inventorySlot = select(2, core:GetTransmogLocationInfo(core.itemCollectionFrame.location))
+        -- local inventorySlot = select(2, core.GetTransmogLocationInfo(core.itemCollectionFrame.location))
         local slot = core.itemCollectionFrame.selectedSlot
         local category = core.itemCollectionFrame.selectedCategory or "Default"
         
@@ -324,7 +324,7 @@ DEB = function(model)
     local model = model or GetMouseFocus()
     
     local _, race = UnitRace("player")
-    local inventorySlot = select(2, core:GetTransmogLocationInfo(core.itemCollectionFrame.location))
+    local inventorySlot = select(2, core.GetTransmogLocationInfo(core.itemCollectionFrame.location))
 
     if not TransmoggyDB.newPositions or not TransmoggyDB.newPositions[race] or not TransmoggyDB.newPositions[race][inventorySlot] then return end
 

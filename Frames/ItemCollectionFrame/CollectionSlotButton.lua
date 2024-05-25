@@ -15,7 +15,7 @@ local SlotButton_OnClick = function(self, button)
 end
 
 core.CreateSlotButtonFrame = function(parent, transmogLocation, size)
-	local locationID, inventorySlot, slotID, textureName, itemSlot = core:GetTransmogLocationInfo(transmogLocation)
+	local locationID, inventorySlot, slotID, textureName, itemSlot = core.GetTransmogLocationInfo(transmogLocation)
 	local f = core.CreateMeACustomTexButton(parent, size, size, textureName, 9/64, 9/64, 54/64, 54/64)
 	
 	f.selectedTexture = f:CreateTexture(nil, "ARTWORK")

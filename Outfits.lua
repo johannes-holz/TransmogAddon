@@ -120,6 +120,7 @@ DressUpItemLink = function(link)
     end
 end
 
+-- What is this one doing here?
 core.IsRangedWeapon = function(itemID)
     local _, _, inventoryType = core.GetItemData(itemID)
     return inventoryType == 15 or inventoryType == 25 or inventoryType == 26

@@ -95,9 +95,9 @@ local function TooltipAddMogLine(tooltip)
 	end
 
 	local text = ""
-	if visualID and visualID > 0 then
+	if visualID and visualID ~= core.UNMOG_ID then
 		text = "\124c" .. core.mogTooltipTextColor.hex .. core.ITEM_TOOLTIP_TRANSMOGRIFIED_TO .. "\n"		
-		local mogName = visualID == 1 and core.HIDDEN or core.GetItemName(visualID) -- Do we want guaranteed up to date server info (GetItemInfo) or avoid flickering tooltip for uncached items (core.GetItemData)?
+		local mogName = visualID == core.HIDDEN_ID and core.HIDDEN or core.GetItemName(visualID) -- Do we want guaranteed up to date server info (GetItemInfo) or avoid flickering tooltip for uncached items (core.GetItemData)?
 		text = text .. (mogName or (core.ITEM_TOOLTIP_FETCHING_NAME .. visualID)) .. "\124r" -- .. (visualUnlocked == 1 and core.GetTextureString("Interface/Buttons/UI-CheckBox-Check", 12) or "")
 		if not mogName then
 			core.FunctionOnItemInfo(visualID, TooltipAddMogLine, tooltip) -- player transmog items seem to be cached anyway, but probably needed for Hyperlinks from chat
@@ -105,7 +105,7 @@ local function TooltipAddMogLine(tooltip)
 		if skinVisualID then text = text .. "\n" end
 	end	
 	if skinVisualID then
-		local skinName = skinVisualID == 1 and core.HIDDEN or core.GetItemName(skinVisualID) -- GetItemInfo(skinVisualID)
+		local skinName = skinVisualID == core.HIDDEN_ID and core.HIDDEN or core.GetItemName(skinVisualID) -- GetItemInfo(skinVisualID)
 		text = text .. "\124c" .. core.skinTextColor.hex .. core.ITEM_TOOLTIP_ACTIVE_SKIN .. "\n" .. (skinName or skinVisualID) .. "\124r"
 	end
 		
@@ -230,15 +230,17 @@ core.PreHook_ModifiedItemClick = function()
 		-- 	core.ShowItemInWardrobe(link) -- TODO: Find out slot from owner frame, modify func to convert links to ids and find slot automatically if no slot is provided
 		-- end
 
+		-- If both modifiers are clicked, chat insert or dressup the transmog item
 		if IsModifiedClick("DRESSUP") and IsModifiedClick("CHATLINK") then
 			local lastUnit, lastSlot = OwnerFrame_GetUnitSlot(GetMouseFocus())
 			local visualID = lastUnit and core.GetInventoryVisualID(lastUnit, lastSlot) or core.API.GetVisualFromItemLink(link) -- Do we want to show transmog or skin for player?
-			if visualID > 1 then
+			if visualID == core.HIDDEN_ID then
+				link = core.HIDDEN			-- TODO: Dressup just ignores this call, do we not want to set armor slots to hidden with this call?
+			elseif visualID ~= core.UNMOG_ID then
 				_, link = GetItemInfo(visualID)
-			elseif visualID == 1 then
-				link = core.HIDDEN
 			end
 		end
+
 		return HandleModifiedItemClickOrig(link, ...)
 
 		-- if IsModifiedClick("DRESSUP") then	
