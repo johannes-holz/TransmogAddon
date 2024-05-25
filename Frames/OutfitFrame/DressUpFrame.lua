@@ -1,6 +1,30 @@
 local folder, core = ...
 
--- Hooking this would need fixes to interact with other addons, even Blizzard Auction UI already overwrites this on.
+--[[
+thought dump:
+Einblendbare Outfit "bar", die an DressUpModel und PreviewModel des Addons angezeigt wird?
+Prinzipiell ist nicht ausgeschlossen, dass beides gleichzeitig angezeigt wird, daher braucht jedes model jeweils eine eigene bar?
+Woher wissen wir, was am model angelegt ist?
+    - Bei Previewmodel haben wir currentchanges und aktuelles gear bzw. aktueller Skin
+    - Bei DressUpModel müssten TryOn, Undress, Reset? hooken oder überschreiben, um aktuellen Zustand zu wissen?
+        - Unterschied zwischen DressUpModel Hooks und OnItemClick weiter modifizieren?
+    - Idee: TryOn, OnShow? etc. modifizieren tabelle in DressUpModel, welche aktuellen Zustand halten soll
+Aktuellen Zustand kann man speichern mit der Outfitbar. Wie? Braucht wohl wieder volles dropdown mit outfits (auswählen, overwrite?, (re)name, delete), save button?!
+
+Der ganzen kram als Funktion schreiben, die einen übergebenen DressUpModel Frame "upgradet"?!
+    - Gibt zB noch den AuctionHouse DressUpFrame, evtl. noch weitere?
+- Undress Button, Print Button (für Debug oder auch permanent? evtl zu Link Outfit ändern?)
+Wenn mans richtig fancy will, historie einführen (imo etwas für nen späteren release)
+]]
+
+-- Waffenslot logik (bzgl offhand/ohweapon, welche waffe tuen wir wann in welche hand)
+-- Waffenanzeige
+-- Wie Verzauberungen im Itemlink (und auf dem Gear) handlen?
+-- Schonmal Undress Button, Print Button (für Debug oder auch permanent? evtl zu Link Outfit ändern?)?
+-- Outfit Bar (vermutlich eine pro Model? Dabei hängt funktionalität ab, ob es ein einfaches DressUpModel ist, oder das Transmog Preview Model)
+
+
+-- Hooking at this point would need fixes to interact with other addons, even Blizzard Auction UI already overwrites this.
 -- The latter could be fixed by overwriting again on Auction UI's ADDON_LOADED event
 -- Probably no need tho, hooking onto DressUpModel seems to work fine
 --[==[
@@ -213,6 +237,11 @@ DressUpModel.SetAll = function(self, set)
 	UpdateListeners("dressUpModel")
 end
 
+local weaponSlots = { MainHandSlot = true, ShieldHandWeaponSlot = true, OffHandSlot = true, RangedSlot = true, SecondaryHandSlot = true }
+core.IsWeaponSlot = function(itemSlot)
+    return weaponSlots[itemSlot]
+end
+
 local TryOnOld = DressUpModel.TryOn
 DressUpModel.TryOnOld = DressUpModel.TryOn
 DressUpModel.TryOn = function(self, itemLink, itemSlot)
@@ -274,47 +303,8 @@ DressUpModel.Undress = function(self)
     self:SetAll({})
 end
 
--- Attempt at local check for whether our weapon mogs/skins are compatible with the slot and equipped weapon to know what to display on default in DressUpFrame
-local doesNotFitShieldHand = {
-    [core.CATEGORIES.WEAPON_FISHING_POLES] = true,
-    [core.CATEGORIES.WEAPON_POLEARMS] = true,
-    [core.CATEGORIES.WEAPON_STAVES] = true,
-}
-
-local doesNotMix = {
-    [core.CATEGORIES.WEAPON_THROWN] = true,
-    [core.CATEGORIES.WEAPON_WANDS] = true,
-    [core.CATEGORIES.ARMOR_SHIELDS] = true,
-}
-
-local IsCompatible = function(source, target, slot)
-    local sCat, sEquipLoc, sEquipLocID = core.GetItemTypeInfo(source)
-    local tCat, tEquipLoc, tEquipLocID = core.GetItemTypeInfo(target)
-
-    if sEquipLocID and not core.slotItemTypes[slot][sEquipLocID] then
-        return false
-    elseif slot == "ShieldHandWeaponSlot" and (sCat and doesNotFitShieldHand[sCat]) then
-        return false
-    elseif slot == "OffHandSlot" and (tCat ~= sCat and sCat and tCat and (doesNotMix[tCat] or doesNotMix[sCat]))then
-        return false
-    elseif slot == "MainHandSlot" and (tCat ~= sCat and tCat == core.CATEGORIES.WEAPON_FISHING_POLES) then
-        return false
-    elseif slot == "RangedSlot" and (tCat ~= sCat and sCat and tCat and (doesNotMix[tCat] or doesNotMix[sCat])) then
-        return false
-    end
-
-    return true
-end
-
-local GetShownItem = function(slot, skin)
-    -- if core.IsEnchantSlot(slot) then -- Should maybe do this in TransmogGetSlotInfo, but as Transmog does not support Enchants so far, lets just return the enchants on our equipped weapons here
-    --     local correspondingWeaponSlot = slot == "MainHandEnchantSlot" and 16 or 17
-    --     return core.GetInventoryEnchantID("player", correspondingWeaponSlot)
-    -- end
-
+local GetShownItem = function(slot, skin)   
     local itemID, visualID, skinVisualID = core.TransmogGetSlotInfo(slot, skin)
-    skinVisualID = skinVisualID and IsCompatible(skinVisualID, itemID, slot) and skinVisualID
-    visualID = visualID and IsCompatible(visualID, itemID, slot) and visualID
 
     local shown = (itemID and skin and skinVisualID) or visualID or itemID or nil
     if shown == 0 then
@@ -328,20 +318,18 @@ DressUpModel.Dress = function(self)
     local skin = core.GetActiveSkin()
 
     local shownItems = {}
-	for _, slot in pairs(core.allSlots) do
+	for _, slot in pairs(core.itemSlots) do
         shownItems[slot] = GetShownItem(slot, skin)
     end
     -- TODO: new function for this or allow enchants in GetShownItem?
-    -- local mhEnchant = core.GetInventoryEnchantID("player", 16)
-    -- local ohEnchant = core.GetInventoryEnchantID("player", 17)
-    -- local oh = GetShownItem("ShieldHandWeaponSlot")
+    local mhEnchant = core.GetInventoryEnchantID("player", 16)
+    local ohEnchant = core.GetInventoryEnchantID("player", 17)
+    local oh = GetShownItem("ShieldHandWeaponSlot")
 
     -- print("DressUpModel mhEnchant, ohEnchant, oh", mhEnchant, ohEnchant, oh)
 
-    -- shownItems["MainHandEnchantSlot"] = mhEnchant
-    -- shownItems["SecondaryHandEnchantSlot"] = ohEnchant
-
-    -- core.am(shownItems)
+    shownItems["MainHandEnchantSlot"] = mhEnchant
+    shownItems["SecondaryHandEnchantSlot"] = ohEnchant
 
     self:SetAll(shownItems)
 end
@@ -362,7 +350,7 @@ DressUpModel.SetCreature = function(self, creatureID)
 end
 
 -- TODO: Weapon Display Logic. Allow only what we can display? Transmog allows more than what we can display anyway, so we can't even show what we wear in some cases
--- Also what do we do with outfits, we created on dualwield char/spec or titangrip spec, that we are now unable to display ...
+-- Also what do we do with outfits, we created on dualwield char or titangrip spec, that we are now unable to display ...
 DressUpModel.update = function(self)
     -- local debug = {}
     -- for slot, itemID in pairs(items) do
@@ -398,9 +386,8 @@ DressUpModel.update = function(self)
     if DressUpFrame.itemListFrame then
         for _, slot in pairs(core.allSlots) do
             local itemID = items[slot]
-            local isEnchantSlot = core.IsEnchantSlot(slot)
-            if itemID and (itemID > 1 or (isEnchantSlot and itemID > 0)) then
-                if isEnchantSlot then
+            if itemID and itemID > 1 then
+                if core.IsEnchantSlot(slot) then
                     local name, _, tex = core.GetEnchantInfo(itemID)
                     DressUpFrame.itemListFrame.slotButtons[slot]:SetText("      " .. (name and (core.GetTextureString(tex) .. " " .. NORMAL_FONT_COLOR_CODE .. name .. FONT_COLOR_CODE_CLOSE) or "unknown enchant localize me")) -- core.GetTextureString(texture, 16) .. " " .. (link or core.LOADING2))
                 else
@@ -411,8 +398,7 @@ DressUpModel.update = function(self)
                     DressUpFrame.itemListFrame.slotButtons[slot]:SetText(core.GetTextureString(texture, 16) .. " " .. (link or core.LOADING2))
                 end
             else
-                local isHidden = itemID == (isEnchantSlot and -1 or 1)
-                DressUpFrame.itemListFrame.slotButtons[slot]:SetText("      " .. (isHidden and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
+                DressUpFrame.itemListFrame.slotButtons[slot]:SetText("      " .. (itemID == 1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
                                                                                             or core.GetColoredString("(" .. core.SLOT_NAMES[slot] .. ")", core.greyTextColor.hex)))
             end
         end
@@ -495,15 +481,12 @@ end
 local SlotListButton_OnClick = function(self, button)
     local itemID = items[self.slot]
     local _, itemLink = GetItemInfo(itemID or 0)
-    local isEnchantSlot = core.IsEnchantSlot(self.slot)
     
     if IsShiftKeyDown() then
         if ChatEdit_InsertLink(itemLink or "") then
             return true
         end
-        if not isEnchantSlot then -- Problem with hiding enchants as the ID 1 is used already
-            DressUpModel:SetSlot(self.slot, 1)
-        end
+        DressUpModel:SetSlot(self.slot, 1)
         return
     elseif IsControlKeyDown() then
         DressUpModel:SetSlot(self.slot, nil)
@@ -518,17 +501,12 @@ end
 
 local SlotListButton_OnEnter = function(self)
     local itemID = items[self.slot]
-    local isEnchantSlot = core.IsEnchantSlot(self.slot)
     
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")   
     if itemID and itemID > 1 then        
         if core.IsEnchantSlot(self.slot) then
             local spellID = core.GetEnchantSpellID(itemID)
-            if spellID then
-                GameTooltip:SetHyperlink("enchant:" .. spellID) -- Do we really want that ugly enchant tooltip tho?
-            else
-                GameTooltip:SetText("Unknown Enchant")
-            end
+            GameTooltip:SetHyperlink("enchant:" .. spellID) -- Do we really want that ugly enchant tooltip tho?
         else
             GameTooltip:SetHyperlink("item:" .. itemID)
         end
@@ -541,9 +519,7 @@ local SlotListButton_OnEnter = function(self)
         local rR, gR, bR = GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b
         GameTooltip:AddLine(" ")
         GameTooltip:AddDoubleLine(core.LEFT_CLICK, core.SHOW_IN_WARDROBE, rL, gL, bL, rR, gR, bR)
-        if not isEnchantSlot then
-            GameTooltip:AddDoubleLine(core.SHIFT_LEFT_CLICK, core.HIDE, rL, gL, bL, rR, gR, bR)
-        end
+        GameTooltip:AddDoubleLine(core.SHIFT_LEFT_CLICK, core.HIDE, rL, gL, bL, rR, gR, bR)
         GameTooltip:AddDoubleLine(core.CONTROL_LEFT_CLICK, EMPTY, rL, gL, bL, rR, gR, bR)
         GameTooltip:AddDoubleLine(core.ALT_LEFT_CLICK, core.RESET, rL, gL, bL, rR, gR, bR)
         -- GameTooltip:AddLine(GRAY_FONT_COLOR_CODE .. "Left Click: Open in Wardrobe." .. FONT_COLOR_CODE_CLOSE)

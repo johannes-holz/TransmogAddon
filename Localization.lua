@@ -77,8 +77,6 @@ L.deDE = {
     CURRENCY_TOOLTIP_TEXT8 = "Arena:",
     CURRENCY_TOOLTIP_TEXT9 = "Schlachtfelder:",
 
-    EQUIP_PREVIEW = "Mit Ausrüstung",
-
     TRANSMOG_NAME = "Transmogrifikation",
     APPEARANCE_NOT_COLLECTED_TEXT_A = "Ihr habt dieses Aussehen noch nicht gesammelt.", -- "You haven't collected this appearance"
     APPEARANCE_NOT_COLLECTED_TEXT_B = "Ihr habt dieses Aussehen gesammelt, aber nicht von diesem Gegenstand.", --"You've collected this appearance, but not from this item"
@@ -161,8 +159,6 @@ L.deDE = {
     
     SHADOW_FORM_TOOLTIP_TITLE = "Simuliere Schattengestalt",
     SHADOW_FORM_TOOLTIP_TEXT = "Emissionstexturen und Gegenstände mit Lichtquellen werden anders aussehen als in der richtigen Schattengestalt.",
-
-    ENCHANT_PREVIEW_BUTTON_TOOLTIP_TEXT = "Zeige ausgerüstete oder gewählte Waffenverzauberung an den Modellen.",
 
     LEFT_CLICK = "Linksklick:",
     SHIFT_LEFT_CLICK = "Umschalt + Linksklick:",
@@ -274,8 +270,6 @@ L.enEU = {
     CURRENCY_TOOLTIP_TEXT8 = "Arena:",
     CURRENCY_TOOLTIP_TEXT9 = "Battlegrounds:",
 
-    EQUIP_PREVIEW = "Equip preview",
-
     TRANSMOG_NAME = "Transmogrification",
     APPEARANCE_NOT_COLLECTED_TEXT_A = "You haven't collected this appearance.",
     APPEARANCE_NOT_COLLECTED_TEXT_B = "You've collected this appearance, but not from this item.",
@@ -358,8 +352,6 @@ L.enEU = {
 
     SHADOW_FORM_TOOLTIP_TITLE = "Shadow form simulation",
     SHADOW_FORM_TOOLTIP_TEXT = "Does not give correct results for emissive textures or items with light sources.",
-    
-    ENCHANT_PREVIEW_BUTTON_TOOLTIP_TEXT = "Preview equipped or selected weapon enchant on mannequins.",
     
     LEFT_CLICK = "Left Click:",
     SHIFT_LEFT_CLICK = "Shift + Left Click:",

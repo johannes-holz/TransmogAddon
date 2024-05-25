@@ -355,7 +355,7 @@ core.MyWaitFunction = function(delay, func, ...)
 end
 
 
--- TODO: do we want to make certain transmog related utilities and fixes global instead?
+-- TODO: do we want to make certain transmog related utilities and fixes global or not?
 core.GetInventoryItemID = function(unit, slotID)
 	local link = GetInventoryItemLink(unit, slotID)
 
@@ -370,13 +370,10 @@ end
 -- We can still get the visualID from GetInventoryItemID and compare it to GetInventoryItemLink to know if it is transmogrified or not
 core.GetInventoryVisualID = function(unit, slotID)
 	if not unit or not slotID then return end
+
+	if slotID == "MainHandEnchantSlot" or slotID == "SecondaryHandEnchantSlot" then return end
 	
 	if type(slotID) == "string" then slotID = GetInventorySlotInfo(slotID) end -- TODO: too hacky or just allow using slotname like this?
-
-	if slotID == -16 or slotID == -17 then
-		return nil
-		-- return core.GetInventoryEnchantID(unit, -slotID) -- TODO: How will we get enchant visuals?
-	end	
 
 	local link = GetInventoryItemLink(unit, slotID)
 	if UnitGUID(unit) ~= UnitGUID("player") then 
@@ -404,7 +401,7 @@ core.GetInventoryEnchantID = function(unit, slotID)
 	local link = GetInventoryItemLink(unit, slotID)
 	local enchantID = link and tonumber(select(3, string.find(link, "item:%d+:(%d+)")))
 
-	return enchantID and enchantID > 0 and enchantID
+	return enchantID
 end
 
 local knownTypes = { [0] = "player", [3] = "NPC", [4] = "pet", [5] = "vehicle" }

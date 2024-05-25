@@ -16,7 +16,7 @@ Possible options:
 		- enable
 	- Option for Data Compression?
 	- Balance display/hooks?
-	- Show/Hide Minimap Icon?
+	- Show/Hide Minimap Icon? Look at how other AddOns do this?
 
 ]]
 
@@ -48,13 +48,13 @@ local SetWidgetValue = function(info, input)
 	core.db.profile[caller][arg] = input
 	
 	-- Update our stuff
-	core.OnSettingsUpdate(arg)
+	core.OnSettingsUpdate()
+	-- core.Reload()
     print("Options changed:", caller, arg, input)
 end
 
-core.OnSettingsUpdate = function(arg)
+core.OnSettingsUpdate = function()
 	core.UpdateMinimapIcon()
-	core.UpdateSkinDropdown()
 end
 
 core.options = {
@@ -171,17 +171,6 @@ core.options = {
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "hideControlHints",
-                },		
-				ActiveSkinDropdown = {
-                    type = "select",
-                    order = 11,
-                    name = "Active skin selection",
-					-- width = "full",
-                    desc = "Select method to select active skin in the Characterframe.",
-					values = { _01_none = "None", _02_dropdown = "Dropdown", _03_button = "Button" }, -- less cringe way to get the order right?
-                    get = GetWidgetValue,
-                    set = SetWidgetValue,
-                    arg = "activeSkinDropdown",
                 },
             },		
         },
@@ -240,7 +229,6 @@ core.defaults = {
 			playSpecialSounds = true,
 			doNotResetDressUp = false,
 			hideControlHints = false,
-			activeSkinDropdown = "_02_dropdown",
 		},
     },
 }

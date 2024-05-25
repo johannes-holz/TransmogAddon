@@ -1,6 +1,6 @@
 local folder, core = ...
 
--- TODO: Make these settings save per character instead of account? planning to revisit this when making options
+-- TODO: Make these settings save per character instead of account. planning to revisit this when making options
 
 TransmoggyDB.isExpanded = TransmoggyDB.isExpanded or true
 TransmoggyDB.isWatched = TransmoggyDB.isWatched or false

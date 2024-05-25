@@ -2,6 +2,7 @@ local folder, core = ...
 
 local GetInventoryItemID = core.GetInventoryItemID
 local GetInventoryVisualID = core.GetInventoryVisualID
+local CanReceiveTransmog = core.CanReceiveTransmog
 local SetSlotAndCategory = core.SetSlotAndCategory
 local FunctionOnItemInfo = core.FunctionOnItemInfo
 
@@ -22,7 +23,7 @@ SlotButton_UpdateIcon = function(self)
 	if not shown then
 		self.itex:Hide()
 	else
-        local icon = self.isEnchantSlot and select(3, core.GetEnchantInfo(shown)) or select(10, GetItemInfo(shown))
+        local icon = select(10, GetItemInfo(shown))
 
         if not icon then
             FunctionOnItemInfo(shown, SlotButton_UpdateIcon, self)
@@ -49,21 +50,14 @@ local SlotButton_OnEnter = function(self)
 	local itemNameColors = {}
 	local itemIcons = {}
 	for k, v in pairs({itemID, visualID, skinVisualID, pendingID}) do
-		if v then
-			if self.isEnchantSlot then
-				local name, _, icon = core.GetEnchantInfo(v)
-				itemNames[v] = name
-				itemNameColors[v] = { 1.0, 0.82, 0.0 } -- NORMAL_FONT_COLOR
-				itemIcons[v] = icon
-			else
-				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")		
-				GameTooltip:SetHyperlink("item:" .. v)
-				local mytext =_G["GameTooltipTextLeft" .. 1]
-				local tex = select(10, GetItemInfo(v))
-				itemNames[v] = mytext:GetText()--"["..mytext:GetText().."]")
-				itemNameColors[v] = { mytext:GetTextColor() }
-				itemIcons[v] = tex
-			end
+		if v then 
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")		
+			GameTooltip:SetHyperlink("item:"..v)
+			local mytext =_G["GameTooltipTextLeft" .. 1]
+			local tex = select(10, GetItemInfo(v))
+			itemNames[v] = mytext:GetText()--"["..mytext:GetText().."]")
+			itemNameColors[v] = { mytext:GetTextColor() }
+			itemIcons[v] = tex
 		end
 	end
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")		
@@ -163,10 +157,10 @@ local SlotButton_OnMouseDown = function(self, button)
 		return
 	end
 	
-	SetSlotAndCategory(self.itemSlot, not self.isEnchantSlot and core.GetDefaultCategory(self.itemSlot))
+	SetSlotAndCategory(self.itemSlot, core.GetDefaultCategory(self.itemSlot))
 end
 
-local SlotButton_update = function(self) -- Show and hide the right textures    
+local SlotButton_update = function(self) -- Show and hide the right textures        
 	local itemID, visualID, skinVisualID, pendingID, _, _, canTransmogrify, cannotTransmogrifyReason = core.TransmogGetSlotInfo(self.itemSlot)
 	local selectedSkin = core.GetSelectedSkin()
 
@@ -221,7 +215,7 @@ local SlotButton_update = function(self) -- Show and hide the right textures
 
 	--Changedswirlytex
 	if not self.applying then
-		if pendingID and canTransmogrify then
+		if pendingID and (self.isEnchantSlot or canTransmogrify) then
 			self.changedTex:Show()
 			self.changedTex2:Show()
 			self:SetScript("OnUpdate", self.OnUpdate_Animation)
@@ -244,11 +238,17 @@ end
 core.CreateSlotButton = function(parent, width, itemSlot)
 	local f = CreateFrame("Frame", itemSlot .. "Frame", parent)
 	f.itemSlot = itemSlot
-	f.isEnchantSlot = core.IsEnchantSlot(itemSlot)
+	if itemSlot == "MainHandEnchantSlot" or itemSlot == "SecondaryHandEnchantSlot" then f.isEnchantSlot = true end
 	f:SetSize(width, width)
 	f:EnableMouse()
 	
-	local defaultBackgroundTexture = select(2, core.GetItemSlotInfo(itemSlot))
+	local defaultBackgroundTexture
+	if f.isEnchantSlot then		
+		defaultBackgroundTexture = "Interface\\Icons\\INV_Scroll_05"
+		f:SetSize(width * 0.6, width * 0.6)
+	else
+		f.slotID, defaultBackgroundTexture, _ = core.GetItemSlotInfo(itemSlot)
+	end
 
 	f.ntex = f:CreateTexture(nil, "BACKGROUND")
 	f.ntex:SetTexture(defaultBackgroundTexture)

@@ -64,7 +64,7 @@ core.CreateActiveSkinDropDown = function(parent, menu)
 	skinDropDown.update()	
 
 	core.RegisterListener("activeSkin", skinDropDown)
-	-- core.RegisterListener("selectedSkin", skinDropDown) -- stands for any skin changes. as we only need to update the displayed name, we just care about active skin tho
+	core.RegisterListener("skins", skinDropDown)
 	
 	UIDropDownMenu_JustifyText(skinDropDown, "LEFT") 
 	UIDropDownMenu_Initialize(skinDropDown, skinDropDown.Initialize, menu and "MENU" or nil)
@@ -93,38 +93,37 @@ core.activeSkinButton:SetScript("OnClick", function(self, button)
 	end
 end)
 
--- show when we have bought a skin or when we have usable skins?
--- local usableSkinCount = 0
--- for _, skin in pairs(skins) do
--- 	if skin.name and skin.name ~= "" then
--- 		usableSkinCount = usableSkinCount + 1
--- 	end
--- end
-core.UpdateSkinDropdown = function()
-	local selected = core.db and core.db.profile.General.activeSkinDropdown
+PaperDollFrame:HookScript("OnShow", function(self)
 	local skins = core.GetSkins()
-	local enableActiveSkinDropDown = (not selected or selected == "_02_dropdown") and skins and core.Length(skins) > 0 -- or check for usable skins?
-	local enableActiveSkinButton = selected == "_03_button"
-	-- TODO: can we remember the "before" title dropdown width? titleFrameWidthOrig = UIDropDownMenu_GetWidth(PlayerTitleFrame)
-	-- also remember point?
+	-- show when we have bought a skin or when we have usable skins?
+	-- local usableSkinCount = 0
+	-- for _, skin in pairs(skins) do
+	-- 	if skin.name and skin.name ~= "" then
+	-- 		usableSkinCount = usableSkinCount + 1
+	-- 	end
+	-- end
 
-	-- /run print(PlayerTitleFrame:IsShown()) works as we want, so check this and place skins full width if we have no titles (which is probably never the case, that we have a skin but no title ...)
+	local enableActiveSkinDropDown = true
+	local enableActiveSkinButton = false
 
-	if enableActiveSkinDropDown and not core.activeSkinDropDown:IsShown() then
-		UIDropDownMenu_SetWidth(PlayerTitleFrame, 90)
-		PlayerTitleFrame:ClearAllPoints()
-		PlayerTitleFrame:SetPoint("TOPRIGHT", CharacterLevelText, "BOTTOM", 0, -9)
-		core.activeSkinDropDown:SetPoint("LEFT", PlayerTitleFrameButton, "RIGHT", -12, -2)
-		core.activeSkinDropDown:SetFrameLevel(core.activeSkinDropDown:GetParent():GetFrameLevel() + 2)
-		core.activeSkinDropDown:Show()
-	elseif not enableActiveSkinDropDown and core.activeSkinDropDown:IsShown() then
-		core.activeSkinDropDown:Hide()
-		UIDropDownMenu_SetWidth(PlayerTitleFrame, 160)
-		PlayerTitleFrame:ClearAllPoints()
-		PlayerTitleFrame:SetPoint("TOP", CharacterLevelText, "BOTTOM", 0, -9)
+	if enableActiveSkinDropDown then
+		if skins and core.Length(skins) > 0 and not core.activeSkinDropDown:IsShown() then  -- TODO: dropdown / button / nothing? option
+			UIDropDownMenu_SetWidth(PlayerTitleFrame, 90)
+			PlayerTitleFrame:ClearAllPoints()
+			PlayerTitleFrame:SetPoint("TOPRIGHT", CharacterLevelText, "BOTTOM", 0, -9)
+			core.activeSkinDropDown:SetPoint("LEFT", PlayerTitleFrameButton, "RIGHT", -12, -2)
+			core.activeSkinDropDown:SetFrameLevel(core.activeSkinDropDown:GetParent():GetFrameLevel() + 2)
+			core.activeSkinDropDown:Show()
+		end
+	else
+		if core.activeSkinDropDown:IsShown() then
+			core.activeSkinDropDown:Hide()
+			UIDropDownMenu_SetWidth(PlayerTitleFrame, 160)
+			PlayerTitleFrame:ClearAllPoints()
+			PlayerTitleFrame:SetPoint("TOP", CharacterLevelText, "BOTTOM", 0, -9)
+		end
 	end
 
 	core.SetShown(core.activeSkinButton, enableActiveSkinButton)
-end
 
-PaperDollFrame:HookScript("OnShow", core.UpdateSkinDropdown)
+end)

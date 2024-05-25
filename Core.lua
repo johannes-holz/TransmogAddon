@@ -59,9 +59,6 @@ core.TMOG_NPC_ID = 1010969
 core.CURRENCY_ICON = "Interface\\Icons\\inv_misc_gem_sapphire_03"
 core.CURRENCY_FAKE_ITEMID = -1337
 
-core.HIDDEN_ID = 1
-core.UNMOG_ID = 0
-
 -- 11755 -- SimonGame_Visual_LevelStart
 -- 4140	 -- HumanExploration
 -- 12891 -- AchievementSound
@@ -71,19 +68,6 @@ core.sounds = {
 	unlockVisual = 1202, 
 	gainBalance = 1204,
 }
-
-core.DUMMY_WEAPONS = {
-	POLEARM = 1485,							-- 1485: Any polearm. Used to reset a DressUpModel's memory about which hand had a 1H weapon equipped last
-	INVISIBLE_1H = 25194, 					-- 45630 should be "Invisible Axe", but it shows as the debug cube model instead. 25194 is smallest knuckle duster
-	ENCHANT_PREVIEW_WEAPON = 864, 			-- 864: Basic looking sword for enchant preview
-	ENCHANT_PREVIEW_OFFHAND_WEAPON = 12939, -- 12939: Most basic offhand weapon I could find so far. Used to display enchanted offhand weapon without dualwield
-	TOOLTIP_FIX_ITEM = 32479,				-- 32479: Any item with >= 9 tooltip lines. Needed for tooltip line fix
-	["1H_EXOTICA"] = 32407,					-- 32407: Only item of 1h exotica type. Needed to get (non DE/EN) localized category name
-}
-
-for name, itemID in pairs(core.DUMMY_WEAPONS) do
-	core.QueryItem(itemID)
-end
 
 -- The following tables do not need to be localized manually. We overwrite these with the correct localized names using GetAuctionItemClasses() and GetAuctionItemSubClasses()
 core.ITEM_CLASSES = {
@@ -172,7 +156,7 @@ do
 
 	local weaponSubClasses, armorSubClasses, miscSubClasses = { GetAuctionItemSubClasses(1) }, { GetAuctionItemSubClasses(2) }, { GetAuctionItemSubClasses(11) }
 	local tradeGoodsSubClasses = { GetAuctionItemSubClasses(6) }
-	local _, _, _, _, _, _, exoticaSubClass = GetItemInfo(core.DUMMY_WEAPONS["1H_EXOTICA"])
+	local _, _, _, _, _, _, exoticaSubClass = GetItemInfo(32407)
 	local loc = GetLocale()
 	core.ITEM_SUB_CLASSES = {
 		CLOTH = armorSubClasses[2],
@@ -255,7 +239,6 @@ core.appearanceNotCollectedTooltipColor = { r = 0.30, g = 0.52, b = 0.90, a = 1,
 core.greyTextColor = { r = 0.53, g = 0.62, b = 0.62, a = 1, hex = "FF889D9D"}
 core.yellowTextColor = { r = 1, g = 242 / 255, b = 15 / 255, a = 1, hex = "FFfff30f"}
 
--- scuffed listener pattern to update the correct frames on data changes
 local listeners = {}
 local RegisterListener, UpdateListeneres
 
@@ -277,7 +260,8 @@ local slotValid = {}
 local slotReason = {}
 local config = nil
 
-local atTransmogrifier -- bad var name. used in e.g. itemCollectionFrame to get different behaviour depending on whether we are using it in the TransmogFrame or the WardrobeFrame
+
+local atTransmogrifier -- used in e.g. itemCollectionFrame to get different behaviour depending on whether we are using it in the TransmogFrame or the WardrobeFrame
 
 ------------------- Updoots (for speed and readability) ------------------------
 local GetCoinTextureStringFull = core.GetCoinTextureStringFull
@@ -299,7 +283,6 @@ local GetInventoryVisualID = core.GetInventoryVisualID
 local GetContainerVisualID = core.GetContainerVisualID
 
 ------------------------------------------------------------------------------------------
-
 -- maps Transmog API locations to game inventory slots
 core.locationToInventorySlot = {
 	Head = "HeadSlot",
@@ -384,7 +367,7 @@ end
 
 -- Although we save and track the collection status of every item, we still need to ask the server what items are available for a specific slot and item
 -- Currently we just always update these, when we click on a slot in the transmog interface
--- Would be nice if we could cache this info to reduce server requests, but we have no reliable way to know when the available mogs have changed
+-- Would be nice if we could cache this info to reduce server requests, but we have no reliable way to know when the available mogs change
 core.availableMogs = {
 	["HeadSlot"] = {},
 	["ShoulderSlot"] = {},
@@ -404,12 +387,13 @@ core.availableMogs = {
 	["RangedSlot"] = {},
 }
 
--- see above. we could try to catch all events, that might change our available mogs and their unlock status, but that will probably not be reliable
--- core.availableMogsUpdateNeeded = {}
+core.availableMogsUpdateNeeded = {}
 
--- for k, v in pairs(itemSlots) do
--- 	core.availableMogsUpdateNeeded[v] = true
--- end
+for k, v in pairs(itemSlots) do
+	if v ~= "MainHandEnchantSlot" and v ~= "SecondaryHandEnchantSlot" then
+		core.availableMogsUpdateNeeded[v] = true
+	end
+end
 
 -- itemSlots to game inventorySlot IDs
 local slotToID = {
@@ -428,13 +412,13 @@ local slotToID = {
 	["SecondaryHandSlot"] = 17,
 	["ShieldHandWeaponSlot"] = 17,
 	["OffHandSlot"] = 17,
-	["MainHandEnchantSlot"] = -16, --TODO: allowed? better to add a ToCorrespondingSlot function instead of this hacky minus stuff?
+	["MainHandEnchantSlot"] = -16, --TODO: erlaubt?
 	["SecondaryHandEnchantSlot"] = -17,
 	["RangedSlot"] = 18,
 }
 core.slotToID = slotToID
 
--- Backwards map to GetInventorySlotInfo("slotName")
+-- InventorySlots
 local idToSlot = {
 	[1] = "HeadSlot",
 	[3] = "ShoulderSlot",
@@ -449,7 +433,7 @@ local idToSlot = {
 	[8] = "FeetSlot",
 	[16] = "MainHandSlot",
 	[17] = "SecondaryHandSlot",
-	--[1???] = "MainHandEnchantSlot", -- TODO: some functions need this to be item exclusive atm. decide how to handle
+	--[1???] = "MainHandEnchantSlot", --TODO: erlaubt?
 	--[1???] = "SecondaryHandEnchantSlot",
 	[18] = "RangedSlot",
 }
@@ -483,7 +467,7 @@ core.slotCategories = {
 	["SecondaryHandEnchantSlot"] = {},
 }
 
--- the following inserts are additional slot categories for items that are in the game, but are either quest items (-> not transmogable?) or weird bugged test items, that can't be unlocked by normal means
+-- the following inserts are additional slot categories for items that are in the game, but are either quest items (-> not transmogable) or weird bugged test items, that can't be unlocked by normal means
 if true then -- TODO: Options to en-/disable these?
 	tinsert(core.slotCategories.MainHandSlot, core.CATEGORIES.WEAPON_1H_EXOTICA)
 end
@@ -519,7 +503,19 @@ for _, slot in pairs(core.itemSlots) do
 	end
 end
 
-core.GetTransmogLocationInfo = function(locationName)
+core.DUMMY_WEAPONS = {
+	POLEARM = 1485,							-- 1485: Any polearm. Used to reset a DressUpModel's memory about which hand had a 1H weapon equipped last
+	INVISIBLE_1H = 25194, 					-- 45630 should be "Invisible Axe", but it shows as the debug cube model instead. 25194 is smallest knuckle duster
+	ENCHANT_PREVIEW_WEAPON = 864, 			-- 864: Basic looking sword for enchant preview
+	ENCHANT_PREVIEW_OFFHAND_WEAPON = 12939, -- 12939: Most basic offhand weapon I could find so far. Used to display enchanted offhand weapon without dualwield
+	TOOLTIP_FIX_ITEM = 32479,				-- 32479: Any item with >= 9 tooltip lines. Needed for tooltip line fix
+}
+
+for name, itemID in pairs(core.DUMMY_WEAPONS) do
+	core.QueryItem(itemID)
+end
+
+core.GetTransmogLocationInfo = function(self, locationName)
 	if not core.API.Slot[locationName] then return end
 
 	local locationID = core.API.Slot[locationName]
@@ -542,13 +538,8 @@ core.GetItemSlotInfo = function(itemSlot)
 	assert(slotToID[itemSlot] ~= nil, "Invalid slot in GetItemSlotInfo")
 
 	local slotID = slotToID[itemSlot]
-	local isEnchantSlot = core.IsEnchantSlot(itemSlot)
 
-	if isEnchantSlot then
-		return slotID, "Interface\\Icons\\INV_Scroll_05"
-	else
-		return GetInventorySlotInfo(idToSlot[slotID])
-	end
+	return GetInventorySlotInfo(idToSlot[slotID])
 end
 
 
@@ -574,15 +565,7 @@ local itemSlotToTransmogLocation = {
 }
 
 ToTransmogLocation = function(itemSlot) --, special)
-	if type(itemSlot) == "number" then
-		if itemSlot == core.slotToID["MainHandEnchantSlot"] then
-			itemSlot = "MainHandEnchantSlot"
-		elseif itemSlot == core.slotToID["SecondaryHandEnchantSlot"] then
-			itemSlot = "SecondaryHandEnchantSlot"
-		else
-			itemSlot = idToSlot[itemSlot]
-		end
-	end
+	if type(itemSlot) == "number" then itemSlot = idToSlot[itemSlot] end
 
 	if itemSlotToTransmogLocation[itemSlot] then
 		return API.Slot[itemSlotToTransmogLocation[itemSlot]]
@@ -603,7 +586,6 @@ for itemSlot, transmogLocation in pairs(itemSlotToTransmogLocation) do
 	transmogLocationToItemSlot[core.API.Slot[transmogLocation]] = itemSlot
 end
 
--- Currently skins use api locations for some reason ...
 core.GetSkinSlotVisualID = function(skinID, slotID)
 	if not skinID then return end
 
@@ -618,29 +600,27 @@ core.GetInventorySkinID = function(inventorySlotID)
 end	
 
 core.TransmogGetSlotInfo = function(itemSlot, skinID)
-	assert(slotToID[itemSlot] ~= nil, "Invalid slot in TransmogGetSlotInfo: " .. (itemSlot or "nil"))
-	skinID = skinID or core.GetSelectedSkin() -- TODO: always expect skinID instead?
+	assert(slotToID[itemSlot] ~= nil, "Invalid slot in TransmogGetSlotInfo")
+	skinID = skinID or core.GetSelectedSkin() -- TODO: allow optional this optional skinID parameter?
 
-	local isEnchantSlot = core.IsEnchantSlot(itemSlot)
 	local inventorySlotID = slotToID[itemSlot]
 	local locationID = ToTransmogLocation(itemSlot) -- TODO: hopefully soon replaced so we work on locations instead of itemslots (not gonna happen PEPW)
-	--local locationID = core.GetTransmogLocationInfo(location)
+	--local locationID = core:GetTransmogLocationInfo(location)
 	--print(itemSlot, "inventoryID", inventorySlotID, "location", location, "locationID", locationID, "selectedSkin", core.GetSelectedSkin())
 
-	local itemID = isEnchantSlot and core.GetInventoryEnchantID("player", -inventorySlotID) or core.GetInventoryItemID("player", inventorySlotID)
+	local itemID = core.GetInventoryItemID("player", inventorySlotID)
 	local visualID = core.GetInventoryVisualID("player", inventorySlotID)
 	local skinVisualID = core.GetSkinSlotVisualID(skinID, locationID)
-	local pendingID = TransmoggyDB.currentChanges and TransmoggyDB.currentChanges[itemSlot]
+	local pendingID = TransmoggyDB.currentChanges[itemSlot]
 	local pendingCostsShards = slotCostsShards[itemSlot]
 	local pendingCostsCopper = slotCostsCopper[itemSlot]
 	local canTransmogrify = slotValid[itemSlot]
 	local cannotTransmogrifyReason = slotReason[itemSlot]
 
 	--print(slotID, itemID, visualID, skinVisualID, pendingID)
-	if itemID and (itemSlot == "OffHandSlot" or itemSlot == "ShieldHandWeaponSlot" or itemSlot == "SecondaryHandEnchantSlot") then
-		local offHand = core.GetInventoryItemID("player", 17)
-		local isOffHandType = core.IsOffHandItemType(select(9, GetItemInfo(offHand)))
-		if (itemSlot == "OffHandSlot" and not isOffHandType) or ((itemSlot == "ShieldHandWeaponSlot" or itemSlot == "SecondaryHandEnchantSlot") and isOffHandType) then
+	if itemID and (itemSlot == "OffHandSlot" or itemSlot == "ShieldHandWeaponSlot") then
+		local isOffHandType = core.IsOffHandItemType(select(9, GetItemInfo(itemID)))
+		if (itemSlot == "OffHandSlot" and not isOffHandType) or (itemSlot == "ShieldHandWeaponSlot" and isOffHandType) then
 			itemID = nil
 			visualID = nil
 		end
@@ -650,10 +630,6 @@ core.TransmogGetSlotInfo = function(itemSlot, skinID)
 end
 
 core.GetDefaultCategory = function(itemSlot)
-	if core.IsEnchantSlot(itemSlot) then
-		return
-	end
-
 	local _, class = UnitClass("player")
 	local level = UnitLevel("player")
 	local itemID = core.TransmogGetSlotInfo(itemSlot)
@@ -720,12 +696,11 @@ local ToApiSet = function(set, withEnchants)
 			if isEnchantSlot then
 				-- TODO: do we only allow enchants when there is a weapon in the set? or should we allow setting enchantSlot for e.g. skins without a weapon in the set?
 			end
-			
 			--local slotID, _ = GetInventorySlotInfo(slot)
 			local transmogLocation = ToTransmogLocation(slot)
 			if (transmogLocation == nil) then print("Could not find transmogLocation for", slot) end
-			assert(transmogLocation ~= nil, "Could not find transmogLocation for " .. (slot or "nil"))
-			apiSet[transmogLocation] = (itemID == core.HIDDEN_ID and API.HideItem) or (itemID == core.UNMOG_ID and API.NoTransmog) or itemID
+			assert(transmogLocation ~= nil, "Could not find transmogLocation for "..slot)
+			apiSet[transmogLocation] = itemID
 		end
 	end
 	-- am("From set:", set, withEnchants)
@@ -737,9 +712,9 @@ core.ToApiSet = ToApiSet
 core.FromApiSet = function(apiSet)
 	local set = {}
 	for slotID, itemID in pairs(apiSet) do
-		if itemID ~= API.NoTransmog then
+		if itemID ~= 0 then
 			local itemSlot = transmogLocationToItemSlot[slotID]
-			set[itemSlot] = (itemID == API.HideItem and core.HIDDEN_ID) or itemID
+			set[itemSlot] = itemID
 		end
 	end
 	-- am("From apiset:", apiSet)
@@ -807,26 +782,22 @@ core.GetSkinCosts = function()
 end
 
 SetSlotAndCategory = function(slot, cat, updateList)
-	assert((slot == nil and cat == nil) or core.Contains(core.allSlots, slot))
-	-- assert((slot == nil and cat == nil) or core.Contains(core.slotCategories[slot], cat))
+	assert((slot == nil and cat == nil) or core.Contains(itemSlots, slot))
+	assert((slot == nil and cat == nil) or core.Contains(core.slotCategories[slot], cat))
 	
 	if not updateList and slot == selectedSlot and cat == selectedCategory then return end
 	
-	-- If we chose a new slot, request available transmogrifications
-	-- This also clears the available list until the server answers and also triggers an update to the display list each time, if slot == selected slot
-	-- So calling this before setting slot avoids an unnecessary display list update
-	if slot and selectedSlot ~= slot then
-		core.RequestUnlocksSlot(slot)
-	end
+	if slot and selectedSlot ~= slot then core.RequestUnlocksSlot(slot) end
 	
 	selectedSlot = slot
 	selectedCategory = cat
 
 	core.itemCollectionFrame:SetSlotAndCategory(slot, cat, updateList)
-
+	
 	CloseDropDownMenus()
 	
 	UpdateListeners("selectedSlot")
+	-- UpdateListeners("selectedCategory") --
 end
 core.SetSlotAndCategory = SetSlotAndCategory
 
@@ -846,7 +817,7 @@ SetCurrentChanges = function(set)
 	end
 
 	for _, slot in pairs(core.enchantSlots) do
-		SetCurrentChangesSlot(slot, set[slot], true)
+		-- not supported atm, just ignore?
 	end
 
 	for _, slot in pairs(itemSlots) do
@@ -868,42 +839,38 @@ SetCurrentChangesSlot = function(slot, id, silent)
 	assert(id == nil or type(id) == "number") -- and GetItemData(id) or even GetItemInfo(id) to secure that id is valid item (that is cached?) and maybe even check slot?
 	if not TransmoggyDB.currentChanges then TransmoggyDB.currentChanges = {} end
 
-	local isEnchantSlot = core.IsEnchantSlot(slot)
-
-	-- if isEnchantSlot then		
-	-- 	print("Can not set enchant transmog.")
-	-- 	return -- do not allow setting enchant slots atm
-	-- end
+	if core.Contains(core.enchantSlots, slot) then
+		return -- do not allow setting enchant slots atm
+	end
 
 	local itemID, visualID, skinVisualID = core.TransmogGetSlotInfo(slot)
 	local selectedSkin = core.GetSelectedSkin()
 
 	if selectedSkin then
-		if id == skinVisualID or (id == core.UNMOG_ID and not skinVisualID) then -- skin and no change to current skinVisual
+		if id == skinVisualID or (id == 0 and not skinVisualID) then
 			id = nil
 		end
 	elseif itemID then
 		if id == itemID then -- we chose the original item as transmog -> interpret as unmog
-			id = core.UNMOG_ID
+			id = 0
 		end		
-		if id == visualID then -- we chose the currently equipped visual -> no change. should be exclusive but check both to be sure
+		if id == visualID then -- we chose the currently equipped visual -> no change
 			id = nil
 		end
 	else
-		id = nil -- no skin and no equipped item to mog
+		id = nil
 	end
 
-	if (slot == "ShieldHandWeaponSlot" or slot == "SecondaryHandEnchantSlot") and not core.HasShieldHandWeaponSlot() then
-		id = nil -- e.g. we tried copying an outfit with shieldhand weapon into skin on character without dualwield
+	if slot == "ShieldHandWeaponSlot" and not core.HasShieldHandWeaponSlot() then
+		id = nil -- e.g. we tried copying an outfit with shieldhandweapon into skin on character without dualwield
 	end
 
 	if slot == "RangedSlot" and not core.HasRangedSlot() then
-		id = nil -- same as before
+		id = nil
 	end
 	
 	if TransmoggyDB.currentChanges[slot] == id then return end
 
-	-- Set slot and clear costs (this also disables apply button until we receive costs from server)
 	TransmoggyDB.currentChanges[slot] = id -- Or let change only go through, after we get an answer to RequestPriceSlot?
 	slotCostsCopper[slot] = nil
 	slotCostsShards[slot] = nil
@@ -918,11 +885,11 @@ SetCurrentChangesSlot = function(slot, id, silent)
 end
 
 core.UnmogSlot = function(itemSlot)
-	SetCurrentChangesSlot(itemSlot, core.UNMOG_ID)
+	SetCurrentChangesSlot(itemSlot, 0)
 end
 
 core.UndressSlot = function(itemSlot)
-	SetCurrentChangesSlot(itemSlot, core.HIDDEN_ID)
+	SetCurrentChangesSlot(itemSlot, 1)
 end
 
 core.ClearPendingSlot = function(itemSlot)
@@ -933,8 +900,6 @@ core.SetPending = function(itemSlot, itemID)
 	SetCurrentChangesSlot(itemSlot, itemID)
 end
 
---  TODO: Decide whether we want to display sum, even if there are currently invalid pendings
---  Would have to add another another var for all valid, currently using cost nil check for that
 SetSlotCostsAndReason = function(itemSlot, copper, shards, valid, reason)
 	slotCostsCopper[itemSlot] = copper
 	slotCostsShards[itemSlot] = shards
@@ -943,12 +908,12 @@ SetSlotCostsAndReason = function(itemSlot, copper, shards, valid, reason)
 
 	local copper, shards = 0, 0
 	local valid, hasPendings = true, false
-	for _, itemSlot in pairs(core.allSlots) do
+	for _, itemSlot in pairs(itemSlots) do
 		if valid then
 			local _, _, _, pendingID, s, c, canTransmogrify = core.TransmogGetSlotInfo(itemSlot)
 			if pendingID then
 				hasPendings = true
-				if (not s or not c or not canTransmogrify) then
+				if (not s or not c or not canTransmogrify) then -- TODO: Decide whether we want to display sum, even if there are currently invalid pendings
 					valid = false
 				else
 					copper = copper + c
@@ -989,9 +954,10 @@ SetAvailableMogs = function(slot, items)
 
 	if core.transmogFrame:IsShown() then
 		if slot == selectedSlot then
-			-- TODO: This the way we want to trigger rebuilt of list and stuff?
-			--(selectedSlot, selectedCategory, true) 
+			--(selectedSlot, selectedCategory, true) -- TODO: This the way we want to trigger rebuilt of list and stuff?
 			core.itemCollectionFrame:UpdateDisplayList()
+			--core.MyWaitFunction(0.1, core.itemCollectionFrame.UpdateDisplayList, core.itemCollectionFrame)
+
 		end
 	end
 	
@@ -1002,8 +968,6 @@ core.IsAvailableSourceItem = function(item, slot)
 	return core.availableMogs[slot] and core.availableMogs[slot][item]
 end
 
--- Why do we not translate skins to our own set format? :)
--- Only TransmogGetSlotInfo needs to know this format, but we still have to translate the ids?
 core.SetSkin = function(skin, silent)
 	local id = skin.id
 	
@@ -1014,7 +978,7 @@ core.SetSkin = function(skin, silent)
 	for slotID, itemID in pairs(skin.slots) do
 		slotID = tonumber(slotID) -- should be numeric acoording to API doc, but is a string
 		-- local itemSlot = core.TransmogLocationToItemSlot(slotID)
-		skins[id].slots[slotID] = (itemID == API.NoTransmog and nil) or (itemID == API.HideItem and core.HIDDEN_ID) or itemID
+		skins[id].slots[slotID] = itemID
 	end
 
 	if skin.id == core.GetSelectedSkin() and not skin.name or skin.name == "" then -- If we reset our currently selected skin, flip back to inventory
@@ -1092,7 +1056,7 @@ end
 
 -- This is used to modify behaviour of shared frames between the wardrobe and transmog frame
 -- (Could've probably just checked which frame is shown for that)
--- It does not really say whether we are at the npc :^)
+-- It does not really say whether we are at the npc
 core.SetIsAtTransmogrifier = function(atNPC)
 	atTransmogrifier = atNPC
 end
@@ -1124,7 +1088,6 @@ rAPI:registerEvent("transmog/skin/activated", OnSkinActivated)
 local OnSkinChanged = function(payload)
 	am("OnSkinUpdate", payload)
 	core.SetSkin(payload)
-	core.UpdateSkinDropdown()
 end
 rAPI:registerEvent("transmog/skin/changed", OnSkinChanged)
 
@@ -1274,8 +1237,7 @@ core.RequestUnlocksSlot = function(slot)
 	local requestID = requestCounterUS[transmogLocation]
 	f(unpack(p)):next(function(items)
 		if requestID == requestCounterUS[transmogLocation] then
-			-- Imo we still want our equipped item in our list of item transmogs to "deselect"?
-			-- A bit confusing that items with the same displayID as the equipped item also get hidden, why even disallow this?
+			-- Imo we still want our equipped item in our list of item transmogs to "deselect"? A bit confusing that items with the same displayID as the equipped item also get hidden
 			if itemID and not skin then
 				table.insert(items, itemID)
 			end
@@ -1313,7 +1275,7 @@ local requestCounterACC = 0
 core.RequestApplyCurrentChanges = function()
 	requestCounterACC = requestCounterACC + 1
 	local requestID = requestCounterACC
-	API.ApplyAll(ToApiSet(TransmoggyDB.currentChanges, true), core.GetSelectedSkin()):next(function(answer)
+	API.ApplyAll(ToApiSet(TransmoggyDB.currentChanges), core.GetSelectedSkin()):next(function(answer)
 		if requestID == requestCounterACC then
 			PlaySound(6555) -- 888
 			core.PlayApplyAnimations()
@@ -1341,7 +1303,7 @@ core.RequestBalance = function()
 	end)
 end
 
--- Not used. Instead of tracking the total price we keep track of the costs+validity of each slot
+-- Instead of tracking the total price we keep track of the costs+validity of each slot
 local requestCounterPOA = 0
 core.RequestPriceTotal = function()
 	requestCounterPOA = requestCounterPOA + 1
@@ -1389,7 +1351,6 @@ end
 -- 	end)
 -- end
 
--- Combines price + validity check
 local requestCounterSlotPrices = {}
 core.RequestPriceSlot = function(itemSlot)
 	requestCounterSlotPrices[itemSlot] = (requestCounterSlotPrices[itemSlot] or 0) + 1
@@ -1417,19 +1378,25 @@ core.RequestPriceSlot = function(itemSlot)
 	end)
 end
 
--- Unused. We now always allow setting a slot and then ask the server for a check + price.
--- After the server answer, this info can be retrieved with TransmogGetSlotInfo
-core.CanReceiveTransmog = function(mogTarget, mogSource, slot)
+-- TODO: check slot / check all?
+-- Options:
+-- Make a Check + Price API function with deferred lib, like the xxxAll functions in the Transmog Lib
+-- Make a Check Function, and always call price + check. Most inefficient solution, since we always do both server requests and also have double updates to GUI
+-- Only call Check (which takes single slot or slot table?), when loading a set/outfit and don't call it, when we set a pending from our item collection? 
+
+local function canReceiveTransmog(mogTarget, mogSource, slot)
 	local canMog = false
 	--local targetSubtype = select(7,GetItemInfo(mogTarget))
 	--local sourceSubtype = select(7,GetItemInfo(mogSource))
 	--if targetSubtype == sourceSubtype then canMog = true end
-	-- hidden id is part of availables list, if it is valid for the slot
-	if core.availableMogs[slot] and core.availableMogs[slot][mogSource] or mogSource == core.UNMOG_ID then
+	if core.availableMogs[slot] and core.availableMogs[slot][mogSource]
+			or mogSource == 0 then -- mogSource/visual either has to be in list of available mogs, or stand for hide (1) or unmog (0) TODO: hide and unmog to fields instead of these magic numbers everywhere --or mogSource == 1 
 		canMog = true
 	end
+
 	return canMog
 end
+core.CanReceiveTransmog = canReceiveTransmog
 
 -- local function canBeEnchanted(itemSlot)
 -- 	local itemID = TransmoggyDB.currentChanges[itemSlot]
@@ -1479,8 +1446,8 @@ core.ShowMeleeWeapons = function(mod, mainHand, offHand, callID)
 	local mainHandID = core.GetItemIDFromLink(mainHand)
 	local offHandID = core.GetItemIDFromLink(offHand)
 
-	if not mainHandID or mainHandID == core.HIDDEN_ID then mainHand = nil end
-	if not offHandID or offHandID == core.HIDDEN_ID then offHand = nil end
+	if not mainHandID or mainHandID == 1 then mainHand = nil end
+	if not offHandID or offHandID == 1 then offHand = nil end
 	
 	local _, _, _, _, _, _, mhSubType, _, mhInvType = GetItemInfo(mainHand or 0)
 	local _, _, _, _, _, _, ohSubType, _, ohInvType = GetItemInfo(offHand or 0)
@@ -1496,8 +1463,6 @@ core.ShowMeleeWeapons = function(mod, mainHand, offHand, callID)
 	local hasTitanGrip = core.HasTitanGrip()
 	local canDualWield = core.CanDualWield()
 
-	-- print("equipMWeps", mainHand, offHand)
-
 	if mainHand then
 		TryOn(mod, core.DUMMY_WEAPONS.POLEARM)
 		TryOn(mod, mainHand)
@@ -1508,7 +1473,7 @@ core.ShowMeleeWeapons = function(mod, mainHand, offHand, callID)
 				TryOn(mod, offHand)
 			else
 				--am("MyAdddon: Cannot preview "..select(1, GetItemInfo(offHand)).." in offhand with "..select(1, GetItemInfo(mainHand)).." in mainhand.")
-				return true
+				return 1
 			end
 		end
 	else
@@ -1525,7 +1490,7 @@ core.ShowMeleeWeapons = function(mod, mainHand, offHand, callID)
 			TryOn(mod, offHand)
 		else
 			--core.am("MyAdddon: Cannot preview "..select(1, GetItemInfo(offHand)).." in offhand.")
-			return true
+			return 1
 		end
 	end
 end
@@ -1567,10 +1532,10 @@ core.OnEquippedItemChange = function(itemSlot, itemEquipped)
 		if not itemEquipped then
 			core.availableMogs[itemSlot] = {}
 		else
-			-- core.availableMogsUpdateNeeded[itemSlot] = true -- Update when we open Transmogwindow. (not used atm. instead we always update when selecting a slot)
+			core.availableMogsUpdateNeeded[itemSlot] = true -- Update when we open Transmogwindow
 		end
 	else
-		core.RequestUnlocksSlot(itemSlot) -- does nothing if slot is nil
+		core.RequestUnlocksSlot(itemSlot)
 	end
 
 	UpdateListeners("inventory")
