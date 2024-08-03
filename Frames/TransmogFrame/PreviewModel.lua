@@ -120,7 +120,6 @@ core.CreatePreviewModel = function(parent, width, height)
 	model:SetScript("OnHide", function(self)
 		model.isTurning, model.isDragging = false, false
 		model.posBackup[1], model.posBackup[2], model.posBackup[3] = model:GetPosition()
-		core.am(model.posBackup)
 		model:SetPosition(0, 0, 0)
 		--[[model.texRatio, model.texCutoff = 3/4, 0
 		model.BGTopLeft:SetHeight(model:GetHeight()*model.texRatio)		
@@ -211,7 +210,7 @@ core.CreatePreviewModel = function(parent, width, height)
     model.cantPreviewMessage = model.textFrame:CreateFontString()
     model.cantPreviewMessage:SetFontObject(GameFontRed)
 	model.cantPreviewMessage:SetWidth(200)
-    model.cantPreviewMessage:SetPoint("BOTTOM", 0, model:GetHeight() / 5)
+    model.cantPreviewMessage:SetPoint("BOTTOM", 0, model:GetHeight() / 4)
     model.cantPreviewMessage:SetJustifyH("CENTER")
     model.cantPreviewMessage:SetJustifyV("MIDDLE")
     model.cantPreviewMessage:SetText(core.CAN_NOT_PREVIEW)
@@ -238,19 +237,20 @@ core.CreatePreviewModel = function(parent, width, height)
 		local selectedSlot = core.GetSelectedSlot()
 
 		local itemsToShow = {}
-		for _, slot in pairs(core.itemSlots) do        
-            local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot)
+		for _, slot in pairs(core.allSlots) do        
+            local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot, skin)
 
 			local show = pendingID or (skin and skinVisualID) or ((not skin or self.showItemsUnderSkin) and (visualID or itemID)) or nil
-			if self.showItemsUnderSkin and not itemID then show = nil end
 
-			if show == 0 then
-				show = (not skin or self.showItemsUnderSkin) and itemID or nil
-			elseif show == 1 and not includeHidden then
-				show = nil
+			if self.showItemsUnderSkin and not itemID then show = nil end 		-- skin won't show if there is no item in slot
+
+			if show == core.UNMOG_ID then
+				show = (not skin or self.showItemsUnderSkin) and itemID or nil	-- pending or visual is nomog/unmog: show item
+			elseif show == core.HIDDEN_ID and not includeHidden then
+				show = nil														-- show hidden item: nothing to show
 			end
 
-            itemsToShow[slot] = show	
+            itemsToShow[slot] = show
 		end
 		return itemsToShow
 	end
@@ -273,9 +273,9 @@ core.CreatePreviewModel = function(parent, width, height)
 
 		model:Undress()
 		
-		for k, v in pairs(itemsToShow) do
-			if not core.Contains({"MainHandSlot", "MainHandEnchantSlot", "SecondaryHandEnchantSlot", "SecondaryHandSlot", "RangedSlot", "OffHandSlot", "ShieldHandWeaponSlot"}, k) then
-				model:TryOn(v)
+		for slot, item in pairs(itemsToShow) do
+			if not (core.IsEnchantSlot(slot) or core.IsWeaponSlot(slot)) then
+				model:TryOn(item)
 			end
 		end
 
@@ -295,15 +295,16 @@ core.CreatePreviewModel = function(parent, width, height)
 		-- Staff/polearm/fishing pole transmogs will not be shown while in the offhand. Similar for MH/OH exclusive weapons in the wrong slot. Confusing ...
 		local mhTransmogHidden = mhWeaponType and core.OHOnly[mhInvType]
 		local ohTransmogHidden = ohWeaponType and core.TwoHandExclusive[ohWeaponType] or core.MHOnly[ohInvType]
+
+		-- TODO: Check mh in oh, oh in mh, mh is fishing pole
 		
 		mh = mhTransmogHidden and core.TransmogGetSlotInfo("MainHandSlot") or mh
 		oh = ohTransmogHidden and core.TransmogGetSlotInfo("SecondaryHandSlot") or oh
 		
 		-- How to handle enchants? :)
-		local showInventoryEnchants = not skin or self.showItemsUnderSkin
-		local mhEnchant = showInventoryEnchants and core.GetInventoryEnchantID("player", 16)
-		local ohEnchant = showInventoryEnchants and core.GetInventoryEnchantID("player", 17)
-		if mh and mh > 1 and mhEnchant and mhEnchant > 0 then mh = "item:" .. mh .. ":" .. mhEnchant end
+		local mhEnchant = core.SpellToEnchantID(itemsToShow["MainHandEnchantSlot"])
+		local ohEnchant = core.SpellToEnchantID(itemsToShow["SecondaryHandEnchantSlot"])
+		if mh and mhEnchant then mh = "item:" .. mh .. ":" .. mhEnchant end
 		if oh and ohEnchant then oh = "item:" .. oh .. ":" .. ohEnchant end
         
 		model.ohAppearanceNotShown:SetText((mhTransmogHidden and ohTransmogHidden) and core.MH_OH_APPEARANCE_WONT_BE_SHOWN or
@@ -325,7 +326,7 @@ core.CreatePreviewModel = function(parent, width, height)
                 end
             end
 		end
-		core.UpdateListeners("previewModel")
+		core.UpdateListeners("previewModel") -- also update model's Outfitframe
 	end
 
 	core.RegisterListener("currentChanges", model)
@@ -336,6 +337,9 @@ core.CreatePreviewModel = function(parent, width, height)
 
 	---- Outfit Stuff ----
 
+	-- TODO: Why are we not using the same method for model update and GetAll?
+		-- What do we want to save in an outfit here? Whats visible (then see previous question)?
+		-- Or do we want to allow saving all weapon slots, so we can remember a full skin?
 	model.GetAll = function(self)
 		local items = self:GetItemsToDisplay(true)		
 		local selectedSlot = core.GetSelectedSlot()
@@ -415,6 +419,12 @@ core.CreatePreviewModel = function(parent, width, height)
 			return self.shadowFormEnabled
 		end
 	end
+
+	-- model.too = model.TryOn
+	-- model.TryOn = function(self, ...)
+	-- 	-- print("previeModel", ...)
+	-- 	self:too(...)
+	-- end
 
 	-----------------------------------
 	

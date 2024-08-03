@@ -5,40 +5,52 @@ The transmog module is available at `LibStub("RisingAPI").Transmog`.
 # ToDo
 
 * Change / document how `ApplyAll()` behaves if some transmogrifications fail
+* Mention rate limiting
 
 # Syntax
 
-`value: Type` denotes a parameter or table key with name `value` of type `Type`. A type followed by a question mark like `Type?` is optional and its type is `Type` or `nil`.
+`value: Type` denotes a parameter or table key with name `value` of type `Type`. A type followed by a question mark like `Type?` is optional and its type is `Type` or `nil`. `Type[]` denotes an array of type `Type`.
 
 # Special Types
 
-## `SlotId: uint`
+## `Slot: string`
 ```lua
-	Head                = 1,
-	Shoulders           = 3,
-	Body                = 4, -- shirt
-	Chest               = 5,
-	Waist               = 6,
-	Legs                = 7,
-	Feet                = 8,
-	Wrists              = 9,
-	Hands               = 10,
-	MainHand            = 12,
-	ShieldHandWeapon    = 13,
-	OffHand             = 14,
-	Ranged              = 15,
-	Back                = 16,
-	Tabard              = 19,
+	Head             = "1",
+	Shoulders        = "3",
+	Body             = "4", -- shirt
+	Chest            = "5",
+	Waist            = "6",
+	Legs             = "7",
+	Feet             = "8",
+	Wrists           = "9",
+	Hands            = "10",
+	MainHand         = "12",
+	ShieldHandWeapon = "13",
+	OffHand          = "14",
+	Ranged           = "15",
+	Back             = "16",
+	Tabard           = "19",
 
-	EnchantMainHand	    = 20,
-	EnchantOffHand	    = 21,
+	EnchantMainHand  = "20",
+	EnchantOffHand   = "21",
 ```
 Lua constants are available (e.g. `Transmog.Slot.Head`).
 
 ## `ItemId: uint`
-Id of the item. Special values if used as transmog visual:
-* `Transmog.NoTransmog` (`0`) - no transmog / show normal visual of item
-* `Transmog.HideItem` (`1`) - hide the item (no visual)
+Id of the item.
+
+## `SpellId: uint`
+Id of the enchantment spell (e.g. 59621).
+
+## `VisualId: ItemId | SpellId`
+Either an item id or spell id depending on the slot.
+
+## Special values for `ItemId`, `SpellId` and `VisualId`
+* `Transmog.NoTransmog` (`0`) - show normal visual of item / enchantment; removes transmog if used in `Apply()`; not included in `GetUnlockedVisuals...()`-methods
+* `Transmog.HideItem` (`1`) - hide the item / enchantment visual; only included in `GetUnlockedVisualsFor{Slot,Item}()` if visual can be hidden
+
+## `UnlockedVisuals: { itemIds: ItemId[], spellIds: SpellId[] }`
+Contains unlocked visuals.
 
 ## `SkinId: uint`
 Id of a user created transmog skin
@@ -46,41 +58,52 @@ Id of a user created transmog skin
 ## `Price: { copper: uint, shards: uint }`
 Price info consisting of copper amount (100 copper = 1 silver; 100 silver = 1 gold) and shards (Shards of Illusion)
 
-## `SlotMap: { [slotId: SlotId]: ItemId }`
-Set of transmog visuals represented as a mapping of slots to item visuals
+## `SlotMap: { [slot: Slot]: VisualId }`
+Set of transmog visuals represented as a mapping of slots to visuals.
 
 # Notes
 * All API functions return a [Promise](Promise.md) that wraps the API response.
 * An item visual is considered "temporary unlocked" if it is unlocked for transmogrification but not yet permanently unlocked. There are multiple situations in which an item is temporary unlocked:
 	* If the character has a BoE item in its inventory that is not yet bound to the player and whose visual was not unlocked before.
 	* If the character has a soulbound item in its inventory that can still be traded with other raid members or refunded at a vendor.
-* An unlocked item visual is considered "unavaiable" if the player does not currently satisfy all requirements needed to use the item visual for transmogrification. Such requirements include: level, profession, profession specialization.
+* An unlocked item visual is considered "unavailable" if the player does not currently satisfy all requirements needed to use the item visual for transmogrification. Such requirements include: level, profession, profession specialization.
 
 # API Functions
 
 ## `GetUnlockedVisuals()`
 Get a list of all item visuals that are unlocked for transmog. The result **also contains** items that are currently unavailable for transmog.
 #### Parameters
-* `permanent`: `boolean?` - if `true` the resulting list contains only permanently unlocked items, if `false` only temporary unlocked items, if `nil` all unlocked items
+* `permanent`: `boolean?` - if `true` the resulting list contains only permanently unlocked items, if `false` only temporary unlocked items, if `nil` all unlocked items. See [Notes](#notes)
 #### Response
-`ItemId[]`
+`UnlockedVisuals`
 
 ## `GetUnlockedVisualsForSlot()`
 Get a list of all item visuals that are unlocked for transmog and are compatible with the given slot. The result does **not contain** items that are currently unavailable for transmog (see event `transmog/visual/unlock`).
 #### Parameters
-* `slotId`: `SlotId`
+* `slot`: `Slot`
 * `permanent`: `boolean?` - see `GetUnlockedVisuals()`
 #### Response
-`ItemId[]`
+`UnlockedVisuals`
 
 ## `GetUnlockedVisualsForItem()`
 Get a list of all item visuals that are permanently unlocked for transmog and are compatible with the given item in the given slot. The result does **not contain** items that are currently unavailable for transmog (see event `transmog/visual/unlock`).
 #### Parameters
 * `itemId`: `ItemId`
-* `slotId`: `SlotId?` - pass a slot id to filter visuals by whether they are compatible with the given slot
+* `slot`: `Slot?` - pass a slot id to filter visuals by whether they are compatible with the given slot
 * `permanent`: `boolean?` - see `GetUnlockedVisuals()`
 #### Response
-`ItemId[]`
+`UnlockedVisuals`
+
+## `UnlockVisual()`
+Unlock the enchantment spell that corresponds to the given enchantment scroll item.
+#### Parameters
+* `itemId`: `ItemId` - enchantment scroll item
+#### Response
+`nil`
+#### Errors
+* if the item is not a valid enchantment scroll for transmog
+* if the enchantment spell is currently not available to the player
+* if player does not have the item in the inventory
 
 ## `GetBalance()`
 Get the current balance of the player, the maximum amount of shards the player can currently own and information on the weekly limits.
@@ -107,14 +130,13 @@ Get the current balance of the player, the maximum amount of shards the player c
 
 ## `GetPrice()`
 Get the price of applying the given transmog visual to the given item. If no item is provided, instead calculates the price of applying the given transmog to a skin.
+**Note:** This function does **not** verify whether the visual is compatible with the given item or slot. Use `Check()` for that purpose.
 #### Parameters
-* `visualItemId: ItemId`
+* `visualId: VisualId`
 * `itemId: ItemId?`
-* `slotId: SlotId`
+* `slot: Slot`
 #### Response
 `Price`
-#### Errors
-* If transmog visual cannot be applied to the given item
 
 ## `GetPriceAll()`
 Get the price of applying the given transmog visuals. If `forSkin` is `true` gets the price of applying the visuals to a skin, otherwise gets the price of applying them to the currently equipped items.
@@ -131,9 +153,9 @@ Get the price of applying the given transmog visuals. If `forSkin` is `true` get
 Applies the given transmog visual to the given skin or the currently equipped item if no skin id is provided.
 **Note:** When applying a visual that is not yet permanently unlocked, but a corresponding item exists in the player's inventory, that item will be bound to the player and can no longer be traded or refunded.
 #### Parameters
-* `visualItemId: ItemId`
+* `visualId: VisualId`
 * `skinId: SkinId?`
-* `slotId: SlotId`
+* `slot: Slot`
 #### Response
 `nil`
 #### Errors
@@ -156,9 +178,9 @@ Applies the given transmog visuals to the given skin or the currently equipped i
 ## `Check()`
 Checks whether the given transmog visual can be applied to the given skin or the currently equipped item if no skin id is provided. This method performs the same checks as `Apply()` does, but without actually applying the transmog.
 #### Parameters
-* `visualItemId: ItemId`
+* `visualId: VisualId`
 * `skinId: SkinId?`
-* `slotId: SlotId`
+* `slot: Slot`
 #### Response
 `{ valid: boolean, message: string? }`
 #### Errors
@@ -170,7 +192,7 @@ Checks whether the given transmog visuals can be applied to the given skin or th
 * `slots: SlotMap`
 * `skinId: SkinId?`
 #### Response
-`{ valid: boolean, messages: { [slot: SlotId]: string } }`
+`{ valid: boolean, messages: { [slot: Slot]: string } }`
 #### Errors
 * see `Check()`
 
@@ -182,7 +204,7 @@ Get a list of all skins.
 {
 	id: SkinId,
 	name: string,
-	slots: { [slot: SlotId (as string)]: ItemId },
+	slots: SlotMap,
 }[]
 ```
 

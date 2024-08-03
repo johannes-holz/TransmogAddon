@@ -3,24 +3,24 @@ local Utils = API.Utils
 local deferred = LibStub("deferred")
 
 M.Slot = {
-	Head                = 1,
-	Shoulders           = 3,
-	Body                = 4, -- shirt
-	Chest               = 5,
-	Waist               = 6,
-	Legs                = 7,
-	Feet                = 8,
-	Wrists              = 9,
-	Hands               = 10,
-	MainHand            = 12,
-	ShieldHandWeapon    = 13,
-	OffHand             = 14,
-	Ranged              = 15,
-	Back                = 16,
-	Tabard              = 19,
+	Head             = "1",
+	Shoulders        = "3",
+	Body             = "4", -- shirt
+	Chest            = "5",
+	Waist            = "6",
+	Legs             = "7",
+	Feet             = "8",
+	Wrists           = "9",
+	Hands            = "10",
+	MainHand         = "12",
+	ShieldHandWeapon = "13",
+	OffHand          = "14",
+	Ranged           = "15",
+	Back             = "16",
+	Tabard           = "19",
 
-	EnchantMainHand	    = 20,
-	EnchantOffHand	    = 21,
+	EnchantMainHand  = "20",
+	EnchantOffHand   = "21",
 }
 
 local transmogSlotToInvSlot = {
@@ -39,6 +39,9 @@ local transmogSlotToInvSlot = {
 	[M.Slot.Ranged] = 18,
 	[M.Slot.Back] = 15,
 	[M.Slot.Tabard] = 19,
+
+	[M.Slot.EnchantMainHand] = 16,
+	[M.Slot.EnchantOffHand] = 17,
 }
 
 M.NoTransmog = 0
@@ -54,38 +57,42 @@ function M.GetUnlockedVisuals(permanent)
 	return API:request("transmog/visual/list", { permanent = permanent })
 end
 
-function M.GetUnlockedVisualsForSlot(slotId, permanent)
-	return API:request("transmog/visual/list", { slotId = slotId, permanent = permanent })
+function M.GetUnlockedVisualsForSlot(slot, permanent)
+	return API:request("transmog/visual/list", { slot = slot, permanent = permanent })
 end
 
-function M.GetUnlockedVisualsForItem(itemId, slotId, permanent)
-	return API:request("transmog/visual/list", { itemId = itemId, slotId = slotId, permanent = permanent })
+function M.GetUnlockedVisualsForItem(itemId, slot, permanent)
+	return API:request("transmog/visual/list", { itemId = itemId, slot = slot, permanent = permanent })
+end
+
+function M.UnlockVisual(itemId)
+	return API:request("transmog/visual/unlock", { itemId = itemId })
 end
 
 function M.GetBalance()
 	return API:request("transmog/balance")
 end
 
-function M.GetPrice(visualItemId, itemId, slotId)
-	return API:request("transmog/price", { visualItemId = visualItemId, itemId = itemId, slotId = slotId })
+function M.GetPrice(visualId, itemId, slot)
+	return API:request("transmog/price", { visualId = visualId, itemId = itemId, slot = slot })
 end
 
 function M.GetPriceAll(slots, forSkin)
 	checkSlotMap(slots, forSkin)
 
 	local futures = {}
-	for slotId, visualItemId in pairs(slots) do
-		if (transmogSlotToInvSlot[slotId] == nil) then
-			error("invalid slotId: " .. tostring(slotId))
+	for slot, visualId in pairs(slots) do
+		if (transmogSlotToInvSlot[slot] == nil) then
+			error("invalid slot: " .. tostring(slot))
 		end
 
 		local itemId
 		if (forSkin) then
 			itemId = nil
 		else
-			itemId = GetInventoryItemID("player", transmogSlotToInvSlot[slotId])
+			itemId = GetInventoryItemID("player", transmogSlotToInvSlot[slot])
 		end
-		table.insert(futures, M.GetPrice(visualItemId, itemId, slotId))
+		table.insert(futures, M.GetPrice(visualId, itemId, slot))
 	end
 
 	return deferred.All(futures):next(function(prices)
@@ -98,42 +105,42 @@ function M.GetPriceAll(slots, forSkin)
 	end)
 end
 
-function M.Apply(visualItemId, skinId, slotId)
-	return API:request("transmog/apply", { visualItemId = visualItemId, skinId = skinId, slotId = slotId })
+function M.Apply(visualId, skinId, slot)
+	return API:request("transmog/apply", { visualId = visualId, skinId = skinId, slot = slot })
 end
 
 function M.ApplyAll(slots, skinId)
 	checkSlotMap(slots, skinId ~= nil)
 
 	local futures = {}
-	for slotId, visualItemId in pairs(slots) do
-		if (transmogSlotToInvSlot[slotId] == nil) then
-			error("invalid slotId: " .. tostring(slotId))
+	for slot, visualId in pairs(slots) do
+		if (transmogSlotToInvSlot[slot] == nil) then
+			error("invalid slot: " .. tostring(slot))
 		end
 
-		table.insert(futures, M.Apply(visualItemId, skinId, slotId))
+		table.insert(futures, M.Apply(visualId, skinId, slot))
 	end
 
 	return deferred.All(futures):next(Utils.Noop)
 end
 
-function M.Check(visualItemId, skinId, slotId)
-	return API:request("transmog/check", { visualItemId = visualItemId, skinId = skinId, slotId = slotId })
+function M.Check(visualId, skinId, slot)
+	return API:request("transmog/check", { visualId = visualId, skinId = skinId, slot = slot })
 end
 
 function M.CheckAll(slots, skinId)
 	checkSlotMap(slots, skinId ~= nil)
 
 	local futures = {}
-	for slotId, visualItemId in pairs(slots) do
-		if (transmogSlotToInvSlot[slotId] == nil) then
-			error("invalid slotId: " .. tostring(slotId))
+	for slot, visualId in pairs(slots) do
+		if (transmogSlotToInvSlot[slot] == nil) then
+			error("invalid slot: " .. tostring(slot))
 		end
 
 		table.insert(
 			futures,
-			M.Check(visualItemId, skinId, slotId):next(function(result)
-				return { valid = result.valid, message = result.message, slot = slotId }
+			M.Check(visualId, skinId, slot):next(function(result)
+				return { valid = result.valid, message = result.message, slot = slot }
 			end)
 		)
 	end
@@ -226,10 +233,10 @@ local linkIndexToTransmogSlot = {
 	M.Slot.EnchantOffHand,
 }
 
-local EMPTY = '!'
-local HIDDEN = '"'
-local OFFSET = 35
-local BASE = 89
+local EMPTY = '#'
+local HIDDEN = '!'
+local OFFSET = 38
+local BASE = 86
 local MAX_ID = math.pow(BASE, 3) - 1
 
 function M.EncodeOutfitLink(slots, text)

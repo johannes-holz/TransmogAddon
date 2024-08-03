@@ -44,28 +44,28 @@ core.ShowOutfitTooltip = function(set, isRefreshOf)
         ItemRefTooltip.AddDoubleLine("Invalid Outfit data or format.")
     else
         local needsRefresh
-        for _, slot in pairs(core.allSlots) do
+        for _, slot in ipairs(core.allSlots) do
             if core.IsEnchantSlot(slot) then
                 local enchantID = set[slot]
-                if enchantID and enchantID > 0 then
-                    local name, _, tex = core.GetEnchantInfo(enchantID)
+                if enchantID and enchantID ~= core.HIDDEN_ID and enchantID ~= core.UNMOG_ID then
+                    local name, _, tex = GetSpellInfo(enchantID)
                     ItemRefTooltip:AddLine("      " .. (name and (core.GetTextureString(tex) .. " " .. name) or "unknown enchant localize me"))
                 else
-                    ItemRefTooltip:AddLine("      " .. (itemID == -1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
+                    ItemRefTooltip:AddLine("      " .. (itemID == core.HIDDEN_ID and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
                                                                     or core.GetColoredString("(" .. core.SLOT_NAMES[slot] .. ")", core.greyTextColor.hex)))
                 end
             else
                 local itemID = set[slot]
-                if itemID and itemID > 1 then
+                if itemID and itemID ~= core.HIDDEN_ID and itemID ~= core.UNMOG_ID then
                     local texture = GetItemIcon(itemID)
                     local _, link = GetItemInfo(itemID)
                     -- link = link and core.GetShortenedString(core.LinkToColoredString(link), 42) or nil
                     link = link and core.LinkToColoredString(link)
-                    ItemRefTooltip:AddLine(core.GetTextureString(texture, 16) .. " " .. (link or core.LOADING2))
+                    ItemRefTooltip:AddLine((texture and core.GetTextureString(texture, 16) or "") .. " " .. (link or core.LOADING2))
                     -- if not link then core.FunctionOnItemInfo(itemID, core.ShowOutfitTooltip, set, counter) end
                     if not link then core.QueryItem(itemID); needsRefresh = itemID end
                 else
-                    ItemRefTooltip:AddLine("      " .. (itemID == 1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
+                    ItemRefTooltip:AddLine("      " .. (itemID == core.HIDDEN_ID and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
                                                                     or core.GetColoredString("(" .. core.SLOT_NAMES[slot] .. ")", core.greyTextColor.hex)))
                 end
             end

@@ -9,7 +9,7 @@ local UnlockedBar_OnValueChange = function(self, value)
 end
 
 local UnlockedBar_OnMouseDown = function(self, button)
-    print("bar click")
+    -- print("bar click")
 end
 
 local Bar_SetMinMaxValues = function(self, min, max)

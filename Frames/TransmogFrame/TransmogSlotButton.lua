@@ -1,8 +1,6 @@
 local folder, core = ...
 
 local GetInventoryItemID = core.GetInventoryItemID
-local GetInventoryVisualID = core.GetInventoryVisualID
-local CanReceiveTransmog = core.CanReceiveTransmog
 local SetSlotAndCategory = core.SetSlotAndCategory
 local FunctionOnItemInfo = core.FunctionOnItemInfo
 
@@ -10,20 +8,21 @@ local TRANSMOGRIFY_TEXTURE = "Interface\\AddOns\\".. folder .."\\images\\Transmo
 local PENDING_ANIMATION_TEXTURE_NORMAL = "Interface\\AddOns\\" .. folder .. "\\images\\PendingAnimationTexture-Purple"
 local PENDING_ANIMATION_TEXTURE_SKIN = "Interface\\AddOns\\" .. folder .. "\\images\\PendingAnimationTexture-Blue"
 
+-- TODO: change to GetItemIcon or can those be wrong / do we still somehow rely on this FOO/item query anyway?
 local SlotButton_UpdateIcon
 SlotButton_UpdateIcon = function(self)    
     local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(self.itemSlot)
 	local selectedSkin = core.GetSelectedSkin()
 
-	local shown = (pendingID and pendingID > 1) and pendingID
-				or (not pendingID and skinVisualID and skinVisualID > 1) and skinVisualID
-				or (not selectedSkin and not pendingID and not skinVisualID and visualID and visualID > 1) and visualID
+	local shown = (pendingID and pendingID ~= core.HIDDEN_ID and pendingID ~= core.UNMOG_ID) and pendingID
+				or (not pendingID and skinVisualID and skinVisualID ~= core.HIDDEN_ID and skinVisualID ~= core.UNMOG_ID) and skinVisualID
+				or (not selectedSkin and not pendingID and not skinVisualID and visualID and visualID ~= core.HIDDEN_ID and visualID ~= core.UNMOG_ID) and visualID
 				or (not selectedSkin) and itemID
 
 	if not shown then
 		self.itex:Hide()
 	else
-        local icon = select(10, GetItemInfo(shown))
+        local icon = self.isEnchantSlot and select(3, GetSpellInfo(shown)) or select(10, GetItemInfo(shown))
 
         if not icon then
             FunctionOnItemInfo(shown, SlotButton_UpdateIcon, self)
@@ -50,14 +49,21 @@ local SlotButton_OnEnter = function(self)
 	local itemNameColors = {}
 	local itemIcons = {}
 	for k, v in pairs({itemID, visualID, skinVisualID, pendingID}) do
-		if v then 
-			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")		
-			GameTooltip:SetHyperlink("item:"..v)
-			local mytext =_G["GameTooltipTextLeft" .. 1]
-			local tex = select(10, GetItemInfo(v))
-			itemNames[v] = mytext:GetText()--"["..mytext:GetText().."]")
-			itemNameColors[v] = { mytext:GetTextColor() }
-			itemIcons[v] = tex
+		if v then
+			if self.isEnchantSlot then
+				local name, _, icon = GetSpellInfo(v)
+				itemNames[v] = name
+				itemNameColors[v] = { 1.0, 0.82, 0.0 } -- NORMAL_FONT_COLOR
+				itemIcons[v] = icon
+			else
+				GameTooltip:SetOwner(self, "ANCHOR_RIGHT")		
+				GameTooltip:SetHyperlink("item:" .. v)
+				local mytext =_G["GameTooltipTextLeft" .. 1]
+				local tex = select(10, GetItemInfo(v))
+				itemNames[v] = mytext:GetText()--"["..mytext:GetText().."]")
+				itemNameColors[v] = { mytext:GetTextColor() }
+				itemIcons[v] = tex
+			end
 		end
 	end
 	GameTooltip:SetOwner(self, "ANCHOR_RIGHT")		
@@ -65,48 +71,50 @@ local SlotButton_OnEnter = function(self)
 
 	if selectedSkin then
 		GameTooltip:AddLine(core.SLOT_NAMES[self.itemSlot], 1, 1, 1, 1)
-		if skinVisualID then
+		if skinVisualID and skinVisualID ~= core.UNMOG_ID then -- visual and skinVisual should never be UNMOG_ID anyway?
 			GameTooltip:AddLine(" ")
 			GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_CURRENT_MOG, core.skinTextColor.r, core.skinTextColor.g, core.skinTextColor.b, core.skinTextColor.a)
-			if skinVisualID > 1 then
-				GameTooltip:AddLine(itemNames[skinVisualID], itemNameColors[skinVisualID][1], itemNameColors[skinVisualID][2], itemNameColors[skinVisualID][3])
-			elseif skinVisualID == 1 then
+			if skinVisualID == core.HIDDEN_ID then
 				GameTooltip:AddLine(core.HIDDEN, core.skinTextColor.r, core.skinTextColor.g, core.skinTextColor.b, core.skinTextColor.a)
+			else
+				GameTooltip:AddLine(itemNames[skinVisualID], itemNameColors[skinVisualID][1], itemNameColors[skinVisualID][2], itemNameColors[skinVisualID][3])
 			end
 		end
 		if pendingID then
 			GameTooltip:AddLine(" ")
 			GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_PENDING_CHANGE, core.skinTextColor.r, core.skinTextColor.g, core.skinTextColor.b, core.skinTextColor.a)
-			if pendingID == 0 then
+			if pendingID == core.UNMOG_ID then
 				GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_REMOVE_SKIN, core.yellowTextColor.r, core.yellowTextColor.g, core.yellowTextColor.b, core.yellowTextColor.a)
-			elseif pendingID > 1 then
-				GameTooltip:AddLine(itemNames[pendingID], itemNameColors[pendingID][1], itemNameColors[pendingID][2], itemNameColors[pendingID][3])
-			elseif pendingID == 1 then
+			elseif pendingID == core.HIDDEN_ID then
 				GameTooltip:AddLine(core.HIDDEN, core.skinTextColor.r, core.skinTextColor.g, core.skinTextColor.b, core.skinTextColor.a)
+			else
+				GameTooltip:AddLine(itemNames[pendingID], itemNameColors[pendingID][1], itemNameColors[pendingID][2], itemNameColors[pendingID][3])
 			end
 		end
 	else			
 		if itemID then
 			GameTooltip:AddLine(itemNames[itemID], itemNameColors[itemID][1], itemNameColors[itemID][2], itemNameColors[itemID][3])
+		elseif self.isEnchantSlot then
+			GameTooltip:AddLine(core.SLOT_NAMES[self.itemSlot], 1, 1, 1, 1)
 		end
-		if visualID and visualID > 0 then
+		if visualID and visualID ~= core.UNMOG_ID then
 			GameTooltip:AddLine(" ")
 			GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_CURRENT_MOG, core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)
-			if visualID > 1 then
-				GameTooltip:AddLine(itemNames[visualID], itemNameColors[visualID][1], itemNameColors[visualID][2], itemNameColors[visualID][3])
-			elseif visualID == 1 then
+			if visualID == core.HIDDEN_ID then
 				GameTooltip:AddLine(core.HIDDEN, core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)
+			else
+				GameTooltip:AddLine(itemNames[visualID], itemNameColors[visualID][1], itemNameColors[visualID][2], itemNameColors[visualID][3])
 			end
 		end			
 		if pendingID then
 			GameTooltip:AddLine(" ")
 			GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_PENDING_CHANGE, core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)
-			if pendingID == 0 then
+			if pendingID == core.UNMOG_ID then
 				GameTooltip:AddLine(core.TRANSMOG_TOOLTIP_REMOVE_MOG, core.yellowTextColor.r, core.yellowTextColor.g, core.yellowTextColor.b, core.yellowTextColor.a)
-			elseif pendingID > 1 then
-				GameTooltip:AddLine(--[["|T"..itemIcons[i]..":0|t "..]]itemNames[pendingID], itemNameColors[pendingID][1], itemNameColors[pendingID][2], itemNameColors[pendingID][3])
-			elseif pendingID == 1 then
-				GameTooltip:AddLine(core.HIDDEN, core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)
+			elseif pendingID == core.HIDDEN_ID then
+				GameTooltip:AddLine(core.HIDDEN, core.mogTooltipTextColor.r, core.mogTooltipTextColor.g, core.mogTooltipTextColor.b, core.mogTooltipTextColor.a)				
+			else
+				GameTooltip:AddLine(itemNames[pendingID], itemNameColors[pendingID][1], itemNameColors[pendingID][2], itemNameColors[pendingID][3])
 			end
 		end
 	end
@@ -148,24 +156,24 @@ local SlotButton_OnMouseDown = function(self, button)
 	
 	if IsShiftKeyDown() then
 		core.UndressSlot(self.itemSlot)
-		return
 	elseif IsControlKeyDown() then
 		core.UnmogSlot(self.itemSlot)
-		return
 	elseif IsAltKeyDown() then
 		core.ClearPendingSlot(self.itemSlot)
-		return
+	else
+		SetSlotAndCategory(self.itemSlot, not self.isEnchantSlot and core.GetDefaultCategory(self.itemSlot))
 	end
-	
-	SetSlotAndCategory(self.itemSlot, core.GetDefaultCategory(self.itemSlot))
 end
 
-local SlotButton_update = function(self) -- Show and hide the right textures        
+local SlotButton_update = function(self) -- Show and hide the right textures    
 	local itemID, visualID, skinVisualID, pendingID, _, _, canTransmogrify, cannotTransmogrifyReason = core.TransmogGetSlotInfo(self.itemSlot)
 	local selectedSkin = core.GetSelectedSkin()
-
-	-- Slot Empty
-	if not selectedSkin and not itemID then
+	
+	local correspondingWeapon = self.isEnchantSlot and core.TransmogGetSlotInfo(core.GetCorrespondingSlot(self.itemSlot))
+	-- Slot or corresponding weaponslot empty
+	if not selectedSkin and
+			(not self.isEnchantSlot and not itemID or 
+			 self.isEnchantSlot and not correspondingWeapon) then
 		self.blockedTex:Show()
 		self.moggedTex:Hide()
 		self.itex:Hide()
@@ -189,7 +197,7 @@ local SlotButton_update = function(self) -- Show and hide the right textures
 	elseif selectedSkin and skinVisualID then
 		self.moggedTex:Show()
 		self.moggedTex:SetTexCoord(192/512, 237/512, 1/512, 45/512) -- blue
-	elseif not selectedSkin and visualID and visualID > 0 then
+	elseif not selectedSkin and visualID then
 		self.moggedTex:Show()
 		self.moggedTex:SetTexCoord(239/512, 283/512, 1/512, 45/512) -- purple
 	else
@@ -197,7 +205,7 @@ local SlotButton_update = function(self) -- Show and hide the right textures
 	end
 
 	-- Item Hidden Texture
-	if pendingID == 1 or not pendingID and (selectedSkin and skinVisualID == 1  or not selectedSkin and visualID == 1) then 
+	if pendingID == core.HIDDEN_ID or not pendingID and (selectedSkin and skinVisualID == core.HIDDEN_ID or not selectedSkin and visualID == core.HIDDEN_ID) then 
 		self.hiddenTex:Show()
 		local hColor = 0.5
 		self.itex:SetVertexColor(hColor, hColor, hColor)
@@ -215,7 +223,7 @@ local SlotButton_update = function(self) -- Show and hide the right textures
 
 	--Changedswirlytex
 	if not self.applying then
-		if pendingID and (self.isEnchantSlot or canTransmogrify) then
+		if pendingID and canTransmogrify then
 			self.changedTex:Show()
 			self.changedTex2:Show()
 			self:SetScript("OnUpdate", self.OnUpdate_Animation)
@@ -238,17 +246,11 @@ end
 core.CreateSlotButton = function(parent, width, itemSlot)
 	local f = CreateFrame("Frame", itemSlot .. "Frame", parent)
 	f.itemSlot = itemSlot
-	if itemSlot == "MainHandEnchantSlot" or itemSlot == "SecondaryHandEnchantSlot" then f.isEnchantSlot = true end
+	f.isEnchantSlot = core.IsEnchantSlot(itemSlot)
 	f:SetSize(width, width)
 	f:EnableMouse()
 	
-	local defaultBackgroundTexture
-	if f.isEnchantSlot then		
-		defaultBackgroundTexture = "Interface\\Icons\\INV_Scroll_05"
-		f:SetSize(width * 0.6, width * 0.6)
-	else
-		f.slotID, defaultBackgroundTexture, _ = core.GetItemSlotInfo(itemSlot)
-	end
+	local defaultBackgroundTexture = select(2, core.GetItemSlotInfo(itemSlot))
 
 	f.ntex = f:CreateTexture(nil, "BACKGROUND")
 	f.ntex:SetTexture(defaultBackgroundTexture)
@@ -460,7 +462,7 @@ core.CreateItemSlotOptionsFrame = function(parent)
 	core.SetTooltip(itemSlotOptionsFrame.clearPendingButton, core.CLEAR_PENDING)
 
 	itemSlotOptionsFrame.clearPendingButton:SetScript("OnClick", function()
-		core.SetPending(itemSlotOptionsFrame.owner.itemSlot)
+		core.ClearPendingSlot(itemSlotOptionsFrame.owner.itemSlot)
 	end)
 	
 	itemSlotOptionsFrame.SetOwner = function(self, frame)
@@ -485,9 +487,9 @@ core.CreateItemSlotOptionsFrame = function(parent)
 		self:SetPoint("RIGHT", self.owner, "LEFT")
 	end)
 	
-	local kids = { itemSlotOptionsFrame:GetChildren() }
+	local children = { itemSlotOptionsFrame:GetChildren() }
 
-	for _, child in pairs(kids) do
+	for _, child in pairs(children) do
 		child:HookScript("OnEnter", function(self)
 			self:GetParent().hideMe = false
 		end)

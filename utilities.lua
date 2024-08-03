@@ -339,7 +339,7 @@ core.MyWaitFunction = function(delay, func, ...)
 				local p = tremove(waitRecord,1)
 				if(d>elapse) then
 					tinsert(waitTable,i,{d-elapse,f,p})
-					i = i + 1;
+					i = i + 1
 				else
 					count = count - 1
 					f(unpack(p))
@@ -355,7 +355,7 @@ core.MyWaitFunction = function(delay, func, ...)
 end
 
 
--- TODO: do we want to make certain transmog related utilities and fixes global or not?
+-- TODO: do we want to make certain transmog related utilities and fixes global instead?
 core.GetInventoryItemID = function(unit, slotID)
 	local link = GetInventoryItemLink(unit, slotID)
 
@@ -366,29 +366,39 @@ core.GetInventoryItemID = function(unit, slotID)
 	return tonumber(itemID)
 end
 
+core.GetVisualFromItemLink = function(link)
+	local itemID = link and core.API.GetVisualFromItemLink(link)
+	return (itemID == core.API.HideItem and core.HIDDEN_ID) or (itemID == core.API.NoTransmog and core.UNMOG_ID) or itemID
+end
+
 -- We can't read out the visualID from item links from other players' inventories because of a RG bug, that causes the uniqueID to always be 0 for other players
 -- We can still get the visualID from GetInventoryItemID and compare it to GetInventoryItemLink to know if it is transmogrified or not
 core.GetInventoryVisualID = function(unit, slotID)
 	if not unit or not slotID then return end
-
-	if slotID == "MainHandEnchantSlot" or slotID == "SecondaryHandEnchantSlot" then return end
 	
-	if type(slotID) == "string" then slotID = GetInventorySlotInfo(slotID) end -- TODO: too hacky or just allow using slotname like this?
+	if type(slotID) == "string" then slotID = core.slotToID[slotID] end -- TODO: too hacky or just allow using slotname like this?
+
+	if slotID == core.slotToID["MainHandEnchantSlot"] or slotID == core.slotToID["SecondaryHandEnchantSlot"] then
+		return nil
+		-- return core.GetInventoryEnchantID(unit, -slotID) -- TODO: How will we get enchant visuals?
+	end	
 
 	local link = GetInventoryItemLink(unit, slotID)
+
+	if not link then return end
+
 	if UnitGUID(unit) ~= UnitGUID("player") then 
 		local itemID = tonumber(select(3, string.find(link, "item:(%d+):")))
 		local visualID = GetInventoryItemID(unit, slotID)
-		return visualID == itemID and 0 or visualID
+		return visualID == itemID and core.UNMOG_ID or visualID -- or just nil for no transmog?
 	else
-		return link and core.API.GetVisualFromItemLink(link)
+		return link and core.GetVisualFromItemLink(link)
 	end
 end
 
 core.GetContainerVisualID = function(bagID, slotID)
 	local link = GetContainerItemLink(bagID, slotID)
-
-	return core.API.GetVisualFromItemLink(link)
+	return core.GetVisualFromItemLink(link)
 end
 
 core.GetInventoryEnchantID = function(unit, slotID)
@@ -400,8 +410,9 @@ core.GetInventoryEnchantID = function(unit, slotID)
 
 	local link = GetInventoryItemLink(unit, slotID)
 	local enchantID = link and tonumber(select(3, string.find(link, "item:%d+:(%d+)")))
+	enchantID = core.EnchantToSpellID(enchantID)
 
-	return enchantID
+	return enchantID ~= 0 and enchantID
 end
 
 local knownTypes = { [0] = "player", [3] = "NPC", [4] = "pet", [5] = "vehicle" }
@@ -438,4 +449,9 @@ core.GetEnchantIDFromLink = function(itemLink)
 
     itemLink = strmatch(itemLink, "item:%d+:(%d+)")
     return itemLink and tonumber(itemLink) or nil
+end
+
+core.DecodeItemLink = function(link)
+    local itemString = link and link:match("|H(.*)|h.*|h") or link or ""
+	return strsplit(":", itemString)
 end

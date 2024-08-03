@@ -5,31 +5,34 @@ local folder, core = ...
 	stringDataPos = "string1string2string3 ...", where stringX is the encoded inventoryType, category and substring index of item with ID X if it exists in the data, otherwise "\0\0\0\0"
 	stringData = {inventoryType1 = {category1 = {itemIDs = "...", displayGroups = "...", nextInGroup = "...", unlockedStates = "...", names = "..."}, ...}, ...}
 	
+	So to look up an item, we first look up the place where it is stored by decoding its four bytes in stringDataPos into inventoryType, category and index.
+	With this we get e.g. the unlocked state with strbyte(core.stringData[inventoryType][category].unlockedStates, index).
+
+
 	I went through multiple iterations how the data gets stored so that it takes up as little space as possible while keeping access and iteration times fast and unnoticeable.
 
-	Storing everything in tables is obviously the fastest and simplest way, but takes up a lot of ram, even when grouping data by field instead of itemID
+	Storing everything in tables is the fastest and simplest way, but takes up a lot of space, even when grouping data by field instead of itemID
 	(other AddOns like e.g. DressMe that store less Data and are overall much smaller need ~7MB).
 
 	Bit operations are very slow in Lua, so packing our data in bits of numbers or strings makes item iteration very noticeable (.1 - .2 seconds or something like that).
 
 	What does save a lot of space compared to table data while only being slightly slower is using byte strings to store our data.
-	Each item gets its data converted to a string of certain length and for numbers that are not in our data we add a string of equal length that contains all '\0's.
-	Like this we can still index data by using `strbyte()` and we only need bit operations when we need to store or read values that do not fit into one byte.
 
 	First I used one big byte string to store all item information (unlocked, displayGroup, invType, class, subclass).
 	This approach works well enough and indexing is simple. But with this we need to iterate over all items every time and we can't utilize, that we only need about 1/15 of all items per slot.
 	Furthermore, if we want to store more information like class, race or level requirements etc., we need to fill a lot of empty entries (55kB per extra byte).
 
 	In the current version we still save data to byte strings, but now order them into tables by inventoryType and category (= class + subclass).
-	These substrings also do not contain empty filler data anymore, because we do not index them directly. Instead we add itemIDs to the data.
+	These substrings also do not contain empty filler data anymore, because we do not index them directly.
 	With this we can write iterators, that only look at the selection of the data that we need instead of iterating over the whole itemID range (~[1, 55000]).
 	In order to still be able to look up item data directly by index, we additionally need one byte string that stores inventoryType, category and index in the corresponding substring.
 	
-	Names also get stored in byte strings. Here we obviously don't want to assign a static number of bytes per entry.
+	Names also get stored in byte strings. Here we don't want to assign a static number of bytes per entry.
 	Instead we use a delimiter '#' between entries. With this we can still iterate somewhat quickly, but since this is slightly slower and creates a lot of temporary strings as garbage,
 	we only use the named item iterator, when we need it (there is an non-numerical search term).
 	GetItemName offers the option to get a name by itemID, but has to decompress and iterate the corresponding name substring, so this should not be used in a loop.
-	We could store additional name indices in our data to get constant time access instead, but we only need name data during list searches, where we use the item iterator with names.
+	We could store additional name indices in our data to get constant time access instead (without compression),
+	but we only need name data during list searches, where we use the item iterator with names.
 	When we store our generated (+compressed) name strings in WTF, we want to keep them as is. Otherwise we could also prune names of items that are already cached during the string generation.
 
 	Display groups are now also encoded: Item data contains a field for the displayGroupID as well as the next item in the group (or itself).
@@ -57,6 +60,8 @@ local LibDeflate = LibStub and LibStub:GetLibrary("LibDeflate")
 -- Set this boolean to choose if you want to compress the name strings. Saves up to ~400kB but creates a lot of garbage during searches
 -- Requires reload to take effect and will generate new stringData instead of loading the strings from WTF
 local useCompression = LibDeflate and false
+
+local stringDataVersion = 1.0
 
 core.inventoryTypes = { -- These IDs are used in our original item Data
 	[1] = "INVTYPE_HEAD",
@@ -149,7 +154,7 @@ for category, tab in pairs(core.typeToClassSubclass) do
 	core.classSubclassToType[class][subclass] = category
 end
 
--- UPDOOTS (here they are justified for once) --
+----------- UPDOOTS (here they are worth it for once) -----------
 local rshift = bit.rshift
 local lshift = bit.lshift
 local mod = bit.mod
@@ -160,7 +165,7 @@ local strsub = strsub
 
 local GetItemInfo = GetItemInfo
 
--- Utility functions to efficiently build large strings (from PIL: https://www.lua.org/pil/11.6.html)
+----------- String utility functions to efficiently build large strings (from PIL: https://www.lua.org/pil/11.6.html) -----------
 local function newStack()
 	return {""}
 end
@@ -179,25 +184,82 @@ local ReplaceChar = function(s, pos, c)
     return s:sub(1, pos - 1) .. c .. s:sub(pos + 1)
 end
 
--- The following `Add...()` functions are used to load in the item/enchant data
--- Some of the data gets converted to a different format afterwards during the loading process, so they can not be used to add e.g. new items later on!
+----------- Enchants -----------
+core.enchants = {}
+
+core.enchantInfo = {
+	visualID = {},	-- spellID to visualID/group
+	enchantID = {},	-- spellID to enchantID
+	spellID = {},	-- enchantID to spellID (not always unique and no way to find out the souce spell from enchant. just choosing arbitrary spellID atm)
+	unlocked = {},
+}
+
+-- TODO: Need clean enchant data, need enchant "type" (weapon, 2hweapon, stave)
 core.AddEnchant = function(visualID, enchantID, spellID)
 	if not (visualID and enchantID) then return false end
 	--core.am(visualID..", "..enchantID)
-	core.enchants = core.enchants or {}
 	if core.enchants[visualID] then
-		table.insert(core.enchants[visualID]["enchantIDs"], enchantID)
+		table.insert(core.enchants[visualID]["spellIDs"], spellID)
 	else 
-		core.enchants[visualID] = {["enchantIDs"] = {enchantID}}
+		core.enchants[visualID] = {["spellIDs"] = {spellID}}
 	end
-	core.enchantInfo = core.enchantInfo or {}
-	core.enchantInfo["visualID"] = core.enchantInfo["visualID"] or {}
-	core.enchantInfo["spellID"] = core.enchantInfo["spellID"] or {}
 	
-	core.enchantInfo["visualID"][enchantID] = visualID
+	core.enchantInfo["visualID"][spellID] = visualID
+	core.enchantInfo["enchantID"][spellID] = enchantID
 	core.enchantInfo["spellID"][enchantID] = spellID
 end
 
+core.EnchantToSpellID = function(enchantID)
+	return enchantID and core.enchantInfo.spellID[enchantID]
+end
+
+core.SpellToEnchantID = function(spellID)
+	return spellID and core.enchantInfo.enchantID[spellID]
+end
+
+-- TODO:
+core.GetEnchantData = function(spellID)
+	local unlocked, enchantID, visualID = core.enchantInfo["unlocked"][spellID], core.enchantInfo["enchantID"][spellID], core.enchantInfo["visualID"][spellID]
+
+	return unlocked, enchantID, visualID
+end
+
+core.SetEnchantUnlocks = function(spellIDs)
+	core.enchantInfo["unlocked"] = {}
+	for _, spellID in pairs(spellIDs) do
+		core.enchantInfo["unlocked"][spellID] = 1
+	end
+end
+
+core.SetEnchantUnlocked = function(spellID, unlocked)
+	core.enchantInfo["unlocked"][spellID] = unlocked
+end
+
+----------- Recipes -----------
+core.recipeData = { recipes = {}, spells = {} }
+core.LoadRecipe = function(recipeID, spellID, itemID)
+	if recipeID then
+		core.recipeData.recipes[recipeID] = itemID
+	end
+	if spellID then
+		core.recipeData.spells[spellID] = itemID
+	end
+end
+
+-- Maps itemID of recipes to the crafted (wearable) item
+core.GetRecipeInfo = function(recipe)
+	local recipe = core.GetItemIDFromLink(recipe)
+	return recipe and core.recipeData.recipes[recipe]
+end
+
+-- Maps spellID of a spell to the (wearable) item it produces
+core.GetSpellRecipeInfo = function(spell)
+	local spell = core.GetSpellIDFromLink(spell)
+	return spell and core.recipeData.spells[spell]
+end
+
+
+----------- Items -----------
 core.itemInfo = {
 	displayID = {},
 	class = {},
@@ -205,12 +267,25 @@ core.itemInfo = {
 	inventoryType = {},
 	-- quality = {},
 	-- requiredLevel = {},
-	-- allowableClass = {},
-	-- allowableFaction = {},
-	-- allowableRace = {},
+	allowableClass = {},
+	allowableFaction = {},
+	allowableRace = {},
 	unlocked = {},
 }
+
+-- Overview of non-nil entries for race, class, faction:
+-- 			itemCount	uniqueCount
+-- race		59			5
+-- class	4804		31
+-- faction	2254		4??
+-- The weird factions are all bugged/hidden set items? Imo fine to ignore them in filters, as they are irrelevant for normal play?
+-- -> class and faction get encoded in one byte string, race can be just kept as a normal table
+
+local classFactionMap = {}
+local toClassFaction = {}
+local cfCount = 0
 core.displayIDs = {}
+-- AddItem only works during loading proccess. Data gets converted afterwards
 core.AddItem = function(displayID, itemID, class, subClass, inventoryType, quality, requiredLevel, allowableRace, allowableClass, allowableFaction)
 	if not core.inventoryTypes[inventoryType] then return end -- only want transmogable item types
 
@@ -220,6 +295,8 @@ core.AddItem = function(displayID, itemID, class, subClass, inventoryType, quali
 	else 
 		core.displayIDs[displayID] = { itemID }
 	end
+
+	local allowableClassTemp, allowableFactionTemp = allowableClass or 0, allowableFaction or 0
 		
 	core.itemInfo["displayID"][itemID] = displayID
 	core.itemInfo["class"][itemID] = class
@@ -227,18 +304,15 @@ core.AddItem = function(displayID, itemID, class, subClass, inventoryType, quali
 	core.itemInfo["inventoryType"][itemID] = inventoryType
 	-- core.itemInfo["quality"][itemID] = quality
 	-- core.itemInfo["requiredLevel"][itemID] = requiredLevel
-	-- core.itemInfo["allowableRace"][itemID] = allowableRace
-	-- core.itemInfo["allowableClass"][itemID] = allowableClass
-	-- core.itemInfo["allowableFaction"][itemID] = allowableFaction
-end
+	core.itemInfo["allowableRace"][itemID] = allowableRace
+	core.itemInfo["allowableClass"][itemID] = allowableClassTemp
+	core.itemInfo["allowableFaction"][itemID] = allowableFactionTemp
 
-core.recipeData = { recipes = {}, spells = {} }
-core.LoadRecipe = function(recipeID, spellID, itemID)
-	if recipeID then
-		core.recipeData.recipes[recipeID] = itemID
-	end
-	if spellID then
-		core.recipeData.spells[spellID] = itemID
+	if not classFactionMap[allowableClassTemp] then classFactionMap[allowableClassTemp] = {} end
+	if not classFactionMap[allowableClassTemp][allowableFactionTemp] then
+		classFactionMap[allowableClassTemp][allowableFactionTemp] = cfCount
+		toClassFaction[cfCount] = { allowableClass, allowableFaction }
+		cfCount = cfCount + 1
 	end
 end
 
@@ -298,8 +372,14 @@ core.GenerateStringData = function()
 		core.categoryToID[category] = id
 	end
 
-	-- check if there is pregenerated stringData, that fits our compression setting and client language
-	if TransmoggyDB.stringData and TransmoggyDB.stringDataIsCompressed == useCompression and TransmoggyDB.stringDataLocale == GetLocale() then
+	core.itemInfoNonTemp = {}
+	-- core.itemInfoNonTemp.allowableClass = core.itemInfo.allowableClass
+	-- core.itemInfoNonTemp.allowableFaction = core.itemInfo.allowableFaction
+	core.itemInfoNonTemp.allowableRace = core.itemInfo.allowableRace
+
+	-- check if there is pregenerated stringData, that fits our version, compression setting and client language
+	if TransmoggyDB.stringData and stringDataVersion == TransmoggyDB.stringDataVersion
+			and TransmoggyDB.stringDataIsCompressed == useCompression and TransmoggyDB.stringDataLocale == GetLocale() then
 		core.stringData = TransmoggyDB.stringData
 		core.stringDataPos = TransmoggyDB.stringDataPos
 		
@@ -307,6 +387,7 @@ core.GenerateStringData = function()
 		core.groupData = nil
 		core.names = nil
 		core.displayIDs = nil
+		classFactionMap = nil
 		collectgarbage("collect")
 
 		print("Loaded stringData from cache.")
@@ -322,13 +403,15 @@ core.GenerateStringData = function()
 		itemData[invTypeID] = {}
 	end
 
-	local tmp = {}	-- temporarily store info about what item comes after a certain item in their displayGroup. add to stringData so that we can reconstruct displayGroup from these chained links
+	-- temporarily store info about what item comes after a certain item in their displayGroup. add to stringData so that we can reconstruct displayGroup from these chained links
+	local tmp = {}	
 	for groupID, tab in pairs(core.groupData) do
 		for i, itemID in ipairs(tab) do
 			tmp[itemID] = tab[i % #tab + 1] -- link item to the next item in its displayGroup
 		end
 	end
 
+	-- sort itemIDs into tables according to invType and category. encode and store these positions into one large position bytestring
 	local dataPositions = newStack()
 	for i = 1, 55000 do
 		if core.itemInfo["class"][i] then
@@ -354,7 +437,7 @@ core.GenerateStringData = function()
 	end
 	core.stringDataPos = table.concat(dataPositions) -- save where we put our item data
 
-	-- iterate over all subtables and generate the byte strings
+	-- iterate over these temporary subtables and generate the data byte strings
 	local stringData = {}
 	for inventoryType, tab1 in pairs(itemData) do
 		stringData[inventoryType] = {}
@@ -364,15 +447,20 @@ core.GenerateStringData = function()
 			local nextInGroups = newStack()
 			local unlockedStates = newStack()
 			local names = newStack()
+			local classFactionCodes = newStack()
+			
 			for i, itemID in ipairs(tab2) do
 				local displayGroup = core.itemInfo["displayGroup"][itemID]
-				local unlocked = 0 -- core.itemInfo["unlocked"][itemID] or 0
+				local unlocked = 0 -- gets set later
 				local nxt = tmp[itemID] or itemID
+				local cf = classFactionMap[core.itemInfo["allowableClass"][itemID] or 0][core.itemInfo["allowableFaction"][itemID] or 0]
+
 				addString(itemIDs, ToByteString2(itemID))
 				addString(displayGroups, ToByteString2(displayGroup))
 				addString(nextInGroups, ToByteString2(nxt))
 				addString(unlockedStates, strchar(unlocked))
 				addString(names, (core.names[itemID] or "") .. "#")
+				addString(classFactionCodes, strchar(cf))
 			end
 			stringData[inventoryType][category] = {}
 			stringData[inventoryType][category].itemIDs = table.concat(itemIDs)
@@ -380,12 +468,14 @@ core.GenerateStringData = function()
 			stringData[inventoryType][category].nextInGroup = table.concat(nextInGroups)
 			stringData[inventoryType][category].unlockedStates = table.concat(unlockedStates)
 			stringData[inventoryType][category].names = table.concat(names)
+			stringData[inventoryType][category].classFactionCodes = table.concat(classFactionCodes)
 		end
 	end
 	core.stringData = stringData
 
 	local t2 = GetTime()
 	
+	-- optional compression of name data
 	if useCompression then
 		for inventoryType, tab1 in pairs(core.stringData) do
 			for cat, stringData in pairs(tab1) do
@@ -398,6 +488,7 @@ core.GenerateStringData = function()
 	core.groupData = nil
 	core.names = nil
 	core.displayIDs = nil
+	classFactionMap = nil
 
 	-- if TransmoggyDB.stringData then		
 	-- 	for inventoryType, tab1 in pairs(core.stringData) do
@@ -415,6 +506,8 @@ core.GenerateStringData = function()
 	TransmoggyDB.stringData = stringData
 	TransmoggyDB.stringDataIsCompressed = useCompression
 	TransmoggyDB.stringDataLocale = GetLocale()
+	TransmoggyDB.stringDataVersion = stringDataVersion
+
 	-- local done = {}
 	-- for _, slot in pairs(core.itemSlots) do
 	-- 	for inventoryType, _ in pairs(core.slotItemTypes[slot]) do			
@@ -437,7 +530,7 @@ core.GenerateStringData = function()
 	print("time for normal stringData:", t2 - t1, ". time for compression and garbage collection:", GetTime() - t2)
 end
 
--- Overwrites all unlock data such that only ItemIDs in `unlocks` will be unlocked
+-- Overwrites all unlock data such that only ItemIDs in `unlocks` array will be unlocked
 core.SetUnlocks = function(unlocks)
 	local isUnlocked = {}
 	for _, itemID in pairs(unlocks) do
@@ -479,36 +572,6 @@ core.SetUnlocked = function(itemID)
 	end
 end
 
--- Maps itemID of recipes to the crafted (wearable) item
-core.GetRecipeInfo = function(recipe)
-	local recipe = core.GetItemIDFromLink(recipe)
-	return recipe and core.recipeData.recipes[recipe]
-end
-
--- Maps spellID of a spell to the (wearable) item it produces
-core.GetSpellRecipeInfo = function(spell)
-	local spell = core.GetSpellIDFromLink(spell)
-	return spell and core.recipeData.spells[spell]
-end
-
--- EnchantIDs are different from their spellID. This maps enchantID to spellID and returns its GetSpellInfo
-core.GetEnchantInfo = function(enchantID)
-	local spellID = core.enchantInfo.spellID[enchantID]
-	if spellID then
-		return GetSpellInfo(spellID)
-	end
-end
-
--- Maybe we should just return spellID
-core.GetEnchantSpellID = function(enchantID)
-	return core.enchantInfo.spellID[enchantID]
-end
-
--- Unused so far, not sure
-core.VisualToEnchantIDs = function(visualID)
-	return core.enchants[visualID].enchantIDs
-end
-
 core.GetItemData = function(itemID)
 	if not itemID or itemID < 1 or itemID > 55000 then return end
 	local s = 4 * (itemID - 1) + 1
@@ -530,7 +593,31 @@ end
 
 core.IsItemUnlocked = function(itemID)
 	local unlocked = core.GetItemData(itemID)
-	return unlocked
+	return unlocked == 1
+end
+
+-- TODO: decide whether to merge with GetItemData returns
+core.GetItemData2 = function(itemID)
+	if not itemID or itemID < 1 or itemID > 55000 then return end
+	local s = 4 * (itemID - 1) + 1
+	local inventoryType, b, c, d = strbyte(core.stringDataPos, s, s + 3)
+	local category = core.IDToCategory[b]
+	if not category then return end
+	local index = lshift(c, 8) + d
+
+	local cf = strbyte(core.stringData[inventoryType][category].classFactionCodes, index)
+
+	-- print(itemID, inventoryType, category, index, cf)
+
+	return toClassFaction[cf][1], toClassFaction[cf][2], core.itemInfoNonTemp.allowableRace[itemID]
+	-- return core.itemInfoNonTemp.allowableClass[itemID], core.itemInfoNonTemp.allowableFaction[itemID], core.itemInfoNonTemp.allowableRace[itemID]
+end
+
+core.GetItemTypeInfo = function(itemID)
+	local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
+	local category = class and core.classSubclassToType[class][subClass]
+	local equipLoc = inventoryType and core.inventoryTypes[inventoryType]
+	return category, equipLoc, inventoryType
 end
 
 -- TODO: As long as visualGroups contain items of different types (MH + OH, cloth + leather, etc) this information is not that useful imo
@@ -550,7 +637,7 @@ core.IsVisualUnlocked = function(itemID)
 	return 0
 end
 
--- Do not use in a loop unless you want to freeze the client! Use iterator below with withNames=True instead
+-- Do not use in a loop unless you want to freeze the client! Use fitting iterator below with withNames=True instead
 core.GetItemName = function(itemID)
 	if not itemID or itemID < 1 or itemID > 55000 then return end
 	local name = GetItemInfo(itemID)

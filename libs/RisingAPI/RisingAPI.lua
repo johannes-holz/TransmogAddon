@@ -46,6 +46,7 @@ function RisingAPI:debug(level)
 		print("Debug mode disabled.")
 	end
 end
+RisingAPI:debug(logger.TRACE)
 
 -- #######################################
 -- ## Client to server communication
@@ -155,7 +156,7 @@ function RisingAPI:_handleServerResponse(id, message, done)
 
 	local request = self._clientRequests[id]
 	if not request then
-		logger:error("invalid request id (request does not exist)")
+		logger:error("invalid request id (request does not exist, might be caused by a previous request timeout)")
 		return
 	end
 

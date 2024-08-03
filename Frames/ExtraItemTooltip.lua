@@ -67,4 +67,4 @@ core.ShowExtraItemTooltip = function()
 	tooltip:Show()
 end
 
-core.extraItemTooltip:HookScript("OnTooltipSetItem", core.TooltipDisplayTransmog)
+core.HookItemTooltip(core.extraItemTooltip)

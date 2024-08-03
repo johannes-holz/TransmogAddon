@@ -1,6 +1,6 @@
 local folder, core = ...
 
--- TODO: Make these settings save per character instead of account. planning to revisit this when making options
+-- TODO: Make these settings save per character instead of account? planning to revisit this when making options
 
 TransmoggyDB.isExpanded = TransmoggyDB.isExpanded or true
 TransmoggyDB.isWatched = TransmoggyDB.isWatched or false
@@ -131,10 +131,7 @@ end
 core.RegisterListener("balance", f)
 
 
--- TODO: Decide if we really want to hook this core function. Needed to make Balance Display work with some AddOns
--- somehow taints whole UI, so cant dirty hook getiteminfo like this anyway ..
--- could instead choose an existing item, that is not in use, as fake itemID and secureHook SetHyperlink to automatically change to SetTransmogToken for this item?
-
+-- Hooking GetItemInfo like this taints UI
 -- itemName, itemLink, itemRarity, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, itemSellPrice = GetItemInfo(itemID or "itemString" or "itemName" or "itemLink")
 -- local GetItemInfoOld = GetItemInfo
 -- GetItemInfo = function(item)
@@ -145,11 +142,10 @@ core.RegisterListener("balance", f)
 -- end
 
 
--- GameTooltip.SetHyperlinkOld = GameTooltip.SetHyperlink
--- GameTooltip.SetHyperlink = function(self, link, ...)
--- 	if link == core.CURRENCY_FAKE_ITEMID or link == core.CURRENCY_NAME then
--- 		return GameTooltip:SetTransmogToken()		
--- 	end
--- 	print("Sethyperlinkold", link, ...)
--- 	return GameTooltip:SetHyperlinkOld(link, ...)
--- end
+GameTooltip.SetHyperlinkOld = GameTooltip.SetHyperlink
+GameTooltip.SetHyperlink = function(self, link, ...)
+	if core.GetItemIDFromLink(link) == core.CURRENCY_FAKE_ITEMID then
+		return core.Tooltip_SetTransmogToken(GameTooltip)	
+	end
+	return GameTooltip:SetHyperlinkOld(link, ...)
+end

@@ -184,7 +184,7 @@ core.CreateOutfitDDM = function(parent)
 
 		local info
 		if level == 1 then
-			-- no outfit (they way outfits work, there isn't really a reason to deselect the outfit. blizzard's dropdown also doesn't have this I believe)
+			-- no outfit (there isn't really a reason to deselect the outfit)
 			-- info = UIDropDownMenu_CreateInfo()
 			-- info.text = NONE
 			-- info.arg1 = nil
@@ -286,16 +286,6 @@ core.CreateOutfitDDM = function(parent)
 
 		
 		--UIDropDownMenu_SetWidth(skinDropDown, 100, 0) -- Use in place of dropDown:SetWidth
-
-		-- if skinDropDown.firstInit then
-		-- 	if selectedSkinName then
-		-- 		UIDropDownMenu_SetSelectedName(skinDropDown, selectedSkinName)
-		-- 		UIDropDownMenu_SetText(skinDropDown, selectedSkinName)
-		-- 	else
-		-- 		UIDropDownMenu_SetText(skinDropDown, "Skins")
-		-- 	end
-		-- 	skinDropDown.firstInit = false
-		-- end
 	end
 
 	outfitDropDown.update = function()

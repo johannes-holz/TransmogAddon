@@ -10,9 +10,6 @@ local itemSlotWidth = 24 --modelHeight / 8 - 2
 local doAllButtonWidth = 16
 local doAllButtonDistance = 1
 local itemSlotDistance = 12
-local onlyMogableFilter = true
-local nameFilter = true
-local gossipFrameWidthBackup = 0
 
 StaticPopupDialogs["ApplyTransmogPopup"] = {
 	text = "",
@@ -50,13 +47,20 @@ local ShowApplyTransmogPopup = function()
 	costs.points = costs.points or costs.shards
 
 	local lines = {}
-	for _, slot in ipairs(core.itemSlots) do
+	for _, slot in ipairs(core.allSlots) do
 		local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot, id)
+		local isEnchantSlot = core.IsEnchantSlot(slot)
 		if pendingID then
-			local _, link, _, _, _, _, _, _, _, tex = GetItemInfo(pendingID)
-			local itemText = pendingID > 1 and (link and (core.GetTextureString(tex, 16) .. " " .. core.LinkToColoredString(link)) or pendingID) or
-							pendingID == 1 and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex) or 
-							core.GetColoredString(core.TRANSMOG_TOOLTIP_REMOVE_MOG, core.yellowTextColor.hex)
+			local name, link, tex, _
+			if isEnchantSlot then
+				name, _, tex = GetSpellInfo(pendingID)
+			else
+				_, link, _, _, _, _, _, _, _, tex = GetItemInfo(pendingID)
+			end
+			local itemText = pendingID == core.HIDDEN_ID and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex) or 
+							pendingID == core.UNMOG_ID and core.GetColoredString(core.TRANSMOG_TOOLTIP_REMOVE_MOG, core.yellowTextColor.hex) or
+							isEnchantSlot and (core.GetTextureString(tex, 16) .. " " .. core.GetColoredString(name, core.normalFontColor.hex)) or
+							link and (core.GetTextureString(tex, 16) .. " " .. core.LinkToColoredString(link)) or pendingID
 			local line = core.SLOT_NAMES[slot] .. ": " .. itemText .. "\n"
 			tinsert(lines, line)
 			-- if strlen(line) < 100 then
@@ -80,7 +84,7 @@ local ShowApplyTransmogPopup = function()
 	data.text = (id and (core.APPLY_TO_SKIN_TEXT1 .. " " .. core.SkinPopupDisplay(data.id, data.name)) or core.APPLY_TO_INVENTORY_TEXT1)
 					.. " " .. core.APPLY_TO_INVENTORY_TEXT2 .. "\n\n"
 					.. table.concat(lines) .. "\n"
-					.. (costs.points and costs.copper and core.GetPriceString(costs.points, costs.copper) or "ERROR: Could not request costs from server.")				
+					.. (costs.points and costs.copper and core.GetPriceString(costs.points, costs.copper) or core.APPLY_ERROR1)				
 	local popup = StaticPopup_Show("ApplyTransmogPopup", nil, nil, data)
 end
 
@@ -104,8 +108,9 @@ local TransmogFrame_OnShow = function(self)
 		core.RequestBalance()
 	end
     -- core.RequestPriceTotal()
-    
-	if UnitExists("target") then
+	local npcID = UnitExists("target") and core.GetNPCID(UnitGUID("target"))
+
+	if npcID == core.TMOG_NPC_ID then
     	SetPortraitTexture(f.portraitTexture, "target")
 	else
 		SetPortraitToTexture(f.portraitTexture, "interface/icons/inv_mushroom_11")
@@ -115,9 +120,7 @@ end
 local TransmogFrame_OnHide = function(self)
     PlaySound("igCharacterInfoClose")
 	
-    GossipFrameGreetingPanel:Show()
-    GossipFrameCloseButton:Show()
-    GossipFrame:SetAlpha(1)
+	core.UnHideGossipFrame()
     CloseGossip()
 end
 
@@ -179,11 +182,13 @@ do
 		if not core.GetBalance().shards then
 			core.RequestBalance()
 		end
-		
-		if UnitExists("target") then
+
+		local npcID = UnitExists("target") and core.GetNPCID(UnitGUID("target"))
+
+		if npcID == core.TMOG_NPC_ID then
 			SetPortraitTexture(f.portraitTexture, "target")
 		else
-			SetPortraitToTexture(f.portraitTexture, "Interface/Icons/Achievement_Boss_Algalon_01")
+			SetPortraitToTexture(f.portraitTexture, "interface/icons/inv_mushroom_11") -- "Interface/Icons/Achievement_Boss_Algalon_01"
 		end
 
 		f:update()
@@ -192,9 +197,7 @@ do
 
 	f:SetScript("OnHide", function(self)	
 		core.SetIsAtTransmogrifier(false)
-		GossipFrameGreetingPanel:Show()
-		GossipFrameCloseButton:Show()
-		GossipFrame:SetAlpha(1)
+		core.UnHideGossipFrame()
 		PlaySound("igCharacterInfoClose")
 	end)
 
@@ -206,39 +209,39 @@ do
 		core.itemCollectionFrame:SetSlotAndCategory(core.GetSelectedSlot(), core.GetSelectedCategory(), true)
 	end	
 	
-	f.BGTopLeft = f:CreateTexture(nil, "BACKGROUND")
+	f.BGTopLeft = f:CreateTexture(nil, "BORDER")
 	f.BGTopLeft:SetTexture("Interface\\AddOns\\".. folder .."\\images\\UI-AUCTIONFRAME-BID-TOPLEFT")
 	f.BGTopLeft:SetSize(256 * SCALE, 256 * SCALE)
 	f.BGTopLeft:SetPoint("TOPLEFT", f, "TOPLEFT")
 
-	f.BGTop = f:CreateTexture(nil, "BACKGROUND")
+	f.BGTop = f:CreateTexture(nil, "BORDER")
 	f.BGTop:SetTexture("Interface\\AddOns\\".. folder .."\\images\\UI-AuctionFrame-Bid-Top")
 	f.BGTop:SetSize(320 * SCALE, 256 * SCALE)
 	f.BGTop:SetPoint("TOPLEFT", f.BGTopLeft, "TOPRIGHT")
 	
-	f.BGTopRight = f:CreateTexture(nil, "BACKGROUND")
+	f.BGTopRight = f:CreateTexture(nil, "BORDER")
 	f.BGTopRight:SetTexture("Interface\\AddOns\\".. folder .."\\images\\UI-AuctionFrame-Bid-TopRight")
 	f.BGTopRight:SetSize(256* SCALE, 256 * SCALE)
 	f.BGTopRight:SetPoint("TOPLEFT", f.BGTop, "TOPRIGHT")
 	
-	f.BGBottomLeft = f:CreateTexture(nil, "BACKGROUND")
+	f.BGBottomLeft = f:CreateTexture(nil, "BORDER")
 	f.BGBottomLeft:SetTexture("Interface\\AddOns\\".. folder .."\\images\\UI-AUCTIONFRAME-BID-BOTLEFT")
 	f.BGBottomLeft:SetSize(256 * SCALE, 256 * SCALE)
 	f.BGBottomLeft:SetPoint("TOPLEFT", f.BGTopLeft, "BOTTOMLEFT")
 	
-	f.BGBottom = f:CreateTexture(nil, "BACKGROUND")
+	f.BGBottom = f:CreateTexture(nil, "BORDER")
 	f.BGBottom:SetTexture("Interface\\AddOns\\".. folder .."\\images\\UI-AuctionFrame-Bid-Bot")
 	f.BGBottom:SetSize(320 * SCALE, 256 * SCALE)
 	f.BGBottom:SetPoint("TOPLEFT", f.BGBottomLeft, "TOPRIGHT")
 	
-	f.BGBottomRight = f:CreateTexture(nil, "BACKGROUND")
+	f.BGBottomRight = f:CreateTexture(nil, "BORDER")
 	f.BGBottomRight:SetTexture("Interface\\AddOns\\".. folder .."\\images\\UI-AUCTIONFRAME-BID-BOTRIGHT")
 	f.BGBottomRight:SetSize(256 * SCALE, 256 * SCALE)
 	f.BGBottomRight:SetPoint("TOPLEFT", f.BGBottom, "TOPRIGHT")
 	
 	f.portraitTexture = f:CreateTexture(nil, "BACKGROUND")
-	f.portraitTexture:SetSize(58 * SCALE, 58 * SCALE)
-	f.portraitTexture:SetPoint("TOPLEFT", 8 * SCALE, -7 * SCALE)
+	f.portraitTexture:SetSize(62 * SCALE, 62 * SCALE)
+	f.portraitTexture:SetPoint("TOPLEFT", 7 * SCALE, -4 * SCALE)
 	SetPortraitTexture(f.portraitTexture, "player")
 	
 	f:SetScript("OnMouseDown",function(self,button)
@@ -293,8 +296,8 @@ do
 	f.undressAllButton:SetPoint("TOPRIGHT", f.cancelAllButton, "TOPLEFT", -doAllButtonDistance * SCALE, 0)	
 	f.undressAllButton:SetScript("OnClick", function()
 		local tar = {}
-		for _, slot in pairs(core.itemSlots) do
-			tar[slot] = 1
+		for _, slot in pairs(core.allSlots) do
+			tar[slot] = core.HIDDEN_ID
 		end
 		core.SetCurrentChanges(tar)
 	end)
@@ -305,8 +308,8 @@ do
 	f.removeAllMogButton:SetPoint("RIGHT", f.undressAllButton, "LEFT", -doAllButtonDistance * SCALE, 0)	
 	f.removeAllMogButton:SetScript("OnClick", function()
 		local tar = {}
-		for _, slot in pairs(core.itemSlots) do
-			tar[slot] = 0
+		for _, slot in pairs(core.allSlots) do
+			tar[slot] = core.UNMOG_ID
 		end
 		core.SetCurrentChanges(tar)
 	end)	
@@ -321,7 +324,7 @@ do
 		model.showItemsUnderSkin = self:GetChecked()
 		model:update()
 	end)
-	getglobal(f.showItemsUnderSkinCheckButton:GetName() .. "Text"):SetText("Equip preview")
+	getglobal(f.showItemsUnderSkinCheckButton:GetName() .. "Text"):SetText(core.EQUIP_PREVIEW)
 	core.SetTooltip(f.showItemsUnderSkinCheckButton, core.SHOW_ITEMS_UNDER_SKIN_TOOLTIP_TEXT, nil, nil, nil, nil, 1)
 	f.showItemsUnderSkinCheckButton.update = function(self)
 		core.SetShown(self, core.GetSelectedSkin())
@@ -331,6 +334,10 @@ do
 
 	for _, itemSlot in pairs(core.itemSlots) do
 		itemSlotFrames[itemSlot] = core.CreateSlotButton(model, itemSlotWidth * SCALE, itemSlot)
+	end
+
+	for _, enchantSlot in pairs(core.enchantSlots) do
+		itemSlotFrames[enchantSlot] = core.CreateSlotButton(model, 0.6 * itemSlotWidth * SCALE, enchantSlot)
 	end
 
 	itemSlotOptionsFrame = core.CreateItemSlotOptionsFrame(itemSlotFrames["HeadSlot"])
@@ -354,10 +361,13 @@ do
 	itemSlotFrames["OffHandSlot"]:SetPoint("LEFT", itemSlotFrames["MainHandSlot"], "RIGHT", itemSlotDistance * SCALE, 0)
 
 	itemSlotFrames["RangedSlot"]:SetPoint("LEFT", itemSlotFrames["OffHandSlot"], "RIGHT", itemSlotDistance * 2 * SCALE, 0)
-	if not core.HasRangedSlot() then itemSlotFrames["RangedSlot"]:Hide() end -- TODO: remove rangeslot from core.itemSlots instead?
+	if not core.HasRangedSlot() then itemSlotFrames["RangedSlot"]:Hide() end
 	
---	itemSlotFrames["MainHandEnchantSlot"]:SetPoint("RIGHT", itemSlotFrames["MainHandSlot"], "BOTTOMLEFT", -12, 0)
---	itemSlotFrames["SecondaryHandEnchantSlot"]:SetPoint("RIGHT", itemSlotFrames["SecondaryHandSlot"], "BOTTOMLEFT", -12, 0)
+	itemSlotFrames["MainHandEnchantSlot"]:SetPoint("BOTTOM", itemSlotFrames["MainHandSlot"], "TOP", 0, 7 * SCALE)
+	itemSlotFrames["SecondaryHandEnchantSlot"]:SetPoint("BOTTOM", itemSlotFrames["ShieldHandWeaponSlot"], "TOP", 0, 7 * SCALE)
+	-- itemSlotFrames["MainHandEnchantSlot"]:SetParent(itemSlotFrames["MainHandSlot"])
+	-- itemSlotFrames["MainHandEnchantSlot"]:SetFrameLevel(itemSlotFrames["MainHandSlot"])
+	-- itemSlotFrames["SecondaryHandEnchantSlot"]:SetParent(itemSlotFrames["ShieldHandWeaponSlot"])
 	
 	
 	skinDropDown = core.CreateSkinDropDown(f)
@@ -587,6 +597,7 @@ do
 			itemSlotFrames["OffHandSlot"]:SetPoint("LEFT", itemSlotFrames["MainHandSlot"], "RIGHT", (itemSlotWidth * (i - 1) + itemSlotDistance * i) * SCALE, 0)
 			itemSlotFrames["RangedSlot"]:SetPoint("LEFT", itemSlotFrames["MainHandSlot"], "RIGHT", (itemSlotWidth * i + itemSlotDistance * (i + 2)) * SCALE, 0)
 			core.SetShown(itemSlotFrames["ShieldHandWeaponSlot"], hasShieldHandWeaponSlot)
+			core.SetShown(itemSlotFrames["SecondaryHandEnchantSlot"], hasShieldHandWeaponSlot)
 			itemSlotFrames["OffHandSlot"]:Show()
 		else
 			local ohItemID = core.GetInventoryItemID("player", 17)
@@ -597,6 +608,7 @@ do
 			itemSlotFrames["OffHandSlot"]:SetPoint("LEFT", itemSlotFrames["MainHandSlot"], "RIGHT", itemSlotDistance * SCALE, 0)
 			itemSlotFrames["RangedSlot"]:SetPoint("LEFT", itemSlotFrames["MainHandSlot"], "RIGHT", (itemSlotWidth + itemSlotDistance * 3) * SCALE, 0)
 			core.SetShown(itemSlotFrames["ShieldHandWeaponSlot"], not showOffHandSlot)
+			core.SetShown(itemSlotFrames["SecondaryHandEnchantSlot"], not showOffHandSlot)
 			core.SetShown(itemSlotFrames["OffHandSlot"], showOffHandSlot)
 		end
 		
