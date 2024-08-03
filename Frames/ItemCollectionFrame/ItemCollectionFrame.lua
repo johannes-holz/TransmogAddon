@@ -549,9 +549,15 @@ local Mannequin_OnEnter = function(self)
 			if itemID == core.HIDDEN_ID or itemID == core.UNMOG_ID then
 				GameTooltip:AddLine("> " .. "No/Hidden Enchant localize me")
 			else
-				for i, id in ipairs(itemCollectionFrame.displayGroups[itemID]) do
-					local name, _, tex = GetSpellInfo(id)
-					GameTooltip:AddLine((i == selected and "> " or "- ") .. core.GetTextureString(tex) .. " " .. name)
+				for i, spellID in ipairs(itemCollectionFrame.displayGroups[itemID]) do
+					local name, _, tex = GetSpellInfo(spellID)
+					local unlocked = core.GetEnchantData(spellID)
+					local leftText = (i == selected and "> " or "- ") .. core.GetTextureString(tex) .. " " .. name
+					if unlocked == 1 then
+						GameTooltip:AddDoubleLine(leftText, core.COLLECTED, nil, nil, nil, 0.1, 1, 0.1)
+					else
+						GameTooltip:AddDoubleLine(leftText, "           ", nil, nil, nil, 0.1, 1, 0.1)
+					end
 				end
 				
 				if #itemCollectionFrame.displayGroups[itemID] > 1 then
