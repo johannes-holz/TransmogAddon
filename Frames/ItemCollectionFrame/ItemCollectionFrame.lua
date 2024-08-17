@@ -675,16 +675,6 @@ itemCollectionFrame.GoToItem = function(self, itemID)
 	end
 	
 	for i, listItem in ipairs(self.displayList) do
-		-- local _, displayGroup = core.GetItemData(listItem)
-		
-		-- if self.displayGroups[displayGroup] then
-		-- 	for _, groupItem in pairs() do
-		-- 		if groupItem == itemID then
-		-- 			page = 1 + floor(i / mannequinCount)
-		-- 			break
-		-- 		end
-		-- 	end
-		-- else
 		if listItem == itemID then
 			page = 1 + floor(i / mannequinCount)
 			break

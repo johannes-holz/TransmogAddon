@@ -197,7 +197,7 @@ local SlotButton_update = function(self) -- Show and hide the right textures
 	elseif selectedSkin and skinVisualID then
 		self.moggedTex:Show()
 		self.moggedTex:SetTexCoord(192/512, 237/512, 1/512, 45/512) -- blue
-	elseif not selectedSkin and visualID then
+	elseif not selectedSkin and visualID and visualID ~= core.UNMOG_ID then
 		self.moggedTex:Show()
 		self.moggedTex:SetTexCoord(239/512, 283/512, 1/512, 45/512) -- purple
 	else

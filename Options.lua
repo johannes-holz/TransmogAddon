@@ -64,7 +64,7 @@ core.options = {
 		OptionsHeader = {
 			order = 2,
 			type = "header",
-			name = "", -- core.titleFull, --"Hoernchen's Plate Extensions",--GetAddOnMetadata(folder, "title")," v",GetAddOnMetadata(folder, "version")
+			name = "", -- core.titleFull, --GetAddOnMetadata(folder, "title")," v",GetAddOnMetadata(folder, "version")
 		},
 		
 		General = {
@@ -137,7 +137,7 @@ core.options = {
                     order = 8,
                     name = "Show wrong icons.",
 					width = "full",
-                    desc = "Activate to not fix the bug where the character and inspect frame show the icon of the transmog items instead of the original items.",
+                    desc = "Activate to not fix the bug where inventory slots show the icon of the respective transmog item instead of the original item.",
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "useWrongTextures",

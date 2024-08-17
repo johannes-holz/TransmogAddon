@@ -632,7 +632,7 @@ end
 
 core.TransmogGetSlotInfo = function(itemSlot, skinID)
 	assert(slotToID[itemSlot] ~= nil, "Invalid slot in TransmogGetSlotInfo: " .. (itemSlot or "nil"))
-	skinID = skinID or core.GetSelectedSkin() -- TODO: always expect skinID instead?
+	skinID = skinID or core.GetSelectedSkin() -- TODO: always expect explicit specification of skinID instead?
 
 	local isEnchantSlot = core.IsEnchantSlot(itemSlot)
 	local inventorySlotID = slotToID[itemSlot]
@@ -640,7 +640,7 @@ core.TransmogGetSlotInfo = function(itemSlot, skinID)
 	--local locationID = core.GetTransmogLocationInfo(location)
 	--print(itemSlot, "inventoryID", inventorySlotID, "location", location, "locationID", locationID, "selectedSkin", core.GetSelectedSkin())
 
-	local itemID = isEnchantSlot and core.GetInventoryEnchantID("player", -inventorySlotID) or core.GetInventoryItemID("player", inventorySlotID)
+	local itemID = isEnchantSlot and core.GetInventoryEnchantID("player", core.GetCorrespondingSlot(itemSlot)) or core.GetInventoryItemID("player", inventorySlotID)
 	local visualID = core.GetInventoryVisualID("player", inventorySlotID)
 	local skinVisualID = core.GetSkinSlotVisualID(skinID, locationID)
 	local pendingID = TransmoggyDB.currentChanges and TransmoggyDB.currentChanges[itemSlot]
@@ -907,7 +907,7 @@ SetCurrentChangesSlot = function(slot, id, silent)
 		if id == itemID then -- we chose the original item as transmog -> interpret as unmog
 			id = core.UNMOG_ID
 		end		
-		if id == visualID then -- we chose the currently equipped visual -> no change. should be exclusive but check both to be sure
+		if id == visualID then -- we chose the currently equipped visual -> no change
 			id = nil
 		end
 	else
