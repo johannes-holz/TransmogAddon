@@ -319,8 +319,8 @@ core.locationToInventorySlot = {
 	Feet = "FeetSlot",
 	Wrists = "WristSlot",
 	Hands = "HandsSlot",
-	MainHand = "MainHandSlot",
-	ShieldHandWeapon = "SecondaryHandSlot",
+	MainHandWeapon = "MainHandSlot",
+	OffHandWeapon = "SecondaryHandSlot",
 	OffHand = "SecondaryHandSlot",
 	Ranged = "RangedSlot",
 	Back = "BackSlot",
@@ -540,7 +540,7 @@ core.GetTransmogLocationInfo = function(locationName)
 	local slotID, slotTexture = GetInventorySlotInfo(core.locationToInventorySlot[locationName])
 	local itemSlot = inventorySlot
 	
-	if locationName == "ShieldHandWeapon" then
+	if locationName == "OffHandWeapon" then
 		_, slotTexture = GetInventorySlotInfo("MainHandSlot")
 		itemSlot = "ShieldHandWeaponSlot"
 	end
@@ -565,6 +565,28 @@ core.GetItemSlotInfo = function(itemSlot)
 end
 
 
+--[[
+
+
+	Head                  = "1",
+	Shoulders             = "3",
+	Body                  = "4", -- shirt
+	Chest                 = "5",
+	Waist                 = "6",
+	Legs                  = "7",
+	Feet                  = "8",
+	Wrists                = "9",
+	Hands                 = "10",
+	MainHandWeapon        = "12",
+	OffHandWeapon         = "13",
+	OffHand               = "14",
+	Ranged                = "15",
+	Back                  = "16",
+	Tabard                = "19",
+
+	EnchantMainHandWeapon = "20",
+	EnchantOffHandWeapon  = "21",]]
+
 local itemSlotToTransmogLocation = {
 	HeadSlot = "Head",
 	ShoulderSlot = "Shoulders",
@@ -577,12 +599,12 @@ local itemSlotToTransmogLocation = {
 	WaistSlot = "Waist",
 	LegsSlot = "Legs",
 	FeetSlot = "Feet",
-	MainHandSlot = "MainHand",
-	ShieldHandWeaponSlot = "ShieldHandWeapon",
+	MainHandSlot = "MainHandWeapon",
+	ShieldHandWeaponSlot = "OffHandWeapon",
 	OffHandSlot = "OffHand",
 	-- SecondaryHandSlot", special case
-	MainHandEnchantSlot = "EnchantMainHand", -- TODO: do we allow this?
-	SecondaryHandEnchantSlot = "EnchantOffHand",
+	MainHandEnchantSlot = "EnchantMainHandWeapon", -- TODO: do we allow this?
+	SecondaryHandEnchantSlot = "EnchantOffHandWeapon",
 	RangedSlot = "Ranged",
 }
 
@@ -601,12 +623,12 @@ core.ToTransmogLocation = function(itemSlot) --, special)
 		return API.Slot[itemSlotToTransmogLocation[itemSlot]]
 	elseif itemSlot == "SecondaryHandSlot" then -- not sure if we still use this at all
 		local equipped = GetInventoryItemID("player", 17)
-		if not equipped then return API.Slot.ShieldHandWeapon end -- No offhand equipped, so the field will be nil anyway, but have to return something
+		if not equipped then return API.Slot.OffHandWeapon end -- No offhand equipped, so the field will be nil anyway, but have to return something
 		local invtype = select(9, GetItemInfo(equipped)) -- item info should always be cached/available for equipped items
 		if invtype == "INVTYPE_SHIELD" or invtype == "INVTYPE_HOLDABLE" then
 			return API.Slot.OffHand
 		else
-			return API.Slot.ShieldHandWeapon
+			return API.Slot.OffHandWeapon
 		end
 	end
 end
@@ -635,13 +657,14 @@ core.TransmogGetSlotInfo = function(itemSlot, skinID)
 	skinID = skinID or core.GetSelectedSkin() -- TODO: always expect explicit specification of skinID instead?
 
 	local isEnchantSlot = core.IsEnchantSlot(itemSlot)
+	local correspondingWeaponSlot = isEnchantSlot and core.GetCorrespondingSlot(itemSlot)
 	local inventorySlotID = slotToID[itemSlot]
 	local locationID = core.ToTransmogLocation(itemSlot) -- TODO: hopefully soon replaced so we work on locations instead of itemslots (not gonna happen PEPW)
 	--local locationID = core.GetTransmogLocationInfo(location)
 	--print(itemSlot, "inventoryID", inventorySlotID, "location", location, "locationID", locationID, "selectedSkin", core.GetSelectedSkin())
 
-	local itemID = isEnchantSlot and core.GetInventoryEnchantID("player", core.GetCorrespondingSlot(itemSlot)) or core.GetInventoryItemID("player", inventorySlotID)
-	local visualID = core.GetInventoryVisualID("player", inventorySlotID)
+	local itemID = isEnchantSlot and core.GetInventoryEnchantID("player", correspondingWeaponSlot) or core.GetInventoryItemID("player", inventorySlotID)
+	local visualID = isEnchantSlot and core.GetInventoryEnchantVisualID("player", correspondingWeaponSlot) or core.GetInventoryVisualID("player", inventorySlotID)
 	local skinVisualID = core.GetSkinSlotVisualID(skinID, locationID)
 	local pendingID = TransmoggyDB.currentChanges and TransmoggyDB.currentChanges[itemSlot]
 	local pendingCostsShards = slotCostsShards[itemSlot]

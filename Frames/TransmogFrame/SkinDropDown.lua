@@ -163,10 +163,10 @@ core.ShowVisualsToSkinPopup = function(id, costs)
 	costs.points = costs.points or costs.shards
 
 	local lines = {}
-	for _, slot in ipairs(core.itemSlots) do
+	for _, slot in ipairs(core.allSlots) do
 		local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot, id)
-		if visualID and visualID > 0 and (not skinVisualID or skinVisualID == 0) then
-			local link = visualID > 1 and core.LinkToColoredString(select(2, GetItemInfo(visualID))) or core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
+		if visualID and visualID ~= core.UNMOG_ID and (not skinVisualID or skinVisualID == core.UNMOG_ID) then
+			local link = visualID ~= core.HIDDEN_ID and core.LinkToColoredString(select(2, GetItemInfo(visualID))) or core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
 			tinsert(lines, core.SLOT_NAMES[slot])
 			tinsert(lines, ": ")
 			tinsert(lines, link or visualID)

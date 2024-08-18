@@ -130,15 +130,15 @@ local BUTTON_WIDTH = 28
 local BUTTON_SPACING, BUTTON_SPACING_WIDE = 2, 10
 
 local slots = core.API.Slots
---local order = { slots.Head, slots.Shoulders, slots.Back, slots.Chest, slots.Body, slots.Tabard, slots.Wrists, slots.Hands, slots.Waist, slots.Legs, slots.Feet, slots.MainHand, slots.ShieldHandWeapon, slots.OffHand }
-local order = {"Head", "Shoulders", "Back", "Chest", "Body", "Tabard", "Wrists", "Hands", "Waist", "Legs", "Feet", "MainHand", "ShieldHandWeapon", "OffHand", "Ranged"}
+--local order = { slots.Head, slots.Shoulders, slots.Back, slots.Chest, slots.Body, slots.Tabard, slots.Wrists, slots.Hands, slots.Waist, slots.Legs, slots.Feet, slots.MainHandWeapon, slots.OffHandWeapon, slots.OffHand }
+local order = {"Head", "Shoulders", "Back", "Chest", "Body", "Tabard", "Wrists", "Hands", "Waist", "Legs", "Feet", "MainHandWeapon", "OffHandWeapon", "OffHand", "Ranged"}
 
 itemCollectionFrame.slotButtons = {}
 for i, name in pairs(order) do
 	itemCollectionFrame.slotButtons[name] = core.CreateSlotButtonFrame(itemCollectionFrame, name, BUTTON_WIDTH)
 	if name == "Head" then
 		itemCollectionFrame.slotButtons[name]:SetPoint("TOPLEFT", SIDE_PADDING, -10)
-	elseif name == "MainHand" then
+	elseif name == "MainHandWeapon" then
 		itemCollectionFrame.slotButtons[name]:SetPoint("TOPLEFT", itemCollectionFrame.slotButtons[order[i - 1]], "TOPRIGHT", BUTTON_SPACING_WIDE, 0)
 	else	
 		itemCollectionFrame.slotButtons[name]:SetPoint("TOPLEFT", itemCollectionFrame.slotButtons[order[i - 1]], "TOPRIGHT", BUTTON_SPACING, 0)
@@ -150,10 +150,10 @@ end
 
 -- enchantSlots = { "MainHandEnchantSlot", "OffHandEnchantSlot" }
 itemCollectionFrame.enchantSlotButtons = {}
-itemCollectionFrame.enchantSlotButtons["MainHandEnchantSlot"] = core.CreateEnchantSlotButton(itemCollectionFrame.slotButtons["MainHand"], "MainHandEnchantSlot", BUTTON_WIDTH * 0.6)
-itemCollectionFrame.enchantSlotButtons["MainHandEnchantSlot"]:SetPoint("CENTER", itemCollectionFrame.slotButtons["MainHand"], "BOTTOMRIGHT", -3, 3)
-itemCollectionFrame.enchantSlotButtons["SecondaryHandEnchantSlot"] = core.CreateEnchantSlotButton(itemCollectionFrame.slotButtons["ShieldHandWeapon"], "SecondaryHandEnchantSlot", BUTTON_WIDTH * 0.6)
-itemCollectionFrame.enchantSlotButtons["SecondaryHandEnchantSlot"]:SetPoint("CENTER", itemCollectionFrame.slotButtons["ShieldHandWeapon"], "BOTTOMRIGHT", -3, 3)
+itemCollectionFrame.enchantSlotButtons["MainHandEnchantSlot"] = core.CreateEnchantSlotButton(itemCollectionFrame.slotButtons["MainHandWeapon"], "MainHandEnchantSlot", BUTTON_WIDTH * 0.6)
+itemCollectionFrame.enchantSlotButtons["MainHandEnchantSlot"]:SetPoint("CENTER", itemCollectionFrame.slotButtons["MainHandWeapon"], "BOTTOMRIGHT", -3, 3)
+itemCollectionFrame.enchantSlotButtons["SecondaryHandEnchantSlot"] = core.CreateEnchantSlotButton(itemCollectionFrame.slotButtons["OffHandWeapon"], "SecondaryHandEnchantSlot", BUTTON_WIDTH * 0.6)
+itemCollectionFrame.enchantSlotButtons["SecondaryHandEnchantSlot"]:SetPoint("CENTER", itemCollectionFrame.slotButtons["OffHandWeapon"], "BOTTOMRIGHT", -3, 3)
 
 ----------- ItemType DropDownMenu -----------
 
@@ -413,15 +413,13 @@ local Mannequin_OnMouseDown = function(self, button)
 
 	if isEnchantSlot then
 		if not itemID then print("Error: expected enchantVisualID in mannequin's OnClick") end
-		local enchantID = itemID ~= core.HIDDEN_ID and itemCollectionFrame.displayGroups[itemID][selected] or itemID
+		local enchantID = itemCollectionFrame.displayGroups[itemID][selected] -- itemID ~= core.HIDDEN_ID and itemCollectionFrame.displayGroups[itemID][selected] or itemID
 
 		if enchantID then
 			if IsModifiedClick("CHATLINK") then
-				local enchantLink = core.HIDDEN
-				if enchantID ~= core.HIDDEN_ID then
-					local enchantLink = enchantID and GetSpellLink(enchantID)
-				end
-				if ChatEdit_InsertLink(enchantLink or "") then
+				-- Fallback to GetSpellInfo is for runes, which do not return a spell link for some reason
+				local enchantLink = enchantID == core.HIDDEN_ID and core.HIDDEN or enchantID and (GetSpellLink(enchantID) or GetSpellInfo(enchantID)) or ""
+				if ChatEdit_InsertLink(enchantLink) then
 					return true
 				end
 				return
@@ -434,7 +432,7 @@ local Mannequin_OnMouseDown = function(self, button)
 						ShowUIPanel(DressUpFrame)
 						DressUpModel:SetUnit("player")
 					end
-					DressUpModel:SetSlot(itemCollectionFrame.selectedSlot, enchantID)			
+					DressUpModel:SetSlot(itemCollectionFrame.selectedSlot, enchantID)		
 				end
 			end
 		end

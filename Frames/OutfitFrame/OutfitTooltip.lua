@@ -51,7 +51,7 @@ core.ShowOutfitTooltip = function(set, isRefreshOf)
                     local name, _, tex = GetSpellInfo(enchantID)
                     ItemRefTooltip:AddLine("      " .. (name and (core.GetTextureString(tex) .. " " .. name) or "unknown enchant localize me"))
                 else
-                    ItemRefTooltip:AddLine("      " .. (itemID == core.HIDDEN_ID and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
+                    ItemRefTooltip:AddLine("      " .. (enchantID == core.HIDDEN_ID and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
                                                                     or core.GetColoredString("(" .. core.SLOT_NAMES[slot] .. ")", core.greyTextColor.hex)))
                 end
             else

@@ -355,7 +355,7 @@ core.MyWaitFunction = function(delay, func, ...)
 end
 
 
--- TODO: do we want to make certain transmog related utilities and fixes global instead?
+-- TODO: do we want to make certain transmog related utilities and fixes global?
 core.GetInventoryItemID = function(unit, slotID)
 	local link = GetInventoryItemLink(unit, slotID)
 
@@ -367,20 +367,27 @@ core.GetInventoryItemID = function(unit, slotID)
 end
 
 core.GetVisualFromItemLink = function(link)
-	local itemID = link and core.API.GetVisualFromItemLink(link)
-	return (itemID == core.API.HideItem and core.HIDDEN_ID) or (itemID == core.API.NoTransmog and core.UNMOG_ID) or itemID
+	local itemID, enchantID = core.API.NoTransmog, core.API.NoTransmog
+	if link then
+		itemID, enchantID = core.API.GetVisualFromItemLink(link)
+	end
+
+	return (itemID == core.API.HideItem and core.HIDDEN_ID) or (itemID == core.API.NoTransmog and core.UNMOG_ID) or itemID,
+		   (enchantID == core.API.HideItem and core.HIDDEN_ID) or (enchantID == core.API.NoTransmog and core.UNMOG_ID) or enchantID
 end
 
--- We can't read out the visualID from item links from other players' inventories because of a RG bug, that causes the uniqueID to always be 0 for other players
+-- We can't read out the visualID from item links from other players' inventories because of a bug on RG, that causes the uniqueID to always be 0 for other players
 -- We can still get the visualID from GetInventoryItemID and compare it to GetInventoryItemLink to know if it is transmogrified or not
 core.GetInventoryVisualID = function(unit, slotID)
 	if not unit or not slotID then return end
 	
 	if type(slotID) == "string" then slotID = core.slotToID[slotID] end -- TODO: too hacky or just allow using slotname like this?
-
+	
 	if slotID == core.slotToID["MainHandEnchantSlot"] or slotID == core.slotToID["SecondaryHandEnchantSlot"] then
-		return nil
+		-- local correspondingSlot = core.GetCorrespondingSlot(core.idToSlot[slotID])
+		-- slotID = core.slotToID[correspondingSlot]
 		-- return core.GetInventoryEnchantID(unit, -slotID) -- TODO: How will we get enchant visuals?
+		return
 	end	
 
 	local link = GetInventoryItemLink(unit, slotID)
@@ -401,12 +408,13 @@ core.GetContainerVisualID = function(bagID, slotID)
 	return core.GetVisualFromItemLink(link)
 end
 
+-- TODO: Or allow EnchantSlots in GetInventoryItemID and GetInventoryVisualID instead?
 core.GetInventoryEnchantID = function(unit, slotID)
 	if not unit or not slotID then return end
 
 	if slotID == "MainHandEnchantSlot" or slotID == "SecondaryHandEnchantSlot" then return end
 	
-	if type(slotID) == "string" then slotID = GetInventorySlotInfo(slotID) end -- TODO: too hacky or just allow using slotname like this?
+	if type(slotID) == "string" then slotID = GetInventorySlotInfo(slotID) end
 
 	local link = GetInventoryItemLink(unit, slotID)
 	local enchantID = link and tonumber(select(3, string.find(link, "item:%d+:(%d+)")))
@@ -414,6 +422,24 @@ core.GetInventoryEnchantID = function(unit, slotID)
 
 	return enchantID ~= 0 and enchantID
 end
+
+core.GetInventoryEnchantVisualID = function(unit, slotID)
+	if not unit or not slotID then return end
+
+	if slotID == "MainHandEnchantSlot" or slotID == "SecondaryHandEnchantSlot" then return end
+	
+	if type(slotID) == "string" then slotID = GetInventorySlotInfo(slotID) end
+
+	local link = GetInventoryItemLink(unit, slotID)
+
+	-- if UnitGUID(unit) ~= UnitGUID("player") then return end -- Bug that we don't get UniqueID info for other players, no fix atm
+
+	local visualID, enchantVisualID = core.GetVisualFromItemLink(link)
+
+	return enchantVisualID
+end
+
+
 
 local knownTypes = { [0] = "player", [3] = "NPC", [4] = "pet", [5] = "vehicle" }
 core.GetNPCID = function(guid)

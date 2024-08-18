@@ -15,24 +15,24 @@ The transmog module is available at `LibStub("RisingAPI").Transmog`.
 
 ## `Slot: string`
 ```lua
-	Head             = "1",
-	Shoulders        = "3",
-	Body             = "4", -- shirt
-	Chest            = "5",
-	Waist            = "6",
-	Legs             = "7",
-	Feet             = "8",
-	Wrists           = "9",
-	Hands            = "10",
-	MainHand         = "12",
-	ShieldHandWeapon = "13",
-	OffHand          = "14",
-	Ranged           = "15",
-	Back             = "16",
-	Tabard           = "19",
+	Head                  = "1",
+	Shoulders             = "3",
+	Body                  = "4", -- shirt
+	Chest                 = "5",
+	Waist                 = "6",
+	Legs                  = "7",
+	Feet                  = "8",
+	Wrists                = "9",
+	Hands                 = "10",
+	MainHandWeapon        = "12",
+	OffHandWeapon         = "13",
+	OffHand               = "14",
+	Ranged                = "15",
+	Back                  = "16",
+	Tabard                = "19",
 
-	EnchantMainHand  = "20",
-	EnchantOffHand   = "21",
+	EnchantMainHandWeapon = "20",
+	EnchantOffHandWeapon  = "21",
 ```
 Lua constants are available (e.g. `Transmog.Slot.Head`).
 
@@ -275,7 +275,7 @@ Get the current transmog config
 ## `UpdateConfig()`
 Update the transmog config
 #### Parameters
-* `{ visibility: "visible" | "hidden-in-pvp" | "hidden", }`
+* `config: { visibility: "visible" | "hidden-in-pvp" | "hidden", }`
 #### Response
 `nil`
 
@@ -290,7 +290,7 @@ same structure as the response of `GetBalance()`
 ## `transmog/visual/unlocked`
 Indicates a new permanently unlocked visual.
 #### Parameters
-`itemId: uint`
+`itemId: ItemId`
 `available: boolean` whether the item is currently available for transmog
 
 ## `transmog/skin/changed`
@@ -301,7 +301,7 @@ same structure as a single skin in the response of `GetSkins()`
 ## `transmog/skin/activated`
 Indicates the player's active skin has changed
 #### Parameters
-`skinId: uint?` Id of the newly activated skin or `nil` for skin disabled
+`skinId: SkinId?` Id of the newly activated skin or `nil` for skin disabled
 
 ## `transmog/config/changed`
 Indicates a change to a player's transmog config
@@ -311,11 +311,11 @@ same structure as the response of `GetConfig()`
 # Utility Functions
 
 ## `GetVisualFromItemLink()`
-Get visual item id from an item link.
+Get visual item id and visual enchant id from an item link. Due to limitations of the WoW client, the visual enchant id cannot always be determined. In this case, `nil` is returned for the enchantment.
 #### Parameters
 * `link: string` - item link, valid formats: `|c<color>|Hitem:<data>|h[<item name>]|h|r` or `item:<data>`
 #### Result
-`uint?`
+`ItemId, SpellId?`
 
 ## `EncodeOutfitLink()`
 Encode the given outfit as a chat link.

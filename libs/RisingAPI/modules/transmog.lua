@@ -3,24 +3,24 @@ local Utils = API.Utils
 local deferred = LibStub("deferred")
 
 M.Slot = {
-	Head             = "1",
-	Shoulders        = "3",
-	Body             = "4", -- shirt
-	Chest            = "5",
-	Waist            = "6",
-	Legs             = "7",
-	Feet             = "8",
-	Wrists           = "9",
-	Hands            = "10",
-	MainHand         = "12",
-	ShieldHandWeapon = "13",
-	OffHand          = "14",
-	Ranged           = "15",
-	Back             = "16",
-	Tabard           = "19",
+	Head                  = "1",
+	Shoulders             = "3",
+	Body                  = "4", -- shirt
+	Chest                 = "5",
+	Waist                 = "6",
+	Legs                  = "7",
+	Feet                  = "8",
+	Wrists                = "9",
+	Hands                 = "10",
+	MainHandWeapon        = "12",
+	OffHandWeapon         = "13",
+	OffHand               = "14",
+	Ranged                = "15",
+	Back                  = "16",
+	Tabard                = "19",
 
-	EnchantMainHand  = "20",
-	EnchantOffHand   = "21",
+	EnchantMainHandWeapon = "20",
+	EnchantOffHandWeapon  = "21",
 }
 
 local transmogSlotToInvSlot = {
@@ -33,22 +33,22 @@ local transmogSlotToInvSlot = {
 	[M.Slot.Feet] = 8,
 	[M.Slot.Wrists] = 9,
 	[M.Slot.Hands] = 10,
-	[M.Slot.MainHand] = 16,
-	[M.Slot.ShieldHandWeapon] = 17,
+	[M.Slot.MainHandWeapon] = 16,
+	[M.Slot.OffHandWeapon] = 17,
 	[M.Slot.OffHand] = 17,
 	[M.Slot.Ranged] = 18,
 	[M.Slot.Back] = 15,
 	[M.Slot.Tabard] = 19,
 
-	[M.Slot.EnchantMainHand] = 16,
-	[M.Slot.EnchantOffHand] = 17,
+	[M.Slot.EnchantMainHandWeapon] = 16,
+	[M.Slot.EnchantOffHandWeapon] = 17,
 }
 
 M.NoTransmog = 0
 M.HideItem = 1
 
 local function checkSlotMap(slots, forSkin)
-	if (not forSkin and slots[M.Slot.OffHand] ~= nil and slots[M.Slot.ShieldHandWeapon] ~= nil) then
+	if (not forSkin and slots[M.Slot.OffHand] ~= nil and slots[M.Slot.OffHandWeapon] ~= nil) then
 		error("cannot transmogrify both shield and offhand at the same time")
 	end
 end
@@ -205,12 +205,17 @@ function M.UpdateConfig(newValues)
 end
 
 function M.GetVisualFromItemLink(itemLink)
-	local uniqueId = select(9, string.split(":", itemLink))
-	if (uniqueId) then
-		return bit.rshift(tonumber(uniqueId), 16)
-	else
-		return nil
+	local suffixId, uniqueId = select(8, string.split(":", itemLink))
+	suffixId = tonumber(suffixId) or 0
+	uniqueId = tonumber(uniqueId) or 0
+
+	local itemVisual = bit.rshift(uniqueId, 16)
+
+	local enchantVisual = nil
+	if (suffixId == 0) then
+		enchantVisual = bit.band(uniqueId, 0xFFFF)
 	end
+	return itemVisual, enchantVisual
 end
 
 local linkIndexToTransmogSlot = {
@@ -223,14 +228,14 @@ local linkIndexToTransmogSlot = {
 	M.Slot.Feet,
 	M.Slot.Wrists,
 	M.Slot.Hands,
-	M.Slot.MainHand,
-	M.Slot.ShieldHandWeapon,
+	M.Slot.MainHandWeapon,
+	M.Slot.OffHandWeapon,
 	M.Slot.OffHand,
 	M.Slot.Ranged,
 	M.Slot.Back,
 	M.Slot.Tabard,
-	M.Slot.EnchantMainHand,
-	M.Slot.EnchantOffHand,
+	M.Slot.EnchantMainHandWeapon,
+	M.Slot.EnchantOffHandWeapon,
 }
 
 local EMPTY = '#'

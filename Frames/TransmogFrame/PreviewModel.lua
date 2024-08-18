@@ -239,10 +239,16 @@ core.CreatePreviewModel = function(parent, width, height)
 		local itemsToShow = {}
 		for _, slot in pairs(core.allSlots) do        
             local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot, skin)
+			local isEnchantSlot = core.IsEnchantSlot(slot)
+			local correspondingSlot = isEnchantSlot and core.GetCorrespondingSlot(slot)
+			local correspondingWeaponID = correspondingSlot and core.TransmogGetSlotInfo(correspondingSlot, skin)
 
 			local show = pendingID or (skin and skinVisualID) or ((not skin or self.showItemsUnderSkin) and (visualID or itemID)) or nil
 
-			if self.showItemsUnderSkin and not itemID then show = nil end 		-- skin won't show if there is no item in slot
+			if self.showItemsUnderSkin and
+					(isEnchantSlot and not correspondingWeaponID or not isEnchantSlot and not itemID) then
+				show = nil 	-- skin won't show if there is no item in slot (enchantmogs don't need an enchant in "slot")
+			end
 
 			if show == core.UNMOG_ID then
 				show = (not skin or self.showItemsUnderSkin) and itemID or nil	-- pending or visual is nomog/unmog: show item

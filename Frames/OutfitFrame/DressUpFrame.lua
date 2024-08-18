@@ -510,11 +510,11 @@ local SlotListButton_OnEnter = function(self)
     local isEnchantSlot = core.IsEnchantSlot(self.slot)
     
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")   
-    if itemID and itemID ~= core.HIDDEN_ID then        
-        if core.IsEnchantSlot(self.slot) then
+    if itemID and itemID ~= core.HIDDEN_ID then
+        if isEnchantSlot then
             local spellID = itemID
             if spellID then
-                GameTooltip:SetHyperlink("enchant:" .. spellID) -- Do we really want that ugly enchant tooltip tho?
+                GameTooltip:SetHyperlink("spell:" .. spellID)
             else
                 GameTooltip:SetText("Unknown Enchant")
             end

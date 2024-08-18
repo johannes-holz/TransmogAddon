@@ -22,7 +22,7 @@ Frames\FrameTemplates.lua
 
 ItemQuery.lua
 Core.lua
-TooltipHooks.lua
+Hooks.lua
 
 # Enchant and item data
 data\DataUtils.lua
