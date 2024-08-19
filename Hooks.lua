@@ -52,7 +52,7 @@ local Tooltip_AddCollectedLine = function(tooltip, itemID)
 	end
 end
 
- -- for non player units we only get visualID through GetInventoryItemID, for the player we can get visualID from the item link and skin information through the API via GetSkins()
+ -- For other players we only get visualID through GetInventoryItemID, for the player we can get visualID from the item link and skin information through the API via GetSkins()
  -- TODO: Fix TransmogLine + Hiding Scuffness, maybe seperate by task into multiple functions, not sure
 local ignoreRecipeCall = {}
 local function TooltipAddMogLine(tooltip)
@@ -62,6 +62,7 @@ local function TooltipAddMogLine(tooltip)
 	if not link then return end
 
 	local lastUnit, lastSlot = OwnerFrame_GetUnitSlot(tooltip:GetOwner())
+	local correspondingEnchantSlot = lastSlot and core.GetCorrespondingSlot(lastSlot)
 
 	local itemID = core.GetItemIDFromLink(link)
 
@@ -76,8 +77,12 @@ local function TooltipAddMogLine(tooltip)
 		-- return
 	end
 
-	local visualID = lastUnit and core.GetInventoryVisualID(lastUnit, lastSlot) or core.GetVisualFromItemLink(link)
+	local visualID, illusionID = core.GetVisualFromItemLink(link)
+	if lastUnit then
+		visualID = core.GetInventoryVisualID(lastUnit, lastSlot)
+	end
 	local skinVisualID = lastUnit and UnitGUID(lastUnit) == UnitGUID("player") and core.GetInventorySkinID(lastSlot)
+	local skinIllusionID = correspondingEnchantSlot and lastUnit and UnitGUID(lastUnit) == UnitGUID("player") and core.GetInventorySkinID(correspondingEnchantSlot)
 
 	local itemUnlocked = core.GetItemData(itemID)
 	local visualUnlocked = core.GetItemData(visualID)
@@ -102,11 +107,21 @@ local function TooltipAddMogLine(tooltip)
 		if not mogName then
 			core.FunctionOnItemInfo(visualID, TooltipAddMogLine, tooltip) -- player transmog items seem to be cached anyway, but probably needed for Hyperlinks from chat
 		end
-		if skinVisualID then text = text .. "\n" end
+		if illusionID and illusionID ~= core.UNMOG_ID or skinVisualID or skinIllusionID then text = text .. "\n" end
 	end	
+	if illusionID and illusionID ~= core.UNMOG_ID then
+		local illusionName = illusionID == core.HIDDEN_ID and core.HIDDEN or GetSpellInfo(illusionID)
+		text = text .. "\124c" .. core.mogTooltipTextColor.hex .. "Illusion: " .. (illusionName or illusionID) .. "\124r"
+		if skinVisualID or skinIllusionID then text = text .. "\n" end
+	end
 	if skinVisualID then
 		local skinName = skinVisualID == core.HIDDEN_ID and core.HIDDEN or core.GetItemName(skinVisualID) -- GetItemInfo(skinVisualID)
-		text = text .. "\124c" .. core.skinTextColor.hex .. core.ITEM_TOOLTIP_ACTIVE_SKIN .. "\n" .. (skinName or skinVisualID) .. "\124r"
+		text = text .. "\124c" .. core.skinTextColor.hex .. core.ITEM_TOOLTIP_ACTIVE_SKIN .. "\n" .. (skinName or skinVisualID) .. "\124r"		
+		if skinIllusionID then text = text .. "\n" end
+	end
+	if skinIllusionID and skinIllusionID ~= core.UNMOG_ID then
+		local skinIllusionName = skinIllusionID == core.HIDDEN_ID and core.HIDDEN or GetSpellInfo(skinIllusionID)
+		text = text .. "\124c" .. core.skinTextColor.hex .. "Illusion: " .. (skinIllusionName or skinIllusionID) .. "\124r"
 	end
 		
 	if not tooltip.mogText then	
@@ -128,7 +143,7 @@ local function TooltipAddMogLine(tooltip)
 
 		tooltip:HookScript("OnHide", tooltip.HideTransmogLine)
 	end
-	
+
 	textLeft1.justifyHOld = textLeft1:GetJustifyH()
 	textLeft1.justifyVOld = textLeft1:GetJustifyV()
 	-- Not quite sure, but I feel like this approach is preferable to moving all tooltip lines around
