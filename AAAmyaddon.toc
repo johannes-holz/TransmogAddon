@@ -49,6 +49,7 @@ Frames\ItemCollectionFrame\UnlocksOverviewFrame.lua
 Frames\TransmogFrame\PreviewModel.lua
 Frames\TransmogFrame\TransmogSlotButton.lua
 Frames\TransmogFrame\SkinDropDown.lua
+Frames\TransmogFrame\EnchantUnlock.lua
 Frames\TransmogFrame\TransmogFrame.lua
 
 # WardrobeFrame

@@ -1307,15 +1307,15 @@ core.RequestBuySkin = function()
 	end)
 end
 
-local requestCounterUnlockVisual = 0
-core.RequestUnlockVisual = function(itemID) -- use enchant scroll from interface to unlock its visual
-	requestCounterUnlockVisual = requestCounterUnlockVisual + 1
+local requestCounterUnlockVisuals = 0
+core.RequestUnlockVisuals = function(items) -- use enchant scroll from interface to unlock its visual
+	requestCounterUnlockVisuals = requestCounterUnlockVisuals + 1
 	local requestID = requestCounterUnlockVisual
-	API.UnlockVisual(itemID):next(function(answer)
-		print("Unlock Get!")
+	API.UnlockVisualAll(items):next(function(answer)
 		core.am(answer)
 	end):catch(function(err)
-		print("RequestUnlockVisual: An error occured:", err.message)
+		print("RequestUnlockVisuals: An error occured:", err.message)
+		UIErrorsFrame:AddMessage(err.message, 1.0, 0.1, 0.1, 1.0)
 	end)
 end
 

@@ -536,6 +536,15 @@ do
 	-- 	ToggleDropDownMenu(1, nil, skinDropDown, "MyAddonFrame", 0, 0)
 	-- end)
 
+	---- Button to open Enchant Unlock Frame or Popup ----
+
+	f.unlockEnchantsButton = core.CreateUnlockEnchantsButton(f, 18 * SCALE, 18 * SCALE)
+	-- f.unlockEnchantsButton:SetPoint("TOP", 135 * SCALE, -76 * SCALE) -- Buttons fake pushed offset method requires single point (e.g. no "TOPRIGHT")
+	f.unlockEnchantsButton:SetPoint("RIGHT", balanceFrame, "LEFT", -4 * SCALE, 0 * SCALE)
+	f.unlockEnchantsButton:Hide()
+	TESTO = f.unlockEnchantsButton
+
+
 
 	------- Inventory/Skins Tabs/Buttons -------------------
 	f.TAB_NAMES = {core.INVENTORY, core.SKINS}

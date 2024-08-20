@@ -313,8 +313,11 @@ end
 
 local GetShownItem = function(slot, skin)
     local itemID, visualID, skinVisualID = core.TransmogGetSlotInfo(slot, skin)
-    skinVisualID = skinVisualID and IsCompatible(skinVisualID, itemID, slot) and skinVisualID
-    visualID = visualID and IsCompatible(visualID, itemID, slot) and visualID
+    local isEnchantSlot = core.IsEnchantSlot(slot)
+    if not isEnchantSlot then
+        skinVisualID = skinVisualID and IsCompatible(skinVisualID, itemID, slot) and skinVisualID
+        visualID = visualID and IsCompatible(visualID, itemID, slot) and visualID
+    end
 
     local shown = (itemID and skin and skinVisualID) or visualID or itemID or nil
     if shown == core.UNMOG_ID then

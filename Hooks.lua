@@ -102,7 +102,7 @@ local function TooltipAddMogLine(tooltip)
 	local text = ""
 	if visualID and visualID ~= core.UNMOG_ID then
 		text = "\124c" .. core.mogTooltipTextColor.hex .. core.ITEM_TOOLTIP_TRANSMOGRIFIED_TO .. "\n"		
-		local mogName = visualID == core.HIDDEN_ID and core.HIDDEN or core.GetItemName(visualID) -- Do we want guaranteed up to date server info (GetItemInfo) or avoid flickering tooltip for uncached items (core.GetItemData)?
+		local mogName = visualID == core.HIDDEN_ID and core.HIDDEN or core.GetItemName(visualID) -- Do we want guaranteed up to date server info (GetItemInfo) or avoid flickering tooltip for uncached items (core.GetItemName)?
 		text = text .. (mogName or (core.ITEM_TOOLTIP_FETCHING_NAME .. visualID)) .. "\124r" -- .. (visualUnlocked == 1 and core.GetTextureString("Interface/Buttons/UI-CheckBox-Check", 12) or "")
 		if not mogName then
 			core.FunctionOnItemInfo(visualID, TooltipAddMogLine, tooltip) -- player transmog items seem to be cached anyway, but probably needed for Hyperlinks from chat
@@ -154,7 +154,7 @@ local function TooltipAddMogLine(tooltip)
 	-- tell mogText to do a line break if any line does not fit into the tooltip:
 	-- tooltip.mogText:SetWidth(math.max(tooltip:GetWidth() - 15, 200))
 
-	-- if we don't want a line break in mog names and instead want the tooltip to horizontally increase in size:
+	-- or if we don't want a line break in mog names and instead want the tooltip to horizontally increase in size:
 	textLeft1:SetWidth(math.max(tooltip.mogText:GetStringWidth(), tooltip:GetWidth()))
 	textLeft1:SetHeight(textLeft1:GetStringHeight() + tooltip.mogText:GetHeight())
 	tooltip:Show() -- triggers resize

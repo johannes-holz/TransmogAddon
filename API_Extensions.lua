@@ -25,3 +25,12 @@ M.GetPriceAndCheck = function(visualItemId, itemId, slotId, skinId)
         return answer
     end)
 end
+
+M.UnlockVisualAll = function(items)
+	local futures = {}
+	for i, itemID in ipairs(items) do
+        table.insert(futures, M.UnlockVisual(itemID))
+	end
+
+	return deferred.All(futures):next(API.Utils.Noop)
+end
