@@ -40,7 +40,7 @@ core.factions = {
 	["Horde"] = 1,
 	["Alliance"] = 2
 }
--- race, raceEn<- = UnitRace("unit");
+-- race, ->raceEn = UnitRace("unit");
 core.races = {
 	["Human"] = 1,
 	["Orc"] = 2,
@@ -77,12 +77,12 @@ end
 
 local factionFilterButtons = { { text = ALL, arg1 = nil } }
 for _, faction in ipairs({ "Alliance", "Horde" }) do
-    tinsert(factionFilterButtons, { text = faction, arg1 = core.factions[faction] }) -- TODO: where to get localized faction + races
+    tinsert(factionFilterButtons, { text = core[strupper(faction)], arg1 = core.factions[faction] }) -- TODO: where to get localized faction + races
 end
 
 local raceFilterButtons = { { text = ALL, arg1 = nil } }
 for _, race in ipairs({ "Human", "Dwarf", "NightElf", "Gnome", "Draenei", "Orc", "Undead", "Tauren", "Troll", "BloodElf" }) do
-    tinsert(raceFilterButtons, { text = race, arg1 = core.races[race] }) -- TODO: localize
+    tinsert(raceFilterButtons, { text = core[strupper(race)], arg1 = core.races[race] }) -- TODO: localize
 end
 
 core.CreateOptionsDDM = function(parent)
@@ -90,18 +90,23 @@ core.CreateOptionsDDM = function(parent)
 
     optionsDDM.SetEnchant = function(self, arg1, arg2, checked)
         optionsDDM:GetParent():SetPreviewEnchant(arg1)
-        CloseDropDownMenus()
+        -- CloseDropDownMenus()
     end
 
     optionsDDM.SetUnlockedFilter = function(self, arg1, arg2, checked)
         optionsDDM:GetParent():SetUnlockedFilter(arg1)
-        CloseDropDownMenus()
+        -- CloseDropDownMenus()
     end
 
     optionsDDM.SetFilter = function(self, arg1, arg2, checked)
-        print("setfilter", arg2, arg1)
+        -- print("setfilter", arg2, arg1)
         optionsDDM:GetParent():SetFilter(arg2, arg1)
-        CloseDropDownMenus()
+        -- CloseDropDownMenus()
+    end
+
+    optionsDDM.ClearFilters = function(self)        
+        optionsDDM:GetParent():ClearFilters()
+        -- CloseDropDownMenus()
     end
 
 	optionsDDM.Initialize = function(self, level)
@@ -125,6 +130,17 @@ core.CreateOptionsDDM = function(parent)
             -- info.hasArrow = true
             -- info.value = { levelOneKey = keys.ENCHANT}
 			-- UIDropDownMenu_AddButton(info, level)
+            
+            -- Clear all filters
+			info = UIDropDownMenu_CreateInfo()
+			info.text = core.CLEAR_FILTERS
+			info.arg1 = nil
+			info.arg2 = nil
+			info.padding = 0
+            info.notCheckable = true
+            info.hasArrow = nil
+            info.func = self.ClearFilters
+			UIDropDownMenu_AddButton(info, level)
 
             -- unlocked filter
 			info = UIDropDownMenu_CreateInfo()

@@ -1,5 +1,7 @@
 local folder, core = ...
 
+
+--[[ ScrollFrame Attempt. Don't feel like ScrollFrame is needed tho
 local function CreateScrollFrame(parent)
     local frame = CreateFrame("Frame", folder .. "EnchantUnlockFrame", UIParent, "UIPanelDialogTemplate")
     frame:SetSize(340, 250)
@@ -61,22 +63,34 @@ core.UpdateScrollFrame = function(content, items)
 end
 
 
+a = {1, 2, 3, 4, 5, 6, 7, 8}
+b = {1, 2, 3}
+
+
+FrameYo, SF, Content = CreateScrollFrame(UIParent)
+core.UpdateScrollFrame(Content, a)
+
+]]
+
 
 local unlockMapping = {
+    [38879] = 23799,
+    [38919] = 27971,
     [38923] = 27981,
     [38925] = 27984,
     [38926] = 28003,
     [38927] = 28004,
+    [38946] = 34010,
     [44453] = 60621,
-    [38919] = 27971,
 }
 
 core.FindUnlockables = function()
+    local itemToSpellMap = unlockMapping -- core.enchantInfo.itemToSpellID
     local items = {}
     for bag = 0, 4 do
         for slot = 1, GetContainerNumSlots(bag) do
             local itemID = GetContainerItemID(bag, slot)
-            local spellID = itemID and unlockMapping[itemID]
+            local spellID = itemID and itemToSpellMap[itemID]
             local unlocked = spellID and core.GetEnchantData(spellID)
             if spellID and unlocked ~= 1 then
                 tinsert(items, itemID)
@@ -86,14 +100,6 @@ core.FindUnlockables = function()
     return items
 end
 
-a = {1, 2, 3, 4, 5, 6, 7, 8}
-b = {1, 2, 3}
-
-
-FrameYo, SF, Content = CreateScrollFrame(UIParent)
-core.UpdateScrollFrame(Content, a)
-
-
 StaticPopupDialogs["UnlockEnchantsPopup"] = {
 	text = "",
 	button1 = ACCEPT,
@@ -101,7 +107,6 @@ StaticPopupDialogs["UnlockEnchantsPopup"] = {
 	hasEditBox = nil,
 	OnAccept = function(self, data)
         core.RequestUnlockVisuals(data.items)
-        core.am("Request unlocks", data.items)
 	end,
 	OnShow = function(self, data)
 		self.text:SetText(data.text)
@@ -120,51 +125,48 @@ core.OpenUnlockEnchantsPopup = function(items)
     data.items = items
     data.disable = not items or #items == 0
     if not data.disable then
-        data.text = "Seid ihr sicher, dass ihr folgende Verzauberungen zur Transmogrifikation freischalten wollt? Die Gegenstände werden dabei zerstört.\n"
+        data.text = core.ENCHANT_UNLOCK_POPUP_TEXT
         for i, itemID in ipairs(items) do
             local tex = GetItemIcon(itemID) or ""
             local name, link = GetItemInfo(itemID)
             data.text = data.text .. "\n" .. core.GetTextureString(tex) .. " " .. (link and core.LinkToColoredString(link) or itemID)
         end
-    else
-        data.text = "Keine Verzauberungen zum Freischalten ausgewählt."
+        
+        local popup = StaticPopup_Show("UnlockEnchantsPopup", nil, nil, data)
     end
-    local popup = StaticPopup_Show("UnlockEnchantsPopup", nil, nil, data)
 end
 
 core.CreateUnlockEnchantsButton = function(parent, width, height)
+    local button = CreateFrame("Button", nil, parent) -- , "UIPanelButtonTemplate")
+    button:SetSize(width, height)
+    -- button:SetText("Unlock Enchants")
+    button:SetMotionScriptsWhileDisabled(true)
 
-    local UnlockEnchantsButton = CreateFrame("Button", nil, parent) -- , "UIPanelButtonTemplate")
-    UnlockEnchantsButton:SetSize(width, height)
-    -- UnlockEnchantsButton:SetText("Unlock Enchants")
-    UnlockEnchantsButton:SetMotionScriptsWhileDisabled(true)
-
-    UnlockEnchantsButton:SetScript("OnClick", function(self, button)
+    button:SetScript("OnClick", function(self, button)
         local items = core.FindUnlockables()
         core.OpenUnlockEnchantsPopup(items)
     end)
 
-    UnlockEnchantsButton:HookScript("OnEnter", function(self)    
-        local text = self:IsEnabled() == 1 and "Schaltet Verzauberungen aus eurem Inventar zur Transmogrifikation frei."
-                                    or "Ihr habt keine Schriftrollen zum Freischalten von Transmogrifikationen."	
+    button:HookScript("OnEnter", function(self)    
+        local text = self:IsEnabled() == 1 and core.ENCHANT_UNLOCK_BUTTON_TOOLTIP1 or core.ENCHANT_UNLOCK_BUTTON_TOOLTIP2
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetText(text, nil, nil, nil, nil, 1)
         GameTooltip:Show()
     end)
 
-    UnlockEnchantsButton:HookScript("OnLeave", function(self)
+    button:HookScript("OnLeave", function(self)
         GameTooltip:Hide()
     end)
 
-    UnlockEnchantsButton:HookScript("OnMouseDown", function(self, button)
+    button:HookScript("OnMouseDown", function(self, b)
         if self:IsEnabled() == 0 then return end
-        self.oldPoint = {UnlockEnchantsButton:GetPoint(1)}
+        self.oldPoint = { self:GetPoint(1) }
         local point, relativeTo, relativePoint, xOfs, yOfs = unpack(self.oldPoint)
         self:ClearAllPoints()
         self:SetPoint(point, relativeTo, relativePoint, xOfs - 1, yOfs - 1)
     end)
 
-    UnlockEnchantsButton:HookScript("OnMouseUp", function(self, button)
+    button:HookScript("OnMouseUp", function(self, b)
         if self:IsEnabled() == 0 then return end
         self:ClearAllPoints()
         self:SetPoint(unpack(self.oldPoint))
@@ -172,35 +174,34 @@ core.CreateUnlockEnchantsButton = function(parent, width, height)
 
     local enchantButtonTex = "Interface/Icons/inv_scroll_05"
 
-    UnlockEnchantsButton:SetNormalTexture(enchantButtonTex)
-    UnlockEnchantsButton:SetPushedTextOffset(-10, 50)
-    UnlockEnchantsButton:SetPushedTexture(enchantButtonTex)
-    UnlockEnchantsButton:GetPushedTexture():ClearAllPoints()
-    UnlockEnchantsButton:GetPushedTexture():SetPoint("BOTTOMLEFT", 1, 1)
-    UnlockEnchantsButton:GetPushedTexture():SetPoint("TOPRIGHT", -1, -1)
-    -- UnlockEnchantsButton:SetPushedTextOffset(-10, 50)
-    -- UnlockEnchantsButton:GetPushedTexture():SetTexCoord(0.1, 0.9, 0.1, 0.9)
-    UnlockEnchantsButton:SetHighlightTexture("Interface/Buttons/ButtonHilight-Square")
-    -- UnlockEnchantsButton:SetHighlightTexture("Interface/Buttons/UI-Common-MouseHilight", 0, 0, 1, 1)
-    UnlockEnchantsButton:GetHighlightTexture():SetBlendMode("ADD")
-    UnlockEnchantsButton:SetDisabledTexture(enchantButtonTex)
-    UnlockEnchantsButton:GetDisabledTexture():SetDesaturated(1)
+    button:SetNormalTexture(enchantButtonTex)
+    button:SetPushedTextOffset(-10, 50)
+    button:SetPushedTexture(enchantButtonTex)
+    button:GetPushedTexture():ClearAllPoints()
+    button:GetPushedTexture():SetPoint("BOTTOMLEFT", 1, 1)
+    button:GetPushedTexture():SetPoint("TOPRIGHT", -1, -1)
+    -- button:SetPushedTextOffset(-10, 50)
+    -- button:GetPushedTexture():SetTexCoord(0.1, 0.9, 0.1, 0.9)
+    button:SetHighlightTexture("Interface/Buttons/ButtonHilight-Square")
+    -- button:SetHighlightTexture("Interface/Buttons/UI-Common-MouseHilight", 0, 0, 1, 1)
+    button:GetHighlightTexture():SetBlendMode("ADD")
+    button:SetDisabledTexture(enchantButtonTex)
+    button:GetDisabledTexture():SetDesaturated(1)
 
-    UnlockEnchantsButton.plusTex = UnlockEnchantsButton:CreateTexture(nil, "OVERLAY")
-    UnlockEnchantsButton.plusTex:SetTexture("Interface/Buttons/UI-PlusMinus-Buttons")
-    UnlockEnchantsButton.plusTex:SetTexCoord(0, 0.5, 0, 0.5)
-    UnlockEnchantsButton.plusTex:SetSize(UnlockEnchantsButton:GetWidth() / 2, UnlockEnchantsButton:GetHeight() / 2)
-    UnlockEnchantsButton.plusTex:SetPoint("BOTTOMRIGHT")
-    UnlockEnchantsButton.plusTex:SetAlpha(0.8)
+    button.plusTex = button:CreateTexture(nil, "OVERLAY")
+    button.plusTex:SetTexture("Interface/Buttons/UI-PlusMinus-Buttons")
+    button.plusTex:SetTexCoord(0, 0.5, 0, 0.5)
+    button.plusTex:SetSize(button:GetWidth() / 2, button:GetHeight() / 2)
+    button.plusTex:SetPoint("BOTTOMRIGHT")
+    button.plusTex:SetAlpha(0.8)
 
-	UnlockEnchantsButton.update = function(self)
-		print("yoyoyo", selectedSlot and core.IsEnchantSlot(selectedSlot))
+	button.update = function(self)
         if #core.FindUnlockables() > 0 then self:Enable() else self:Disable() end
 		core.SetShown(self, selectedSlot and core.IsEnchantSlot(selectedSlot))
 	end
-	core.RegisterListener("selectedSlot", UnlockEnchantsButton)
+	core.RegisterListener("selectedSlot", button)
 
-    UnlockEnchantsButton:HookScript("OnShow", UnlockEnchantsButton.update)
+    button:HookScript("OnShow", button.update)
 
-    return UnlockEnchantsButton
+    return button
 end

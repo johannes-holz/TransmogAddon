@@ -1,6 +1,6 @@
 local folder, core = ...
 
--- Hooking this would need fixes to interact with other addons, even Blizzard Auction UI already overwrites this on.
+-- Hooking this would need fixes to interact with other addons, even Blizzard Auction UI already overwrites this one.
 -- The latter could be fixed by overwriting again on Auction UI's ADDON_LOADED event
 -- Probably no need tho, hooking onto DressUpModel seems to work fine
 --[==[
@@ -61,7 +61,7 @@ DressUpModel.GetShadowForm = function(self)
     return self.shadowFormEnabled
 end
 
-
+-- These equip locations can be uniquely mapped to a slot
 core.equipLocToInventorySlot = {
 	INVTYPE_HEAD = "HeadSlot",
 	INVTYPE_SHOULDER = "ShoulderSlot",
@@ -82,7 +82,9 @@ core.equipLocToInventorySlot = {
 	INVTYPE_THROWN = "RangedSlot",
 	INVTYPE_CLOAK = "BackSlot",
 	INVTYPE_TABARD = "TabardSlot",
-    -- INVTYPE_WEAPON, INVTYPE_2HWEAPON ? need special handling?
+    -- INVTYPE_WEAPON, INVTYPE_2HWEAPON need special handling
+    INVTYPE_WEAPON = "MainHandSlot",
+    INVTYPE_2HWEAPON = "MainHandSlot",
 }
 
 local items = {}
@@ -229,48 +231,41 @@ DressUpModel.TryOn = function(self, itemLink, itemSlot)
         return
     end
 
-    local _, _, _, _, _, _, _, _, itemEquipLoc = GetItemInfo(itemID)
+    local _, _, _, _, _, _, itemSubClass, _, itemEquipLoc = GetItemInfo(itemID)
     if not itemEquipLoc then
         core.QueryItem(itemID)        
         -- oder automatisch anlegen onItemInfo? Doof, wenn wir grade locked out sind und nach ewigkeiten nen random TryOn aufgerufen wird
         -- Ist zwar abfangbar mit maxTime, Model lnicht ausgeblendet und Slot nicht anders überschrieben in der Zeit, aber trotzdem unentschlossen                                                                                  
-        print("Could not preview " .. itemLink .. ", because it has not been cached yet. Try again after a few seconds.")
+        print("Could not preview item " .. itemLink .. ", because it has not been cached yet. Try again after a few seconds.")
         return
     end
 
     -- print("DressUp", itemLink, itemSlot, itemEquipLoc, itemID, enchantID)
 
+    -- Try to determine itemSlot from equipLocation
     itemSlot = itemSlot or core.equipLocToInventorySlot[itemEquipLoc]
-    if not itemSlot then
-        if itemEquipLoc == "INVTYPE_WEAPON" then
-            if self.lastWeaponSlot == "MainHandSlot" and core.CanDualWield() then
-                itemSlot = "ShieldHandWeaponSlot"
-            else
-                itemSlot = "MainHandSlot"
-            end
-        end
-        if itemEquipLoc == "INVTYPE_2HWEAPON" then
-            if self.lastWeaponSlot == "MainHandSlot" and core.HasTitanGrip() and core.CanDualWield() then
-                itemSlot = "ShieldHandWeaponSlot"
-            else
-                itemSlot = "MainHandSlot"
-            end
-        end
-    end
-                
+    
+    -- Not one of the visible itemSlots. Don't have to do anything in this case
     if not itemSlot then
         -- print("Could not find proper Inventory Slot for " .. itemLink .. ". Maybe it is an invisible inventory item like rings or trinkets.")
         return
     end
 
+    -- Check if its time to equip weapon to OffHand instead
+    if itemSlot == "MainHandSlot" and self.lastWeaponSlot == "MainHandSlot" and core.CanDualWield() then
+        if itemEquipLoc == "INVTYPE_WEAPON" or itemEquipLoc == "INVTYPE_2HWEAPON" and core.CanBeTitanGripped(itemSubClass) and core.HasTitanGrip() then
+            itemSlot = "ShieldHandWeaponSlot"
+        end
+    end
+
     if core.IsWeaponSlot(itemSlot) then
-        self.lastWeaponSlot = itemSlot -- TODO: Revisit. Should we reset it on equipping sets? prioritize empty slot? etc.
+        self.lastWeaponSlot = itemSlot -- TODO: Revisit weapon slot logic. Should we reset on equipping sets? prioritize empty slot? etc.
     end
 
     -- print("tryOn", itemID, itemEquipLoc, inventorySlot)
     self:SetSlot(itemSlot, itemID)
-    if enchantID and (itemSlot == "MainHandSlot") then -- TODO: why only for mh weapons?
-        self:SetSlot("MainHandEnchantSlot", enchantID)
+    if enchantID and core.IsWeaponSlot(itemSlot) then
+        self:SetSlot(core.GetCorrespondingSlot(itemSlot), enchantID)
     end
 end
 

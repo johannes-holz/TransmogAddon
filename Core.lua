@@ -977,7 +977,7 @@ core.SetPending = function(itemSlot, itemID)
 	SetCurrentChangesSlot(itemSlot, itemID)
 end
 
---  TODO: Decide whether we want to display sum, even if there are currently invalid pendings
+--  TODO: Decide whether we want to display (only the valid?) cost sum, even if there are currently invalid pendings
 --  Would have to add another another var for all valid, currently using cost nil check for that
 SetSlotCostsAndReason = function(itemSlot, copper, shards, valid, reason)
 	slotCostsCopper[itemSlot] = copper
@@ -1005,18 +1005,19 @@ SetSlotCostsAndReason = function(itemSlot, copper, shards, valid, reason)
 		copper, shards = nil, nil
 	end
 
-	SetCosts(copper, shards)
-	--UpdateListeners("costs")
+	costs.copper = copper
+	costs.points = shards
+	UpdateListeners("costs") -- moneyframe, applybutton, 
 end
 
-SetCosts = function(copper, points) -- TODO: Keep allowing setting costs even tho its basically just a view on slot costs now, which we update when changing slot costs?
-	assert(type(copper) == "number" and type(points) == "number"
-		or copper == nil and points == nil)
+-- SetCosts = function(copper, points) -- TODO: Keep allowing setting costs even tho its basically just a view on slot costs now, which we update when changing slot costs?
+-- 	assert(type(copper) == "number" and type(points) == "number"
+-- 		or copper == nil and points == nil)
 	
-	costs.copper = copper
-	costs.points = points
-	UpdateListeners("costs") --moneyframe, applybutton, 
-end
+-- 	costs.copper = copper
+-- 	costs.points = points
+-- 	UpdateListeners("costs") --moneyframe, applybutton, 
+-- end
 
 core.GetCosts = function()
 	return costs
@@ -1409,25 +1410,25 @@ core.RequestBalance = function()
 end
 
 -- Not used. Instead of tracking the total price we keep track of the costs+validity of each slot
-local requestCounterPOA = 0
-core.RequestPriceTotal = function()
-	requestCounterPOA = requestCounterPOA + 1
-	SetCosts() -- Setting costs to nil disables apply button and cost display while we are waiting for an answer
+-- local requestCounterPOA = 0
+-- core.RequestPriceTotal = function()
+-- 	requestCounterPOA = requestCounterPOA + 1
+-- 	SetCosts() -- Setting costs to nil disables apply button and cost display while we are waiting for an answer
 
-	if core.Length(TransmoggyDB.currentChanges) == 0 then return end -- No changes, so nothing to apply and no costs to display
+-- 	if core.Length(TransmoggyDB.currentChanges) == 0 then return end -- No changes, so nothing to apply and no costs to display
 
-	local requestID = requestCounterPOA
-	API.GetPriceAll(ToApiSet(TransmoggyDB.currentChanges), core.GetSelectedSkin()):next(function(price)
-		if requestID == requestCounterPOA then
-			SetCosts(price.copper, price.shards)
-		end
-	end):catch(function(err)
-		print("RequestPriceTotal: An error occured:", err.message)
-		if requestID == requestCounterPOA then
-			SetCosts()
-		end
-	end)
-end
+-- 	local requestID = requestCounterPOA
+-- 	API.GetPriceAll(ToApiSet(TransmoggyDB.currentChanges), core.GetSelectedSkin()):next(function(price)
+-- 		if requestID == requestCounterPOA then
+-- 			SetCosts(price.copper, price.shards)
+-- 		end
+-- 	end):catch(function(err)
+-- 		print("RequestPriceTotal: An error occured:", err.message)
+-- 		if requestID == requestCounterPOA then
+-- 			SetCosts()
+-- 		end
+-- 	end)
+-- end
 
 -- local requestCounterSlotPrices = {}
 -- core.RequestPriceSlot = function(itemSlot)
@@ -1714,7 +1715,7 @@ a:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 a:RegisterEvent("GOSSIP_SHOW")
 a:RegisterEvent("GOSSIP_CLOSED")
 a:RegisterEvent("PLAYER_MONEY")
-a:RegisterEvent("PLAYER_REGEN_ENABLED")
+-- a:RegisterEvent("PLAYER_REGEN_ENABLED")
 
 local lastClosed = 0
 a:SetScript("OnEvent", function(self, event, ...)
@@ -1759,6 +1760,7 @@ a:SetScript("OnEvent", function(self, event, ...)
 		core.CreateSlotButton = nil
 		core.CreateItemSlotOptionsFrame = nil
 		core.CreateSkinDropDown = nil
+		core.CreateUnlockEnchantsButton = nil
 		-- Outfit/DressUpFrame
 		core.CreateSlotListButton = nil
 		core.CreateOutfitFrame = nil

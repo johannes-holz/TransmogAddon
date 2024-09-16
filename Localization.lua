@@ -164,6 +164,11 @@ L.deDE = {
 
     ENCHANT_PREVIEW_BUTTON_TOOLTIP_TEXT = "Zeige ausgerüstete oder gewählte Waffenverzauberung an den Modellen.",
 
+    ENCHANT_UNLOCK_BUTTON_TOOLTIP1 = "Schaltet Verzauberungen aus eurem Inventar zur Transmogrifikation frei.",
+    ENCHANT_UNLOCK_BUTTON_TOOLTIP2 = "Ihr habt keine Schriftrollen zum Freischalten von Transmogrifikationen.",
+
+    ENCHANT_UNLOCK_POPUP_TEXT = "Seid ihr sicher, dass ihr folgende Verzauberungen zur Transmogrifikation freischalten wollt? Die Gegenstände werden dabei zerstört.\n",
+
     LEFT_CLICK = "Linksklick:",
     SHIFT_LEFT_CLICK = "Umschalt + Linksklick:",
     CONTROL_LEFT_CLICK = "Steuerung + Linksklick:",
@@ -196,6 +201,22 @@ L.deDE = {
         SecondaryHandEnchantSlot = "Schildhandverzauberung",
         RangedSlot = "Distanz",
     },
+
+    CLEAR_FILTERS = "Filter zurücksetzen",
+
+    ALLIANCE = "Allianz", -- Localized name lookup for Faction and Race seems to be unavailable before 8.0.1
+    HORDE = "Horde",
+
+    HUMAN = "Mensch",
+    ORC = "Orc",
+    DWARF = "Zwerg",
+    NIGHTELF = "Nachtelf",
+    UNDEAD = "Untote",
+    TAUREN = "Tauren",
+    GNOME = "Gnom",
+    TROLL = "Troll",
+    BLOODELF = "Blutelf",
+    DRAENEI = "Draenei",
 }
 
 
@@ -360,6 +381,11 @@ L.enEU = {
     SHADOW_FORM_TOOLTIP_TEXT = "Does not give correct results for emissive textures or items with light sources.",
     
     ENCHANT_PREVIEW_BUTTON_TOOLTIP_TEXT = "Preview equipped or selected weapon enchant on mannequins.",
+
+    ENCHANT_UNLOCK_BUTTON_TOOLTIP1 = "Unlock enchants for transmogrification.",
+    ENCHANT_UNLOCK_BUTTON_TOOLTIP2 = "You don't have any scrolls to unlock for transmogrification.",
+
+    ENCHANT_UNLOCK_POPUP_TEXT = "Are you sure you want to unlock the following enchants for transmogrification? The scrolls will be destroyed in the process.\n",
     
     LEFT_CLICK = "Left Click:",
     SHIFT_LEFT_CLICK = "Shift + Left Click:",
@@ -393,6 +419,22 @@ L.enEU = {
         SecondaryHandEnchantSlot = "Shield hand enchant",
         RangedSlot = "Ranged",
     },
+    
+    CLEAR_FILTERS = "Reset filters",
+
+    ALLIANCE = "Alliance",
+    HORDE = "Horde",
+    
+    HUMAN = "Human",
+    ORC = "Orc",
+    DWARF = "Dwarf",
+    NIGHTELF = "Night Elf",
+    UNDEAD = "Undead",
+    TAUREN = "Tauren",
+    GNOME = "Gnome",
+    TROLL = "Troll",
+    BLOODELF = "Blood Elf",
+    DRAENEI = "Draenei",
 }
 
 

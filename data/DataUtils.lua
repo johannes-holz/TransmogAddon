@@ -190,6 +190,7 @@ core.enchants = {}
 core.enchantInfo = {
 	visualID = {},	-- spellID to visualID/group
 	enchantID = {},	-- spellID to enchantID
+	itemToSpellID = {}, -- (scroll) itemID to spellID
 	spellID = {},	-- enchantID to spellID (not always unique and no way to find out the souce spell from enchant. just choosing arbitrary spellID atm)
 	unlocked = {},
 }
