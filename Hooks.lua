@@ -1,12 +1,5 @@
 local folder, core = ...
 
--- TODOs:
--- (low prio) fix set boni display for other players
-	-- Need to think about how to encode and use setdata. we would probably need 2 more item info: id of the set and id of the item under which name the item gets shown in the set boni
-	-- maybe we can just use an extra table for this if set data is small enough
-	-- Then scan all inventory slots and count items that belong to the set. if they belong to our set, look up their display items name and add them to table {name = true}
-	-- then fix relevant tooltip lines
-
 -- Minimal scanning Tooltip to get correct player Setboni (https://wowwiki-archive.fandom.com/wiki/UIOBJECT_GameTooltip)
 core.ScanningTooltip = CreateFrame("GameTooltip", folder .. "ScanningTooltip")
 ScanningTooltip = core.ScanningTooltip
@@ -16,7 +9,7 @@ ScanningTooltip:AddFontStrings(ScanningTooltip:CreateFontString( "$parentTextLef
 -- Getting VisualID works differently for units, that are not the player
 local lastUnit, lastSlot
 local SetLastUnit = function(self, unit, slot, nameOnly)
-	lastUnit, lastSlot = unit, slot -- This gets called too late, after we do our OnItem stuff. Getting Unit/Slot atm from OwnerFrame, unsure if that's the way to go
+	lastUnit, lastSlot = unit, slot -- This gets called too late, after we do our OnItem stuff. Getting Unit/Slot from OwnerFrame (CharacterFrame or InspectFrame) atm, unsure if that's the way to go
 end
 hooksecurefunc(GameTooltip, "SetInventoryItem", SetLastUnit)
 local OnTooltipCleared = function(self)
@@ -41,7 +34,7 @@ local Tooltip_AddCollectedLine = function(tooltip, itemID)
 
 	local itemUnlocked = core.GetItemData(itemID)
 
-	if itemUnlocked and itemUnlocked ~= 1 then 	-- or just check for == 0? (dressable item and not unlocked)
+	if itemUnlocked and itemUnlocked ~= 1 then 	-- or just check for == 0? (nil: not a dressable item (or missing in our data), 0: not unlocked, 1: unlocked)
 		if core.requestUnlocksAllFailed then
 			tooltip:AddLine(core.APPEARANCE_NOT_COLLECTED_TEXT_NO, 1.0, 0.1, 0.1, 1.0)
 		else
@@ -52,10 +45,11 @@ local Tooltip_AddCollectedLine = function(tooltip, itemID)
 	end
 end
 
- -- For other players we only get visualID through GetInventoryItemID, for the player we can get visualID from the item link and skin information through the API via GetSkins()
+ -- For the player we can get visualID and illusionID from the item link and skin information through the API via GetSkins()
+ -- For other players we only get visualID through GetInventoryItemID. Here we can not differentiate between skin and item visual and can not get illusions
  -- TODO: Fix TransmogLine + Hiding Scuffness, maybe seperate by task into multiple functions, not sure
 local ignoreRecipeCall = {}
-local function TooltipAddMogLine(tooltip)
+local function OnTooltipSetItem(tooltip)
 	tooltip:Show()
 
 	local name, link = tooltip:GetItem()
@@ -68,7 +62,7 @@ local function TooltipAddMogLine(tooltip)
 
 	-- Recipe Hack
 	-- OnTooltipSetItem gets called 2 times for recipes, apprently the first call is for the produced item, the second is for the recipe itself
-	-- GetItem() returns the recipes both times tho, so if we find that this a relevant recipe tooltip, we only add our stuff on the first call 
+	-- GetItem() returns the recipe both times tho, so if we find that this a relevant recipe tooltip, we only add our stuff on the first call 
 	if core.GetRecipeInfo(itemID) and not ignoreRecipeCall[tooltip] then
 		itemID = core.GetRecipeInfo(itemID)
 		ignoreRecipeCall[tooltip] = 1
@@ -77,16 +71,16 @@ local function TooltipAddMogLine(tooltip)
 		-- return
 	end
 
-	local visualID, illusionID = core.GetVisualFromItemLink(link)
-	if lastUnit then
-		visualID = core.GetInventoryVisualID(lastUnit, lastSlot)
+	local visualID, illusionID = core.GetVisualFromItemLink(link)				-- Read out visualID and illusionID from itemLink's uniqueID field
+	if lastUnit and UnitGUID(lastUnit) ~= UnitGUID("player") then				-- A bug causes the uniqueID to be always 0 while inspecting other players
+		visualID, illusionID = core.GetInventoryVisualID(lastUnit, lastSlot)	-- We can still get visualID with a trick, illusionID can not be retrieved for other players sadly
 	end
-	local skinVisualID = lastUnit and UnitGUID(lastUnit) == UnitGUID("player") and core.GetInventorySkinID(lastSlot)
+	local skinVisualID = lastUnit and UnitGUID(lastUnit) == UnitGUID("player") and core.GetInventorySkinID(lastSlot)	-- For player inventory also show skin visual and illusion
 	local skinIllusionID = correspondingEnchantSlot and lastUnit and UnitGUID(lastUnit) == UnitGUID("player") and core.GetInventorySkinID(correspondingEnchantSlot)
 
-	local itemUnlocked = core.GetItemData(itemID)
-	local visualUnlocked = core.GetItemData(visualID)
-	local skinVisualUnlocked = core.GetItemData(skinVisualID)	
+	-- local itemUnlocked = core.GetItemData(itemID)
+	-- local visualUnlocked = core.GetItemData(visualID)
+	-- local skinVisualUnlocked = core.GetItemData(skinVisualID)
 
 	Tooltip_AddCollectedLine(tooltip, itemID)
 
@@ -105,7 +99,7 @@ local function TooltipAddMogLine(tooltip)
 		local mogName = visualID == core.HIDDEN_ID and core.HIDDEN or core.GetItemName(visualID) -- Do we want guaranteed up to date server info (GetItemInfo) or avoid flickering tooltip for uncached items (core.GetItemName)?
 		text = text .. (mogName or (core.ITEM_TOOLTIP_FETCHING_NAME .. visualID)) .. "\124r" -- .. (visualUnlocked == 1 and core.GetTextureString("Interface/Buttons/UI-CheckBox-Check", 12) or "")
 		if not mogName then
-			core.FunctionOnItemInfo(visualID, TooltipAddMogLine, tooltip) -- player transmog items seem to be cached anyway, but probably needed for Hyperlinks from chat
+			core.FunctionOnItemInfo(visualID, OnTooltipSetItem, tooltip) -- player transmog items seem to be cached anyway, but probably needed for Hyperlinks from chat
 		end
 		if illusionID and illusionID ~= core.UNMOG_ID or skinVisualID or skinIllusionID then text = text .. "\n" end
 	end	
@@ -164,24 +158,18 @@ local function TooltipAddMogLine(tooltip)
 	end
 end
 
-local function TooltipHideMogLine(tooltip)
+local function OnTooltipCleared(tooltip)
 	if tooltip.HideTransmogLine then
 		tooltip:HideTransmogLine()
 	end
 end 
 
-core.HookItemTooltip = function(tooltip)
-	tooltip:HookScript("OnTooltipSetItem", TooltipAddMogLine)
-	tooltip:HookScript("OnTooltipCleared", TooltipHideMogLine)
-end
-
-
 local tooltips = { GameTooltip, ItemRefTooltip, ItemRefShoppingTooltip1, ItemRefShoppingTooltip2, ItemRefShoppingTooltip3, ShoppingTooltip1, ShoppingTooltip2, ShoppingTooltip3 }
 
 for _, tooltip in pairs(tooltips) do
-	core.HookItemTooltip(tooltip)
+	tooltip:HookScript("OnTooltipSetItem", OnTooltipSetItem)
+	tooltip:HookScript("OnTooltipCleared", OnTooltipCleared)
 end
-
 
 -- Adds "item/visual not collected" line to recipe spell tooltips
 local OnTooltipSetSpell = function(tooltip)
@@ -193,8 +181,9 @@ local OnTooltipSetSpell = function(tooltip)
 	end
 end
 
-GameTooltip:HookScript("OnTooltipSetSpell", OnTooltipSetSpell)
-ItemRefTooltip:HookScript("OnTooltipSetSpell", OnTooltipSetSpell)
+for _, tooltip in pairs({GameTooltip, ItemRefTooltip}) do
+	tooltip:HookScript("OnTooltipSetSpell", OnTooltipSetSpell)
+end
 
 -- or use lastUnit, lastSlot again
 -- GetInspectFrameVisualID = function(frame)
@@ -283,7 +272,7 @@ core.PreHook_ModifiedItemClick = function()
 	end
 end
  
--- Makes client show correct inventory item textures again instead of their tmog's texture. Gets more complicated when skins are in use, see below
+-- Makes client show correct inventory item textures again instead of their tmog's texture. Gets more scuffed when skins are in use, see below
 local GetInventoryItemTextureOld = GetInventoryItemTexture
 GetInventoryItemTexture = function(unit, slotID)
 	local link = GetInventoryItemLink(unit, slotID)
@@ -293,8 +282,6 @@ GetInventoryItemTexture = function(unit, slotID)
 		return select(10, GetItemInfo(link))
 	end
 end
-
--- [=====[
 
 -- PaperDollFrame Skin Fix
 -- UNIT_INVENTORY_CHANGED does not fire when using a skin, so we call update to PaperDollItemSlot on PLAYER_EQUIPMENT_CHANGED
@@ -307,7 +294,7 @@ f:SetScript("OnEvent", function(self, event, ...)
 end)
 
 -- InspectFrame Skin Fix
--- GetInventoryItemLink return value never changes for other players with activated skin until a new NotifyInspect call is made
+-- GetInventoryItemLink's return value never changes for other players with activated skin until a new NotifyInspect call is made
 local f = CreateFrame("Frame")
 f:RegisterEvent("ADDON_LOADED")
 --f:RegisterEvent("INSPECT_READY")
@@ -315,7 +302,7 @@ f:RegisterEvent("UNIT_STATS")
 f:RegisterEvent("UNIT_PORTRAIT_UPDATE")
 f:RegisterEvent("UNIT_MODEL_CHANGED")
 
-
+-- Block NotifyInspect from other AddOns (GearScore) while InspectFrame is open
 local blockingActive = false
 core.NotifyInspectOld = _G.NotifyInspect
 _G.NotifyInspect = function(unit)
@@ -404,8 +391,6 @@ f.onUpdate = function(self, e)
 		end		
 	end
 end
-
--- ]=====]
 
 -- Setboni display fix for player. Scans hidden tooltip and copies setboni lines over to GameTooltip, when GameTooltip is set to an inventory item
 local SetInventoryItem_SetFix = function(self, unit, slot, nameOnly)

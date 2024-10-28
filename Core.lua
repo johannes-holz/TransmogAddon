@@ -303,7 +303,6 @@ local CreateMeATextButton = core.CreateMeATextButton
 local CreateMeACustomTexButton = core.CreateMeACustomTexButton
 
 local GetInventoryItemID = core.GetInventoryItemID
-local GetInventoryVisualID = core.GetInventoryVisualID
 local GetContainerVisualID = core.GetContainerVisualID
 
 ------------------------------------------------------------------------------------------

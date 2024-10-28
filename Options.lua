@@ -178,7 +178,7 @@ core.options = {
                     name = "Active skin selection",
 					-- width = "full",
                     desc = "Select method to select active skin in the Characterframe.",
-					values = { _01_none = "None", _02_dropdown = "Dropdown", _03_button = "Button" }, -- less cringe way to get the order right?
+					values = { _01_none = "None", _02_dropdown = "Dropdown", _03_button_left = "Button Left", _04_button_right = "Button Right"}, -- less cringe way to get the order right?
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "activeSkinDropdown",

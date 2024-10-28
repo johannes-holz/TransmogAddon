@@ -377,12 +377,14 @@ core.GetVisualFromItemLink = function(link)
 end
 
 -- We can't read out the visualID from item links from other players' inventories because of a bug on RG, that causes the uniqueID to always be 0 for other players
--- We can still get the visualID from GetInventoryItemID and compare it to GetInventoryItemLink to know if it is transmogrified or not
+-- We can still get the visualID from GetInventoryItemID and compare it to GetInventoryItemLink (which returns the real item) to know if it is transmogrified or not
 core.GetInventoryVisualID = function(unit, slotID)
 	if not unit or not slotID then return end
 	
 	if type(slotID) == "string" then slotID = core.slotToID[slotID] end -- TODO: too hacky or just allow using slotname like this?
 	
+	if not slotID then return end
+
 	if slotID == core.slotToID["MainHandEnchantSlot"] or slotID == core.slotToID["SecondaryHandEnchantSlot"] then
 		-- local correspondingSlot = core.GetCorrespondingSlot(core.idToSlot[slotID])
 		-- slotID = core.slotToID[correspondingSlot]
@@ -395,11 +397,11 @@ core.GetInventoryVisualID = function(unit, slotID)
 	if not link then return end
 
 	if UnitGUID(unit) ~= UnitGUID("player") then 
-		local itemID = tonumber(select(3, string.find(link, "item:(%d+):")))
+		local itemID = core.GetItemIDFromLink(link)
 		local visualID = GetInventoryItemID(unit, slotID)
-		return visualID == itemID and core.UNMOG_ID or visualID -- or just nil for no transmog?
+		return (visualID == itemID and core.UNMOG_ID) or (visualID == core.API.HideItem and core.HIDDEN_ID) or visualID -- or just nil for no transmog?
 	else
-		return link and core.GetVisualFromItemLink(link)
+		return core.GetVisualFromItemLink(link) -- returns a tuple of visualID, illusionID for weapons now
 	end
 end
 
@@ -480,4 +482,8 @@ end
 core.DecodeItemLink = function(link)
     local itemString = link and link:match("|H(.*)|h.*|h") or link or ""
 	return strsplit(":", itemString)
+end
+
+core.ToPrintableLink = function(link)
+	return link and gsub(link, "\124", "\124\124") or ""
 end

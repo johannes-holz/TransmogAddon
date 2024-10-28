@@ -72,20 +72,21 @@ core.UpdateScrollFrame(Content, a)
 
 ]]
 
-
-local unlockMapping = {
-    [38879] = 23799,
-    [38919] = 27971,
-    [38923] = 27981,
-    [38925] = 27984,
-    [38926] = 28003,
-    [38927] = 28004,
-    [38946] = 34010,
-    [44453] = 60621,
-}
+-- EnchantScrolls to enchant spellID map ([itemID] = spellID)
+-- local unlockMapping = {
+--     [38879] = 23799,
+--     [38919] = 27971,
+--     [38923] = 27981,
+--     [38925] = 27984,
+--     [38926] = 28003,
+--     [38927] = 28004,
+--     [38946] = 34010,
+--     [44453] = 60621,
+--     [45056] = 62948,
+-- }
 
 core.FindUnlockables = function()
-    local itemToSpellMap = unlockMapping -- core.enchantInfo.itemToSpellID
+    local itemToSpellMap = core.enchantInfo.itemToSpellID
     local items = {}
     for bag = 0, 4 do
         for slot = 1, GetContainerNumSlots(bag) do

@@ -104,12 +104,13 @@ core.UpdateSkinDropdown = function()
 	local selected = core.db and core.db.profile.General.activeSkinDropdown
 	local skins = core.GetSkins()
 	local enableActiveSkinDropDown = (not selected or selected == "_02_dropdown") and skins and core.Length(skins) > 0 -- or check for usable skins?
-	local enableActiveSkinButton = selected == "_03_button"
+	local enableActiveSkinButton = selected and strfind(selected, "button")
+	local buttonPos = enableActiveSkinButton and strfind(selected, "left") and "BOTTOMLEFT" or "BOTTOMRIGHT"
 	-- TODO: can we remember the "before" title dropdown width? titleFrameWidthOrig = UIDropDownMenu_GetWidth(PlayerTitleFrame)
 	-- also remember point?
 
 	-- /run print(PlayerTitleFrame:IsShown()) works as we want, so check this and place skins full width if we have no titles (which is probably never the case, that we have a skin but no title ...)
-
+	
 	if enableActiveSkinDropDown and not core.activeSkinDropDown:IsShown() then
 		UIDropDownMenu_SetWidth(PlayerTitleFrame, 90)
 		PlayerTitleFrame:ClearAllPoints()
@@ -125,6 +126,8 @@ core.UpdateSkinDropdown = function()
 	end
 
 	core.SetShown(core.activeSkinButton, enableActiveSkinButton)
+	core.activeSkinButton:ClearAllPoints()
+	core.activeSkinButton:SetPoint(buttonPos, (buttonPos == "BOTTOMLEFT" and 1 or -1) * 2, 24)
 end
 
 PaperDollFrame:HookScript("OnShow", core.UpdateSkinDropdown)

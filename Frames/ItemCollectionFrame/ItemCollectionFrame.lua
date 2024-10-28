@@ -739,6 +739,7 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 		searchTerm = nil
 	end
 
+	local unlockedFilter = self.filter.unlocked	
 	local factionFilter = self.filter.faction
 	local classFilter = self.filter.class
 	local raceFilter = self.filter.race
@@ -754,10 +755,11 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 				local visualUnlocked
 				for _, spellID in pairs(enchantInfo.spellIDs) do
 					local enchantName = GetSpellInfo(spellID)
-					local unlocked = core.GetEnchantData(spellID)
+					local unlocked, _, _, _, allowableClass = core.GetEnchantData(spellID)
 					-- print(enchantName, spellID)
 					if (atTransmogrifier and core.IsAvailableSourceItem(spellID, slot)) or
-							(not atTransmogrifier and (not self.filter.unlocked or unlocked == self.filter.unlocked)) then
+							(not atTransmogrifier and (not unlockedFilter or unlocked == unlockedFilter)
+												  and (not classFilter or band(classFilter, allowableClass) ~= 0)) then
 						if not searchTerm or spellID == searchTerm or (enchantName and strfind(enchantName, searchTerm)) then
 							self.itemUnlocked[spellID] = 1
 							visualUnlocked = visualUnlocked or unlocked == 1
@@ -803,7 +805,7 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 				-- end
 				
 				if (atTransmogrifier and core.IsAvailableSourceItem(itemID, slot)) or
-						(not atTransmogrifier and (not self.filter.unlocked or unlocked == self.filter.unlocked)) then
+						(not atTransmogrifier and (not unlockedFilter or unlocked == unlockedFilter)) then
 					
 					if not hasExtraFilter or
 							((not classFilter or not allowableClass or band(classFilter, allowableClass) ~= 0) 

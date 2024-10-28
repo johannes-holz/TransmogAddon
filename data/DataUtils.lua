@@ -188,15 +188,18 @@ end
 core.enchants = {}
 
 core.enchantInfo = {
-	visualID = {},	-- spellID to visualID/group
-	enchantID = {},	-- spellID to enchantID
+	visualID = {},		-- spellID to visualID/group
+	enchantID = {},		-- spellID to enchantID
 	itemToSpellID = {}, -- (scroll) itemID to spellID
-	spellID = {},	-- enchantID to spellID (not always unique and no way to find out the souce spell from enchant. just choosing arbitrary spellID atm)
+	spellID = {},		-- enchantID to spellID (not always unique and no way to find out the souce spell from enchant. just choosing one of the spellIDs arbitrarily atm
+	itemID = {},		-- spellID to scroll itemID
+	class = {},			-- class mask
+	available = {},		-- wether the enchant should be available to players (to filter out test items etc.)
 	unlocked = {},
 }
 
--- TODO: Need clean enchant data, need enchant "type" (weapon, 2hweapon, stave)
-core.AddEnchant = function(visualID, enchantID, spellID)
+-- aura_id, enchant_id, spell_id, scroll_ids, class, available
+core.AddEnchant = function(visualID, enchantID, spellID, scrollID, class, available)
 	if not (visualID and enchantID) then return false end
 	--core.am(visualID..", "..enchantID)
 	if core.enchants[visualID] then
@@ -207,7 +210,14 @@ core.AddEnchant = function(visualID, enchantID, spellID)
 	
 	core.enchantInfo["visualID"][spellID] = visualID
 	core.enchantInfo["enchantID"][spellID] = enchantID
+	core.enchantInfo["class"][spellID] = class
+	core.enchantInfo["available"][spellID] = available
+	core.enchantInfo["itemID"][spellID] = scrollID
+
 	core.enchantInfo["spellID"][enchantID] = spellID
+	if scrollID then
+		core.enchantInfo["itemToSpellID"][scrollID] = spellID
+	end
 end
 
 core.EnchantToSpellID = function(enchantID)
@@ -218,11 +228,12 @@ core.SpellToEnchantID = function(spellID)
 	return spellID and core.enchantInfo.enchantID[spellID]
 end
 
--- TODO:
+-- Any point in doing it like this or just lookup relevant stuff in enchantInfo?
 core.GetEnchantData = function(spellID)
 	local unlocked, enchantID, visualID = core.enchantInfo["unlocked"][spellID], core.enchantInfo["enchantID"][spellID], core.enchantInfo["visualID"][spellID]
+	local item, class, available = core.enchantInfo["itemID"][spellID], core.enchantInfo["class"][spellID], core.enchantInfo["available"][spellID]
 
-	return unlocked, enchantID, visualID
+	return unlocked, enchantID, visualID, item, class, available
 end
 
 core.SetEnchantUnlocks = function(spellIDs)
