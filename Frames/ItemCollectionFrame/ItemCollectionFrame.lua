@@ -70,8 +70,6 @@ end)
 itemCollectionFrame.SetSlotAndCategory = function(self, slot, category, update)
 	--print("set location, type", locationName, itemType)
 	if not update and itemCollectionFrame.selectedSlot == slot and itemCollectionFrame.selectedCategory == category then return end
-
-	print("itemcollection SetSlotAndCategory")
 	
 	-- if theres only one category in slot, select it, just so it gets shown in ddm? core.SetSlotAndCategory would need this too? :/
 	-- if not category and slot and core.slotCategories[slot] and core.Length(core.slotCategories[slot]) == 1 then
@@ -412,7 +410,7 @@ local Mannequin_OnMouseDown = function(self, button)
 	local atTransmogrifier = core.IsAtTransmogrifier()
 
 	if isEnchantSlot then
-		if not itemID then print("Error: expected enchantVisualID in mannequin's OnClick") end
+		if not itemID then core.debug("Error: expected enchantVisualID in mannequin's OnClick") end
 		local enchantID = itemCollectionFrame.displayGroups[itemID][selected] -- itemID ~= core.HIDDEN_ID and itemCollectionFrame.displayGroups[itemID][selected] or itemID
 
 		if enchantID then
@@ -461,7 +459,7 @@ local Mannequin_OnMouseDown = function(self, button)
 						ShowUIPanel(DressUpFrame)
 						DressUpModel:SetUnit("player")
 					end
-					print("Call DressUpModel TryOn with", link, itemCollectionFrame.selectedSlot)
+					core.debug("Call DressUpModel TryOn with", link, itemCollectionFrame.selectedSlot)
 					DressUpModel:TryOn(link, itemCollectionFrame.selectedSlot)
 					-- if itemCollectionFrame.model then
 					-- 	itemCollectionFrame.model:Undress()
@@ -882,8 +880,6 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 	itemCollectionFrame.unlockedStatusBar:SetMinMaxValues(0, table.getn(self.displayList))
 	itemCollectionFrame.unlockedStatusBar:SetValue(unlockedCount)
 
-	print(unlockedCount)
-
 	self:SetPage(1)
 end
 
@@ -967,77 +963,3 @@ itemCollectionFrame.enchantCheckButton:SetScript("OnClick", function(self, butto
 	itemCollectionFrame:UpdateMannequins()
 end)
 core.SetTooltip(itemCollectionFrame.enchantCheckButton, core.ENCHANT_PREVIEW_BUTTON_TOOLTIP_TEXT, nil, nil, nil, nil, 1)
-
-
------ Test Position, Animation etc. model -----
--- local model = core.CreateWardrobeModelFrame(core.itemCollectionFrame)
--- model:SetPoint("TOPLEFT", model:GetParent(), "TOPRIGHT")
--- model:Hide()
-
-
--- local EnablePositionMode = function()
--- 	TransmoggyDB.mannequinPositions = TransmoggyDB.mannequinPositions or core.mannequinPositions
-
--- 	moveFactor = 0.02
-
--- 	for _, mannequin in pairs(itemCollectionFrame.mannequins) do
--- 		mannequin:SetScript("OnMouseDown", function(self, button)
-			
--- 			if true or button == "RightButton" then
--- 				itemCollectionFrame.posX, itemCollectionFrame.posY = GetCursorPosition()
--- 				itemCollectionFrame.moving = 1
--- 			end
--- 		end)
--- 		mannequin:SetScript("OnMouseUp", function(self, button)
--- 			itemCollectionFrame.moving = nil
--- 		end)
--- 		itemCollectionFrame:SetScript("OnUpdate", function(self, elapsed)
--- 			if self.moving then
--- 				local curX, curY = GetCursorPosition()
--- 				local difX, difY = curX - self.posX, curY - self.posY
--- 				itemCollectionFrame.posX, itemCollectionFrame.posY = curX, curY
--- 				print("moving", curX, curY)
-
--- 				local _, race = UnitRace("player")
--- 				local sex = UnitSex("player")
--- 				local slot, category = self.selectedSlot, self.selectedCategory
--- 				local positions = TransmoggyDB.mannequinPositions[sex]
--- 				positions[race] = positions[race] or core.DeepCopy(positions["Human"])
--- 				positions[race][slot] = positions[race][slot] or { 0, 0, 0, 0 }
-				
--- 				if IsShiftKeyDown() then
--- 					positions[race][slot][2] = positions[race][slot][2] + moveFactor * difX
--- 				elseif IsControlKeyDown() then
--- 					positions[race][slot][3] = positions[race][slot][3] + moveFactor * difY
--- 				elseif IsAltKeyDown() then
--- 					positions[race][slot][4] = positions[race][slot][4] + moveFactor * difY
--- 				else					
--- 					positions[race][slot][1] = positions[race][slot][1] + moveFactor * difY
--- 				end
-
--- 				itemCollectionFrame:UpdateMannequins()
--- 			end
--- 		end)
--- 	end
--- end
--- itemCollectionFrame:HookScript("OnShow", function(self)	
--- 	EnablePositionMode()
--- 	for sex, tab0 in pairs(TransmoggyDB.mannequinPositions) do
--- 		for race, tab1 in pairs(tab0) do
--- 			tab1["MainHandEnchantSlot"] = core.DeepCopy(tab1["MainHandSlot"])
--- 			tab1["ShieldHandWeaponSlot"] = core.DeepCopy(tab1["MainHandSlot"])
--- 			tab1["ShieldHandWeaponSlot"][2] = -tab1["ShieldHandWeaponSlot"][2]
--- 			tab1["ShieldHandWeaponSlot"][4] = -tab1["ShieldHandWeaponSlot"][4]
--- 			tab1["SecondaryHandEnchantSlot"] = core.DeepCopy(tab1["ShieldHandWeaponSlot"])
--- 		end
--- 	end
--- 	if not TransmoggyDB.mannequinPositions[3] then
--- 		local tmp = core.DeepCopy(TransmoggyDB.mannequinPositions)
--- 		TransmoggyDB.mannequinPositions = nil
--- 		TransmoggyDB.mannequinPositions = {}
--- 		TransmoggyDB.mannequinPositions[3] = tmp
--- 	end
--- 	if not TransmoggyDB.mannequinPositions[2] then
--- 		TransmoggyDB.mannequinPositions[2] = core.DeepCopy(TransmoggyDB.mannequinPositions[3])
--- 	end
--- end)

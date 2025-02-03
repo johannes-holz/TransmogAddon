@@ -49,7 +49,7 @@ local SetWidgetValue = function(info, input)
 	
 	-- Update our stuff
 	core.OnSettingsUpdate(arg)
-    print("Options changed:", caller, arg, input)
+    core.debug("Options changed:", caller, arg, input)
 end
 
 core.OnSettingsUpdate = function(arg)

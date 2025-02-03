@@ -39,7 +39,6 @@ Frames\ItemCollectionFrame\CollectionSlotButton.lua
 Frames\ItemCollectionFrame\ItemTypeDDM.lua
 Frames\ItemCollectionFrame\OptionsDDM.lua
 Frames\ItemCollectionFrame\MannequinFrame.lua
-Frames\ItemCollectionFrame\WardrobeModelFrame.lua
 Frames\ItemCollectionFrame\ItemCollectionFrame.lua
 
 # UnlocksOverviewFrame

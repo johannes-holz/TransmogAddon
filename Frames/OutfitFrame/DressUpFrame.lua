@@ -100,10 +100,9 @@ DressUpModel.GetAll = function(self)
 end
 
 -- We allow setting slots to 1 (hidden) now. The original TryOn just ignores these calls anyway. Problem with enchants, as there is an enchant with ID=1 :)
--- Item info should not be needed at this point: We can check itemType for OH stuff with item data and we just have to call a display update on item query
+-- Cached item info should not be needed at this point: We can check itemType for OH stuff with item data and we just have to call a display update on item query
 -- TODO: modify OnItemClick to allow setting hidden items?
 DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
-    print(itemSlot, itemID, silent)
 	assert(itemSlot and core.slotToID[itemSlot], "Invalid slot in DressUpModel.SetSlot:" .. (itemSlot or "nil"))
     if itemID and type(itemID) ~= "number" then
         itemID = core.GetItemIDFromLink(itemID)

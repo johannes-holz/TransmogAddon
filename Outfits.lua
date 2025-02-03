@@ -64,7 +64,7 @@ end
 
 core.SaveOutfit = function(name, set)
     assert(name and set and TransmoggyDB.outfits[name])
-    --AM("save", name, set)
+    --core.am("save", name, set)
     TransmoggyDB.outfits[name] = set
     core.UpdateListeners("outfits")
     return true

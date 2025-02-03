@@ -21,7 +21,6 @@ core.UpdateMinimapIcon = function()
 	end
 end
 	
--- TODO: Make minimap icon optional
 core.InitLDB = function()
 	local LDB = LibStub("LibDataBroker-1.1", true)
     local LDBIcon = LDB and LibStub("LibDBIcon-1.0", true)	

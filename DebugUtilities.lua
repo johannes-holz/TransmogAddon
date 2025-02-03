@@ -221,7 +221,7 @@ PrintAllCosts = function()
 end
 
 PrintBalance = function()
-	am(balance)
+	core.am(balance)
 end
 
 local testSet = { MainHandSlot = 2000, MainHandEnchantSlot = 3789, }

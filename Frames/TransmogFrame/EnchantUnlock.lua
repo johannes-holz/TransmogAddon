@@ -37,7 +37,7 @@ local function CreateButton(parent, index, itemID)
     button:SetPoint("TOP", 10, -(index - 1) * 45 - 10)
     
     button:SetScript("OnClick", function()
-        print("Ausgewähltes Item:", itemID)
+        core.debug("Ausgewähltes Item:", itemID)
     end)
 
     button.SetItem = function(self, itemID)

@@ -162,13 +162,18 @@ local function OnTooltipCleared(tooltip)
 	if tooltip.HideTransmogLine then
 		tooltip:HideTransmogLine()
 	end
-end 
+end
+
+core.HookItemTooltip = function(tooltip)
+	tooltip:HookScript("OnTooltipSetItem", OnTooltipSetItem)
+	tooltip:HookScript("OnTooltipCleared", OnTooltipCleared)
+end
+
 
 local tooltips = { GameTooltip, ItemRefTooltip, ItemRefShoppingTooltip1, ItemRefShoppingTooltip2, ItemRefShoppingTooltip3, ShoppingTooltip1, ShoppingTooltip2, ShoppingTooltip3 }
 
 for _, tooltip in pairs(tooltips) do
-	tooltip:HookScript("OnTooltipSetItem", OnTooltipSetItem)
-	tooltip:HookScript("OnTooltipCleared", OnTooltipCleared)
+	core.HookItemTooltip(tooltip)
 end
 
 -- Adds "item/visual not collected" line to recipe spell tooltips
@@ -313,11 +318,11 @@ _G.NotifyInspect = function(unit)
     addon = string.gsub(addon or "unknown",'I?n?t?e?r?f?a?c?e\\AddOns\\',"")
 
 	if InspectFrame and InspectFrame:IsShown() and not strfind(addon, "Blizzard_InspectUI") then
-		-- print("blocked notify from", addon)
+		-- core.debug("blocked notify from", addon)
 		return
 	end
 
-	-- print(addon, "yo u can come in")
+	-- core.debug(addon, "yo u can come in")
 	core.NotifyInspectOld(unit)
 end
 

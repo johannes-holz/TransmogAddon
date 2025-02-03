@@ -84,7 +84,6 @@ StaticPopupDialogs["DeleteOutfitPopup"] = {
 	button2 = CANCEL,
 	hasEditBox = nil,
 	OnAccept = function(self, data)
-		print("Deleto", data.name)
 		core.DeleteOutfit(data.name)
 	end,
 	OnShow = function(self, data)
@@ -129,8 +128,6 @@ end
 local ShowOverwriteOutfitPopup = function(name, model)
 	local outfits = core.GetOutfits()
 	assert(outfits and outfits[name])
-
-	print(model, model:GetName())
 
 	local data = {}
 	data.name = name

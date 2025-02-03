@@ -45,10 +45,8 @@ local folder, core = ...
 	TODO:		
 		- Can save another 55kB in the index byte string by encoding invType + category as one number
 
-		- Lots of hardcoded magic numbers in the new version atm. (e.g. byte lengths per date), fix at some point!
-			- Also the delimiter and its byte value is hardcoded atm. should fix this and also be sure to use a symbol, that does not occur in any name string
-
-		- Caching name strings in WTF now after they got generated once for much faster loading time. Needs more testing
+		- Lots of hardcoded magic numbers in the new version atm. (e.g. byte lengths per entry)
+			- Also the delimiter and its byte value is hardcoded atm. should fix this and also be sure to use a symbol, that does not occur in any name string of the localizations
 
 		- Generation etc. is still a bit of a mess, but at least we can now set all unlocks after the string data was generated
 			- with this we can now handle a repeated call to RequestAllUnlocks (even tho that should not be needed)
@@ -57,7 +55,7 @@ local folder, core = ...
 
 local LibDeflate = LibStub and LibStub:GetLibrary("LibDeflate")
 
--- Set this boolean to choose if you want to compress the name strings. Saves up to ~400kB but creates a lot of garbage during searches
+-- Set this boolean to choose if you want to compress the name strings. Saves up to ~400kB but creates a lot of temporary strings during searches
 -- Requires reload to take effect and will generate new stringData instead of loading the strings from WTF
 local useCompression = LibDeflate and false
 
@@ -154,7 +152,7 @@ for category, tab in pairs(core.typeToClassSubclass) do
 	core.classSubclassToType[class][subclass] = category
 end
 
------------ UPDOOTS (here they are worth it for once) -----------
+----------- UPDOOTS (here they are useful for once) -----------
 local rshift = bit.rshift
 local lshift = bit.lshift
 local mod = bit.mod
@@ -201,6 +199,7 @@ core.enchantInfo = {
 -- aura_id, enchant_id, spell_id, scroll_ids, class, available
 core.AddEnchant = function(visualID, enchantID, spellID, scrollID, class, available)
 	if not (visualID and enchantID) then return false end
+	
 	--core.am(visualID..", "..enchantID)
 	if core.enchants[visualID] then
 		table.insert(core.enchants[visualID]["spellIDs"], spellID)
@@ -402,7 +401,7 @@ core.GenerateStringData = function()
 		classFactionMap = nil
 		collectgarbage("collect")
 
-		print("Loaded stringData from cache.")
+		core.debug("Loaded stringData from cache.")
 		return
 	end
 
@@ -436,9 +435,9 @@ core.GenerateStringData = function()
 
 			tinsert(itemData[inventoryType][category], i)
 
-			if i == 19866 then
-				core.am(inventoryType, category, "index", core.Length(itemData[inventoryType][category]), itemData[inventoryType][category])
-			end
+			-- if i == 19866 then
+			-- 	core.am(inventoryType, category, "index", core.Length(itemData[inventoryType][category]), itemData[inventoryType][category])
+			-- end
 
 			addString(dataPositions, ToByteString3(inventoryType, category, #itemData[inventoryType][category]))
 			
@@ -538,8 +537,8 @@ core.GenerateStringData = function()
 	-- TransmoggyDB.stringData = nil
 
 	collectgarbage("collect")
-	print(folder, "Succesfully encoded string data.")
-	print("time for normal stringData:", t2 - t1, ". time for compression and garbage collection:", GetTime() - t2)
+	core.debug(folder, "Succesfully encoded string data.")
+	core.debug("time for normal stringData:", t2 - t1, ". time for compression and garbage collection:", GetTime() - t2)
 end
 
 -- Overwrites all unlock data such that only ItemIDs in `unlocks` array will be unlocked
@@ -561,7 +560,7 @@ core.SetUnlocks = function(unlocks)
 		end
 	end
 	
-	print("set all unlocks!")
+	core.debug("set all unlocks!")
 	core.MyWaitFunction(3.0, collectgarbage, "collect")
 end
 
@@ -580,7 +579,7 @@ core.SetUnlocked = function(itemID)
 	elseif core.itemInfo then
 		core.itemInfo["unlocked"][itemID] = 1
 	else
-		print("ERROR in SetUnlocked: Neither string, nor table data exists to write to!")
+		core.debug("ERROR in SetUnlocked: Neither string, nor table data exists to write to!")
 	end
 end
 
@@ -677,7 +676,7 @@ core.GetItemName = function(itemID)
 	end
 
 	if index > #names then -- If we got a valid index from stringDataPos, we should find the name in the name string.
-		print("Error in GetItemName.", itemID, inventoryType, category, index, #names, names)
+		core.debug("Error in GetItemName.", itemID, inventoryType, category, index, #names, names)
 		return
 	end
 

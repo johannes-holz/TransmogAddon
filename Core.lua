@@ -21,6 +21,10 @@ core.titleFull = folder .. " - V." .. core.version -- "Transmoggy V.1.0"
 core.addonDir = "Interface\\AddOns\\"..folder.."\\"
 core.minimapIcon = "Interface\\Icons\\Inv_chest_cloth_02"
 
+core.OnProfileChanged = function(self, ...)
+	core.OnSettingsUpdate()
+end
+
 core.InitializeAce = function(self)	
 	self.db = LibStub('AceDB-3.0'):New('TransmoggyDB', self.defaults, true)
 	self.db.RegisterCallback(self, "OnProfileChanged", "OnProfileChanged")
@@ -45,10 +49,6 @@ core.InitializeAce = function(self)
 	LibStub('AceConsole-3.0'):RegisterChatCommand("transmoggy", core.OpenOptions) -- InterfaceOptionsFrame_OpenToCategory(self.optionsFrame) end)
 end
 
-core.OnProfileChanged = function(self, ...)
-	core.OnSettingsUpdate()
-	print("OnProfileChanged", ...)
-end
 ---------------------------------------
 
 core.TMOG_NPC_ID = 1010969
@@ -296,7 +296,6 @@ local FunctionOnItemInfo = core.FunctionOnItemInfo
 local ClearAllOutstandingOIIF = core.ClearAllOutstandingOIIF
 local SetTooltip = core.SetTooltip
 local MyWaitFunction = core.MyWaitFunction
-local am = core.am
 
 local CreateMeAButton = core.CreateMeAButton
 local CreateMeATextButton = core.CreateMeATextButton
@@ -639,9 +638,9 @@ end
 
 -- Currently skins use api locations for some reason ...
 core.GetSkinSlotVisualID = function(skinID, slotID)
-	if not skinID then return end
+	assert(skinID == nil or skins[skinID], "ERROR in GetSkinSlotVisualID: There is no skin with ID " .. (skinID and skinID or "nil"))
 
-	if not skins[skinID] then am("ERROR in GetSkinSlotVisualID: There is no skin with ID", skinID); return end
+	if not skinID then return end
 
 	return skins[skinID].slots[slotID]
 end
@@ -653,14 +652,16 @@ end
 
 core.TransmogGetSlotInfo = function(itemSlot, skinID)
 	assert(slotToID[itemSlot] ~= nil, "Invalid slot in TransmogGetSlotInfo: " .. (itemSlot or "nil"))
-	skinID = skinID or core.GetSelectedSkin() -- TODO: always expect explicit specification of skinID instead?
+
+	-- Assumes we are asking for the skin we are currently working on. TODO: always expect explicit specification of skinID instead?
+	skinID = skinID or core.GetSelectedSkin()
 
 	local isEnchantSlot = core.IsEnchantSlot(itemSlot)
 	local correspondingWeaponSlot = isEnchantSlot and core.GetCorrespondingSlot(itemSlot)
 	local inventorySlotID = slotToID[itemSlot]
-	local locationID = core.ToTransmogLocation(itemSlot) -- TODO: hopefully soon replaced so we work on locations instead of itemslots (not gonna happen PEPW)
+	local locationID = core.ToTransmogLocation(itemSlot)
 	--local locationID = core.GetTransmogLocationInfo(location)
-	--print(itemSlot, "inventoryID", inventorySlotID, "location", location, "locationID", locationID, "selectedSkin", core.GetSelectedSkin())
+	--core.debug(itemSlot, "inventoryID", inventorySlotID, "location", location, "locationID", locationID, "selectedSkin", core.GetSelectedSkin())
 
 	local itemID = isEnchantSlot and core.GetInventoryEnchantID("player", correspondingWeaponSlot) or core.GetInventoryItemID("player", inventorySlotID)
 	local visualID = isEnchantSlot and core.GetInventoryEnchantVisualID("player", correspondingWeaponSlot) or core.GetInventoryVisualID("player", inventorySlotID)
@@ -671,7 +672,7 @@ core.TransmogGetSlotInfo = function(itemSlot, skinID)
 	local canTransmogrify = slotValid[itemSlot]
 	local cannotTransmogrifyReason = slotReason[itemSlot]
 
-	--print(slotID, itemID, visualID, skinVisualID, pendingID)
+	--core.debug(slotID, itemID, visualID, skinVisualID, pendingID)
 	if itemID and (itemSlot == "OffHandSlot" or itemSlot == "ShieldHandWeaponSlot" or itemSlot == "SecondaryHandEnchantSlot") then
 		local offHand = core.GetInventoryItemID("player", 17)
 		local isOffHandType = offHand and core.IsOffHandItemType(select(9, GetItemInfo(offHand)))
@@ -758,13 +759,13 @@ local ToApiSet = function(set, withEnchants)
 			
 			--local slotID, _ = GetInventorySlotInfo(slot)
 			local transmogLocation = core.ToTransmogLocation(slot)
-			if (transmogLocation == nil) then print("Could not find transmogLocation for", slot) end
+			if (transmogLocation == nil) then core.debug("Could not find transmogLocation for", slot) end
 			assert(transmogLocation ~= nil, "Could not find transmogLocation for " .. (slot or "nil"))
 			apiSet[transmogLocation] = (itemID == core.HIDDEN_ID and API.HideItem) or (itemID == core.UNMOG_ID and API.NoTransmog) or itemID
 		end
 	end
-	-- am("From set:", set, withEnchants)
-	-- am("To apiSet:", apiSet)
+	-- core.debug("From set:", set, withEnchants)
+	-- core.debug("To apiSet:", apiSet)
 	return apiSet
 end
 core.ToApiSet = ToApiSet
@@ -787,7 +788,7 @@ end
 core.RegisterListener = RegisterListener
 
 UpdateListeners = function(field)
-	if not listeners[field] then print("Called GUI Update for", field, ", which has no registered elements."); return end
+	if not listeners[field] then core.debug("Called GUI Update for", field, ", which has no registered elements."); return end
 	
 	for k, v in pairs(listeners[field]) do
 		k:update()
@@ -818,10 +819,9 @@ local configToAPI = {
 }
 
 core.SetConfig = function(c)
-	if not c or not c.visibility or not visibilities[c.visibility] then core.am("ERROR: Unknown visibility in SetConfig:", c); return end
+	if not c or not c.visibility or not visibilities[c.visibility] then core.debug("ERROR: Unknown visibility in SetConfig:", c); return end
 
 	config = visibilities[c.visibility]
-	print("setconfig", config)
 	UpdateListeners("config")
 end
 
@@ -896,7 +896,7 @@ core.GetCurrentChanges = function()
 end
 
 SetCurrentChangesSlot = function(slot, id, silent)
-	-- core.am("SetCurrentChangesSlot:", slot, "to", id)
+	-- core.debug("SetCurrentChangesSlot:", slot, "to", id)
 	assert(core.Contains(itemSlots, slot) or core.Contains(core.enchantSlots, slot))
 	assert(id == nil or type(id) == "number") -- and GetItemData(id) or even GetItemInfo(id) to secure that id is valid item (that is cached?) and maybe even check slot?
 	if not TransmoggyDB.currentChanges then TransmoggyDB.currentChanges = {} end
@@ -904,15 +904,10 @@ SetCurrentChangesSlot = function(slot, id, silent)
 	local isEnchantSlot = core.IsEnchantSlot(slot)
 	local correspondingWeaponID = isEnchantSlot and core.TransmogGetSlotInfo(core.GetCorrespondingSlot(slot))
 
-	-- if isEnchantSlot then		
-	-- 	print("Can not set enchant transmog.")
-	-- 	return -- do not allow setting enchant slots atm
-	-- end
-
 	local itemID, visualID, skinVisualID = core.TransmogGetSlotInfo(slot)
 	local selectedSkin = core.GetSelectedSkin()
 
-	print(isEnchantSlot, itemID, visualID, id)
+	core.debug(isEnchantSlot, itemID, visualID, id)
 
 	if selectedSkin then
 		if id == skinVisualID or (id == core.UNMOG_ID and not skinVisualID) then -- skin and no change to current skinVisual
@@ -1023,7 +1018,7 @@ core.GetCosts = function()
 end
 
 SetAvailableMogs = function(slot, items)
-	--am("Updated available mogs for:", slot)
+	--core.debug("Updated available mogs for:", slot)
 	core.availableMogs[slot] = core.availableMogs[slot] or {}
 	wipe(core.availableMogs[slot])
 
@@ -1071,13 +1066,13 @@ end
 
 -- SkinData now has format: { {id: SkinID, name: String, slots: SlotMap} }
 SetSkinData = function(skinData)
-	core.am("called set skin data!")
+	core.debug("called set skin data!")
 
 	-- for k, skin in pairs(skinData) do
 	-- 	core.am("setdata:", skin)
 	-- end
 	for _, skin in pairs(skinData) do
-		--assert blabla
+		-- assert correct format?
 
 		core.SetSkin(skin, true)
 
@@ -1116,7 +1111,7 @@ core.GetSelectedSkinName = function()
 end
 
 core.SetActiveSkin = function(skinID) -- Setter of internal var. Asking the server to change active Skin is done with Request...
-	if type(skinID) ~= "number" and skinID ~= nil then print("Error in SetActiveSkin: skinID has wrong type") end
+	assert(skinID == nil or type(skinID) == "number", "Error in SetActiveSkin: skinID has wrong type")
 	activeSkin = skinID
 	UpdateListeners("activeSkin")
 end
@@ -1147,7 +1142,7 @@ core.IsAtTransmogrifier = function()
 end
 
 local OnVisualUnlocked = function(payload)
-	core.am(payload)
+	core.debug(payload)
 	local enchantSpellID, itemID, available = payload.spellId, payload.itemId, payload.available and 1 or 0
 
 	if itemID then
@@ -1161,27 +1156,27 @@ local OnVisualUnlocked = function(payload)
 	if core.db and core.db.profile.General.playSpecialSounds then
 		PlaySound(core.sounds.unlockVisual, "SFX")
 	end
-	print("OnVisualUnlock!", itemID, GetItemInfo(itemID or 0), enchantSpellID, GetSpellInfo(enchantSpellID or 0))	
+	core.debug("OnVisualUnlock!", itemID, GetItemInfo(itemID or 0), enchantSpellID, GetSpellInfo(enchantSpellID or 0))	
 	UpdateListeners("unlocks")
 end
 rAPI:registerEvent("transmog/visual/unlocked", OnVisualUnlocked)
 
 local OnSkinActivated = function(payload)
 	--SetSelectedSkin(payload.skinId)
-	print("OnSkinActivate", payload.skinId)
+	core.debug("OnSkinActivate", payload.skinId)
 	core.SetActiveSkin(payload.skinId)
 end
 rAPI:registerEvent("transmog/skin/activated", OnSkinActivated)
 
 local OnSkinChanged = function(payload)
-	am("OnSkinUpdate", payload)
+	core.debug("OnSkinUpdate", payload)
 	core.SetSkin(payload)
 	core.UpdateSkinDropdown()
 end
 rAPI:registerEvent("transmog/skin/changed", OnSkinChanged)
 
 local OnBalanceChanged = function(payload)
-	print("Balance Update!")
+	core.debug("Balance Update!")
 	
 	if core.db and core.db.profile.General.playSpecialSounds then
 		local balance = core.GetBalance()
@@ -1195,7 +1190,7 @@ end
 rAPI:registerEvent("transmog/balance/changed", OnBalanceChanged)
 
 local OnConfigChanged = function(payload)
-	print("Config Update!")
+	core.debug("Config Update!")
 	core.SetConfig(payload)
 end
 rAPI:registerEvent("transmog/config/changed", OnConfigChanged)
@@ -1204,7 +1199,7 @@ core.RequestGetConfig = function()
 	API.GetConfig():next(function(config)
 		core.SetConfig(config)
 	end):catch(function(err)
-		print("RequestGetConfig: An error occured:", err.message)
+		core.debug("RequestGetConfig: An error occured:", err.message)
 	end)
 end
 
@@ -1213,9 +1208,9 @@ core.RequestUpdateConfig = function(config)
 	if not config or not configToAPI[config] then core.am("Wrong usage of RequestUpdateConfig! Parameter:", config); return end
 
 	API.UpdateConfig( { ["visibility"] = configToAPI[config] } ):next(function()
-		--print("Transmog visibility successfully changed to:", configToAPI[config]) -- have event now
+		--core.debug("Transmog visibility successfully changed to:", configToAPI[config]) -- have event now
 	end):catch(function(err)
-		print("RequestUpdateConfig: An error occured:", err.message)
+		core.debug("RequestUpdateConfig: An error occured:", err.message)
 	end)
 end
 
@@ -1224,15 +1219,15 @@ core.RequestActiveSkin = function()
 	API.GetActiveSkin():next(function(skinID)
 		core.SetActiveSkin(skinID)
 	end):catch(function(err)
-		print("RequestActiveSkin: An error occured:", err.message)
+		core.debug("RequestActiveSkin: An error occured:", err.message)
 	end)
 end
 
 core.RequestActivateSkin = function(skinID)
 	API.ActivateSkin(skinID):next(function(answer)
-		print("Active skin activate!") -- Changes trigered by OnSkinUpdate
+		core.debug("Active skin activate!") -- Changes trigered by OnSkinUpdate
 	end):catch(function(err)
-		print("RequestSetActiveSkin: An error occured:", err.message)
+		core.debug("RequestSetActiveSkin: An error occured:", err.message)
 	end)
 end
 
@@ -1245,40 +1240,40 @@ core.RequestSkins = function(id)
 		-- 	SelectSet(id)
 		-- end
 	end):catch(function(err)
-		print("RequestSkins: An error occured:", err.message)
+		core.debug("RequestSkins: An error occured:", err.message)
 	end)
 end
 
 core.RequestSkinRename = function(id, newName)
 	API.RenameSkin(id, newName):next(function(answer)
-		print("RenameSkinSuccess!") -- Changes triggered by OnSkinUpdate
+		core.debug("RenameSkinSuccess!") -- Changes triggered by OnSkinUpdate
 	end):catch(function(err)
-		print("RequestSkinRename: An error occured:", err.message)
+		core.debug("RequestSkinRename: An error occured:", err.message)
 	end)
 end
 
 core.RequestSkinReset = function(id)	
 	API.ResetSkin(id):next(function(answer)
-		print("ResetSkinSuccess!") -- Changes triggered by OnSkinUpdate
+		core.debug("ResetSkinSuccess!") -- Changes triggered by OnSkinUpdate
 	end):catch(function(err)
-		print("RequestSkinReset: An error occured:", err.message)
+		core.debug("RequestSkinReset: An error occured:", err.message)
 	end)
 end
 
 core.RequestTransferPriceAndOpenPopup = function(id)
 	API.GetTransferVisualsToSkinPrice(id):next(function(answer)
-		print("SkinPriceGet!")
+		core.debug("SkinPriceGet!")
 		core.ShowVisualsToSkinPopup(id, answer) -- TODO: Add check that nothing has changed in the meantime, time limit etc?
 	end):catch(function(err)
-		print("RequestTransferVisualsToSkin: An error occured:", err.message)
+		core.debug("RequestTransferVisualsToSkin: An error occured:", err.message)
 	end)
 end
 
 core.RequestTransferVisualsToSkin = function(id)	
 	API.TransferVisualsToSkin(id):next(function(answer)
-		print("SkinAbsorbSuccess!") -- Changes triggered by OnSkinUpdate. Maybe play sound?
+		core.debug("SkinAbsorbSuccess!") -- Changes will be registered by OnSkinUpdate. TODO: Maybe play sound?
 	end):catch(function(err)
-		print("RequestTransferVisualsToSkin: An error occured:", err.message)
+		core.debug("RequestTransferVisualsToSkin: An error occured:", err.message)
 	end)
 end
 
@@ -1291,7 +1286,7 @@ core.RequestSkinCosts = function()
 		if requestID ~= requestCounterSkinCosts then return end
 		SetSkinCosts(answer.shards, answer.copper)
 	end):catch(function(err)
-		print("RequestSkinCosts: An error occured:", err.message)
+		core.debug("RequestSkinCosts: An error occured:", err.message)
 	end)
 end
 
@@ -1300,21 +1295,21 @@ core.RequestBuySkin = function()
 	requestCounterBuySkin = requestCounterBuySkin + 1
 	local requestID = requestCounterBuySkin
 	API.BuySkin():next(function(answer)
-		print("skin get!")
+		core.debug("skin get!")
 		core.RequestSkinCosts()
 	end):catch(function(err)
-		print("RequestSkinCosts: An error occured:", err.message)
+		core.debug("RequestSkinCosts: An error occured:", err.message)
 	end)
 end
 
 local requestCounterUnlockVisuals = 0
-core.RequestUnlockVisuals = function(items) -- use enchant scroll from interface to unlock its visual
+core.RequestUnlockVisuals = function(items) -- Consumes enchant scrolls from inventory to unlock their visual
 	requestCounterUnlockVisuals = requestCounterUnlockVisuals + 1
 	local requestID = requestCounterUnlockVisual
 	API.UnlockVisualAll(items):next(function(answer)
-		core.am(answer)
+		core.debug(answer)
 	end):catch(function(err)
-		print("RequestUnlockVisuals: An error occured:", err.message)
+		core.debug("RequestUnlockVisuals: An error occured:", err.message)
 		UIErrorsFrame:AddMessage(err.message, 1.0, 0.1, 0.1, 1.0)
 	end)
 end
@@ -1339,8 +1334,8 @@ core.RequestUnlocksSlot = function(slot)
 		if requestID == requestCounterUS[transmogLocation] then
 			-- Imo we still want to show our current item/mog in the list of available transmogs to "deselect mog/pending"?
 			-- A bit confusing that items with the same displayID as the equipped item also get hidden, why even disallow this?
-			-- TODO: Instead of adding itemID to this list, might wanna just add it at the start of the list together with 'hidden slot item'
-			core.am(answer)
+			-- TODO: Instead of adding itemID to this list, we might wanna just add it at the start of the list together with 'hidden slot item'
+			core.debug(answer)
 			local items = core.IsEnchantSlot(slot) and answer.spellIds or answer.itemIds
 			if itemID and not skin then
 				table.insert(items, itemID)
@@ -1348,7 +1343,7 @@ core.RequestUnlocksSlot = function(slot)
 			SetAvailableMogs(slot, items)
 		end
 	end):catch(function(err)
-		print("RequestUnlocksSlot: An error occured:", err.message)
+		core.debug("RequestUnlocksSlot: An error occured:", err.message)
 	end)
 end
 
@@ -1371,7 +1366,7 @@ core.RequestUnlocksAll = function(slot)
 			core.requestUnlocksAllFailed = 1
 			core.SetUnlocks({})
 			core.SetEnchantUnlocks({})
-			print("RequestUnlocksAll: An error occured:", err.message)
+			core.debug("RequestUnlocksAll: An error occured:", err.message)
 		end
 	end)
 end
@@ -1387,7 +1382,7 @@ core.RequestApplyCurrentChanges = function()
 			SetCurrentChanges(core.GetCurrentChanges()) -- or just {}, since apply should have been successfull?
 		end
 	end):catch(function(err)
-		print("RequestApplyCurrentChanges: An error occured:", err.message)		
+		core.debug("RequestApplyCurrentChanges: An error occured:", err.message)		
 		SetCurrentChanges(core.GetCurrentChanges()) -- unknown number of slots might have successfully applied. this clears pendings where changes went through
 		UIErrorsFrame:AddMessage(err.message, 1.0, 0.1, 0.1, 1.0)
 	end)
@@ -1399,12 +1394,12 @@ core.RequestBalance = function()
 	local requestID = requestCounterB
 	API.GetBalance():next(function(balance)
 		if requestID == requestCounterB then
-			-- print("Your balance is: " .. balance.shards .. " moggies.")
+			-- core.debug("Your balance is: " .. balance.shards .. " moggies.")
 			SetBalance(balance)
 		end
 	end):catch(function(err)
 		SetBalance({})
-		print("RequestBalance: An error occured:", err.message)
+		core.debug("RequestBalance: An error occured:", err.message)
 	end)
 end
 
@@ -1422,7 +1417,7 @@ end
 -- 			SetCosts(price.copper, price.shards)
 -- 		end
 -- 	end):catch(function(err)
--- 		print("RequestPriceTotal: An error occured:", err.message)
+-- 		core.debug("RequestPriceTotal: An error occured:", err.message)
 -- 		if requestID == requestCounterPOA then
 -- 			SetCosts()
 -- 		end
@@ -1440,17 +1435,17 @@ end
 	
 -- 	if not pendingID then return end -- No pending change, so no price to request
 
--- 	if not (selectedSkin or itemID) then print("ERROR in RequestPriceSlot, requesting price for empty slot") end
+-- 	if not (selectedSkin or itemID) then core.debug("ERROR in RequestPriceSlot, requesting price for empty slot") end
 
 -- 	local requestID = requestCounterSlotPrices[itemSlot]
 -- 	API.GetPrice(pendingID, not selectedSkin and itemID or nil, location):next(function(price)
 -- 		if requestID == requestCounterSlotPrices[itemSlot] then
--- 			--print("Got an answer Poggers Prices", itemSlot, price.copper, price.shards)
+-- 			--core.debug("Got an answer Poggers Prices", itemSlot, price.copper, price.shards)
 -- 			SetSlotCostsAndReason(itemSlot, price.copper, price.shards)
 -- 		end
 -- 	end):catch(function(err)
 -- 		if requestID == requestCounterSlotPrices[itemSlot] then
--- 			print("RequestPriceSlot " .. (itemSlot or "nil") .. ": An error occured:", err.message)
+-- 			core.debug("RequestPriceSlot " .. (itemSlot or "nil") .. ": An error occured:", err.message)
 -- 			SetSlotCostsAndReason(itemSlot, nil, nil, err.message)
 -- 		end
 -- 	end)
@@ -1473,17 +1468,17 @@ core.RequestPriceSlot = function(itemSlot)
 
 	pendingID = (pendingID == core.HIDDEN_ID and API.HideItem) or (pendingID == core.UNMOG_ID and API.NoTransmog) or pendingID -- translate to API ID
 
-	if not (selectedSkin or itemID) then print("ERROR in RequestPriceSlot, requesting price for empty slot") end
+	if not (selectedSkin or itemID) then core.debug("ERROR in RequestPriceSlot, requesting price for empty slot") end
 
 	local requestID = requestCounterSlotPrices[itemSlot]
 	API.GetPriceAndCheck(pendingID, not selectedSkin and itemID or nil, location, selectedSkin):next(function(result)
 		if requestID == requestCounterSlotPrices[itemSlot] then
-			-- core.am(result)
+			-- core.debug(result)
 			SetSlotCostsAndReason(itemSlot, result.copper, result.shards, result.valid, result.message)
 		end
 	end):catch(function(err)
 		if requestID == requestCounterSlotPrices[itemSlot] then
-			print("RequestPriceSlot " .. (itemSlot or "nil") .. ": An error occured:", err.message)
+			core.debug("RequestPriceSlot " .. (itemSlot or "nil") .. ": An error occured:", err.message)
 			SetSlotCostsAndReason(itemSlot, nil, nil, false, err.message)
 		end
 	end)
@@ -1568,7 +1563,7 @@ core.ShowMeleeWeapons = function(mod, mainHand, offHand, callID)
 	local hasTitanGrip = core.HasTitanGrip()
 	local canDualWield = core.CanDualWield()
 
-	-- print("equipMWeps", mainHand, offHand)
+	-- core.debug("equipMWeps", mainHand, offHand)
 
 	if mainHand then
 		TryOn(mod, core.DUMMY_WEAPONS.POLEARM)
@@ -1579,7 +1574,7 @@ core.ShowMeleeWeapons = function(mod, mainHand, offHand, callID)
 				core.EquipOffhandNext(mod)
 				TryOn(mod, offHand)
 			else
-				--am("MyAdddon: Cannot preview "..select(1, GetItemInfo(offHand)).." in offhand with "..select(1, GetItemInfo(mainHand)).." in mainhand.")
+				--core.am("MyAdddon: Cannot preview "..select(1, GetItemInfo(offHand)).." in offhand with "..select(1, GetItemInfo(mainHand)).." in mainhand.")
 				return true
 			end
 		end
@@ -1615,8 +1610,7 @@ end
 
 core.AttemptSkinRename = function(skinID, newName)
 	local denyMessage = CheckForInvalidSkinName(newName)
-	if denyMessage then
-		core.am(denyMessage)		
+	if denyMessage then	
 		UIErrorsFrame:AddMessage(denyMessage, 1.0, 0.1, 0.1, 1.0)
 		return
 	end
@@ -1659,9 +1653,10 @@ core.IsOffHandItemType = function(itemType)
 end
 
 core.OpenTransmogWindow = function(fromGossip)
-	core.wardrobeFrame:Hide()	
+	core.wardrobeFrame:Hide()
 	core.SetIsAtTransmogrifier(true)
 	core.SetShown(core.transmogFrame.minimizeButton, fromGossip)
+	-- core.transmogFrame:SetParent(fromGossip and GossipFrame or UIParent)
 	core.transmogFrame:Show()
 end
 
@@ -1727,6 +1722,8 @@ a:SetScript("OnEvent", function(self, event, ...)
 
 		core:InitializeAce()
 
+		core.OnSettingsUpdate()
+
 		core.GenerateStringData()
 
 		core.RequestSkins()
@@ -1752,7 +1749,7 @@ a:SetScript("OnEvent", function(self, event, ...)
 		core.CreateEnchantSlotButton = nil
 		core.CreateItemTypeDDM = nil
 		core.CreateOptionsDDM = nil
-		-- core.CreateMannequinFrame = nil -- Still need this, as Itemcollection can dynamically create more models when the row/col counts are increased. Might wanna remove this functionality
+		-- core.CreateMannequinFrame = nil -- Might still need this to change amount of shown mannequins
 		core.CreateWardrobeModelFrame = nil
 		-- TransmogFrame
 		core.CreatePreviewModel = nil
@@ -1805,41 +1802,5 @@ a:SetScript("OnEvent", function(self, event, ...)
 
 	elseif event == "PLAYER_MONEY" then
 		UpdateListeners("money")
-	
-	-- Not needed anymore. We reset TAB bind with a SecureHandlerStateTemplate on getting infight instead. We could restore mannequin tabbing here ...
-	-- elseif event == "PLAYER_REGEN_ENABLED" then
-	-- 	for _, mannequin in pairs(core.itemCollectionFrame.mannequins) do
-	-- 		ClearOverrideBindings(mannequin)
-	-- 	end
 	end
 end)
-
-
--- can we make transmog/gossip frame exclusive to other uipanels without closing gossip itself? haven't found a satisfying solution so far
--- CharacterFrame:HookScript("OnShow", function()
--- 	if core.transmogFrame:IsShown() then
--- 		MyWaitFunction(0.01, CloseGossip)
--- 	end
--- end)
-
---[[
---local gossipFrameWidthBackup
-GossipFrame:HookScript("OnShow", function()
-	if GossipFrameNpcNameText:GetText() == "Warpweaver" and not GameMenuFrame:IsShown() then
-		--gossipFrameWidthBackup = GossipFrame:GetWidth() --too thick, hide on characterwindow openinstead?
-		--core.am(GossipFrame:GetWidth())
-		--GossipFrame:SetWidth(100)--core.transmogFrame:GetWidth())
-		--GossipFrame:SetWidth(core.transmogFrame:GetWidth())
-		GossipFrameGreetingPanel:Hide() --here or onshow
-		GossipFrameCloseButton:Hide()
-		GossipFrame:SetAlpha(0)
-		--CharacterFrame:Hide()
-		core.transmogFrame:Show()
-	end
-end)
-
-GossipFrame:HookScript("OnHide", function()
-	core.transmogFrame:Hide()
-	GossipFrame:SetAlpha(1)
-	GossipFrameNpcNameText:SetText("Not Warpi")
-end)]]

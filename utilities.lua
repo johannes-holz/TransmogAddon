@@ -104,6 +104,7 @@ end
 
 -- replacement for print that can display table content
 core.am = function(...)
+
 	local args = pack(...)
 	local printResult = ""
 	for i = 1, args.n do
@@ -117,7 +118,15 @@ core.am = function(...)
 	end
 	DEFAULT_CHAT_FRAME:AddMessage(printResult)
 end
-core.AM = core.am
+
+core.debug = function(...)
+	if not core.debug_enabled then return end
+	core.am(...)
+end
+
+core.ToggleDebug = function()
+	core.debug_enabled = not core.debug_enabled
+end
 
 core.GetTextureString = function(texturePath, height)
 	height = height or 0
