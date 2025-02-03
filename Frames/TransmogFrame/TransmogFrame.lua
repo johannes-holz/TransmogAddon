@@ -120,7 +120,6 @@ end
 local TransmogFrame_OnHide = function(self)
     PlaySound("igCharacterInfoClose")
 	
-	core.UnHideGossipFrame()
     CloseGossip()
 end
 
@@ -195,9 +194,15 @@ do
 		PlaySound("igCharacterInfoOpen")
 	end)
 
-	f:SetScript("OnHide", function(self)	
+	local showGossipFrameOnHide = false
+	f:SetScript("OnHide", function(self)
 		core.SetIsAtTransmogrifier(false)
-		core.UnHideGossipFrame()
+		if showGossipFrameOnHide then
+			ShowUIPanel(GossipFrame)
+			showGossipFrameOnHide = false
+		else
+			CloseGossip()
+		end
 		PlaySound("igCharacterInfoClose")
 	end)
 
@@ -267,8 +272,7 @@ do
 		"Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", 90/512, 118/512, 451/512, 481/512,
 		"Interface\\Buttons\\UI-Panel-MinimizeButton-Disabled", 90/512, 118/512, 451/512, 481/512)		
 	f.exitButton:SetPoint("TOPRIGHT", f, "TOPRIGHT", -1 * SCALE, -15 * SCALE)
-	f.exitButton:SetScript("OnClick", function() 
-		CloseGossip()
+	f.exitButton:SetScript("OnClick", function()
 		f:Hide()
 	end)
 
@@ -279,6 +283,7 @@ do
 		"Interface\\Buttons\\UI-Panel-SmallerButton-Disabled", 90/512, 118/512, 451/512, 481/512)
 	f.minimizeButton:SetPoint("RIGHT", f.exitButton, "LEFT")
 	f.minimizeButton:SetScript("OnClick", function()
+		showGossipFrameOnHide = true
 		f:Hide()
 	end)
 	

@@ -1665,41 +1665,14 @@ core.OpenTransmogWindow = function(fromGossip)
 	core.transmogFrame:Show()
 end
 
-core.gossipBlocker = CreateFrame("Frame", nil, GossipFrame)
-core.gossipBlocker:SetAllPoints()
-core.gossipBlocker:EnableMouse()
-core.gossipBlocker:Hide()
-
-core.HideGossipFrame = function()
-	GossipFrameGreetingPanel:Hide() --here or onshow
-	GossipFrameCloseButton:Hide()
-	GossipFrame:SetAlpha(0)
-	core.gossipBlocker:Show()
-	-- core.defaultGossipFrameWidth = core.defaultGossipFrameWidth or GossipFrame:GetWidth()
-	-- UIPanelWindows["GossipFrame"].width = 2000
-	-- core.gossipFramedefaultWidth = core.gossipFramedefaultWidth or UIPanelWindows.GossipFrame.width or GossipFrame:GetWidth()
-	-- GossipFrame:SetWidth(1020)
-	-- GossipFrame:SetAttribute("UIPanelLayout-" .. "width", 1020)
-	-- GossipFrame:SetAttribute("UIPanelLayout-" .. "pushable", 0)
-	-- GossipFrame:SetAttribute("UIPanelLayout-" .. "area", "center")
-	-- UIPanelWindows["GossipFrame"].width = 1020
-	-- UIPanelWindows["GossipFrame"].pushable = 0
-	-- UIPanelWindows["GossipFrame"].area = "center"
-	-- UpdateUIPanelPositions(GossipFrame)
-end
-
-core.UnHideGossipFrame = function()
-	core.gossipBlocker:Hide()
-	GossipFrameGreetingPanel:Show() --here or onshow
-	GossipFrameCloseButton:Show()
-	GossipFrame:SetAlpha(1)
-end
-
-
-
 core.gossipOpenTransmogButton = core.CreateMeATextButton(GossipFrame, 112, 24, "Transmogrify")
-core.gossipOpenTransmogButton:SetScript("OnClick", function()	
-	core.HideGossipFrame()
+core.gossipOpenTransmogButton:SetScript("OnClick", function()
+	-- hide frame without calling CloseGossip()
+	local onHideScript = GossipFrame:GetScript("OnHide")
+	GossipFrame:SetScript("OnHide", nil)
+	HideUIPanel(GossipFrame)
+	GossipFrame:SetScript("OnHide", onHideScript)
+
 	core.OpenTransmogWindow(true)
 end)
 core.gossipOpenTransmogButton:SetPoint("TOP", GossipNpcNameFrame, "BOTTOM", 0, -10)
@@ -1797,7 +1770,6 @@ a:SetScript("OnEvent", function(self, event, ...)
 	elseif event == "GOSSIP_CLOSED" then
 		lastClosed = GetTime()
 		--GossipFrame:SetWidth(gossipFrameWidthBackup)
-		core.UnHideGossipFrame()
 		core.transmogFrame:Hide()
 		-- GossipFrame:SetAttribute("UIPanelLayout-" .. "area", "left")
 		-- UpdateUIPanelPositions(GossipFrame)
