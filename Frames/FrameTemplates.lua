@@ -243,7 +243,7 @@ core.CreateCustomCheckButton = function(parent, name, width, height)
     if width and height then
         button:SetSize(width, height)
         for k, r in pairs({ button:GetRegions() }) do
-            -- core.debug(k, r, r:GetSize(), r.GetName and r:GetName())
+            -- core.Debug(k, r, r:GetSize(), r.GetName and r:GetName())
             local w, h = r:GetSize()
             r:SetSize(w * width / 36, h * height / 36)
         end

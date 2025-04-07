@@ -1,5 +1,5 @@
 ## Interface: 30300
-## Title: AAAMoggies
+## Title: AAAmyaddon
 ## Version: 1.0
 ## Notes: Transmog, Outfits and Wardrobe Features for WotLK
 ## Author: Qhoernchen

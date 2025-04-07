@@ -104,18 +104,16 @@ local Model_TryOn = function(self, itemID, slot)
 		end
 		self:SetLoading(false)
 	elseif GetItemInfo(itemID) then
+		local realSlot = core.itemCollectionFrame.selectedSlot
+		local correspondingEnchantSlot = core.IsEnchantableSlot(realSlot) and core.GetCorrespondingSlot(realSlot)
 		local enchant
-		if core.itemCollectionFrame.previewWeaponEnchants then
+		if correspondingEnchantSlot and core.itemCollectionFrame.previewWeaponEnchants then
 			if not atTransmogrifier then
-				enchant = core.itemCollectionFrame.previewWeaponEnchants and core.itemCollectionFrame.enchant
+				enchant = core.itemCollectionFrame.enchant
 			else
-				local realSlot = core.GetSelectedSlot()
-				local correspondingEnchantSlot = core.GetCorrespondingSlot(realSlot)
-				if correspondingEnchantSlot then
-					local skin = core.GetSelectedSkin()
-					local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(correspondingEnchantSlot, skin)
-					enchant = pendingID or (skin and skinVisualID) or (not skin and (visualID or itemID)) or nil
-				end
+				local skin = core.GetSelectedSkin()
+				local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(correspondingEnchantSlot, skin)
+				enchant = pendingID or (skin and skinVisualID) or (not skin and (visualID or itemID)) or nil
 			end
 		end
 		local itemString = "item:" .. itemID .. ":" .. (core.SpellToEnchantID(enchant) or 0)

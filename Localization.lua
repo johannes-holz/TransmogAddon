@@ -25,7 +25,7 @@ L.deDE = {
     TRY_ON = "Anprobieren",
     PRINT = "Drucken",
     SHARE = "Teilen",
-    SELECT_ITEM_TYPE = "Gegenstandsarten", -- "Gegenstandsart auswählen",
+    SELECT_ITEM_TYPE = "Gegenstandsarten",
     OVERVIEW = "Übersicht",
 
     COLLECTED_ITEMS = "Gesammelte Gegenstände",
@@ -48,7 +48,7 @@ L.deDE = {
     OVERWRITE = "Überschreiben",
     CREATE = "Erstellen",
 
-    APPLY_TO_ITEMS = "Übernehmen", -- don't think we can fit "to skin/items" on the button in german
+    APPLY_TO_ITEMS = "Übernehmen",
     APPLY_TO_SKIN = "Übernehmen",
 
     BUY_SKIN_SLOT = "Weiteren Skinplatz kaufen",
@@ -80,14 +80,14 @@ L.deDE = {
     EQUIP_PREVIEW = "Mit Ausrüstung",
 
     TRANSMOG_NAME = "Transmogrifikation",
-    APPEARANCE_NOT_COLLECTED_TEXT_A = "Ihr habt dieses Aussehen noch nicht gesammelt.", -- "You haven't collected this appearance"
-    APPEARANCE_NOT_COLLECTED_TEXT_B = "Ihr habt dieses Aussehen gesammelt, aber nicht von diesem Gegenstand.", --"You've collected this appearance, but not from this item"
+    APPEARANCE_NOT_COLLECTED_TEXT_A = "Ihr habt dieses Aussehen noch nicht gesammelt.",
+    APPEARANCE_NOT_COLLECTED_TEXT_B = "Ihr habt dieses Aussehen gesammelt, aber nicht von diesem Gegenstand.",
     APPEARANCE_NOT_COLLECTED_TEXT_NO = "Gesammelte Aussehen konnten nicht abgefragt werden.",
 
     APPEARANCE_TOOLTIP_TEXT1A = "Gegenstände mit diesem Aussehen:",
     APPEARANCE_TOOLTIP_TEXT1B = "Verfügbare Gegenstände mit diesem Aussehen:",
     APPEARANCE_TOOLTIP_TEXT2 = "Drücke Tab oder Rechtsklick, um einen anderen Gegenstand auszuwählen.",
-    APPEARANCE_TOOLTIP_TEXT3 = "Es gibt weitere Gegenstände mit diesem Aussehen, die nicht der aktuellen Auswahl entsrprechen.",
+    APPEARANCE_TOOLTIP_TEXT3 = "Es gibt weitere Gegenstände mit diesem Aussehen, die nicht der aktuellen Auswahl entsprechen.",
     APPEARANCE_TOOLTIP_TEXT4 = "* Durch die Transmogrifikation wird der Gegenstand an euch gebunden und kann nicht mehr gehandelt oder zurückgegeben werden.",
 
     ITEM_TOOLTIP_TRANSMOGRIFIED_TO = "Transmogrifiziert zu:",
@@ -99,9 +99,9 @@ L.deDE = {
     TRANSMOG_TOOLTIP_REMOVE_MOG = "Transmogrifikation entfernen",
     TRANSMOG_TOOLTIP_REMOVE_SKIN = "Leerer Slot",
 
-    CAN_NOT_PREVIEW = "Waffenkombination kann in Vorschau nicht angezeigt werden", -- "Cannot preview current melee weapons together."
-    OH_WILL_BE_HIDDEN = "OH wird von aktueller MH versteckt werden", -- "Off hand will be hidden by current main hand appearance."
-    OH_APPEARANCE_WONT_BE_SHOWN = "Transmog auf Nebenhand wird nicht angezeigt", -- "This off hand appearance will not be shown while in this slot."
+    CAN_NOT_PREVIEW = "Waffenkombination kann in Vorschau nicht angezeigt werden",
+    OH_WILL_BE_HIDDEN = "OH wird von aktueller MH versteckt werden",
+    OH_APPEARANCE_WONT_BE_SHOWN = "Transmog auf Nebenhand wird nicht angezeigt",
     MH_APPEARANCE_WONT_BE_SHOWN = "Transmog auf Waffenhand wird nicht angezeigt",
     MH_OH_APPEARANCE_WONT_BE_SHOWN = "Transmog auf beiden Händen wird nicht angezeigt",
 
@@ -112,6 +112,8 @@ L.deDE = {
     OPEN_TRANSMOG = "Transmogfenster öffnen",
     OPEN_OPTIONS = "Optionen öffnen",
     TOGGLE_VISIBILITY = "Transmogsichtbarkeit umschalten",
+
+    TRANSMOG_WINDOW = "Transmogfenster",
 
     TRANSMOG_STATUS = "Transmog Sichtbarkeit: ",
     TRANSMOG_STATUS_UNKNOWN = "Transmog Sichtbarkeit konnte nicht abgefragt werden.",
@@ -130,7 +132,6 @@ L.deDE = {
     RESET_SKIN_TEXT1 = "Seid ihr euch sicher, dass ihr Skin",
     RESET_SKIN_TEXT2 = "zurücksetzen wollt?\nDadurch werden alle Transmogrifikationen auf dem Skin unwiderruflich gelöscht.",
 
-    --"Die Transmogrifizierung aller ausgerüsteten Gegenstände wird von den Gegenständen entfernt und auf den Skin übertragen. Bereits gezahlte Kosten werden verrechnet. Existiert bereits eine Transmogrifikation auf einem Ausrüstungsplatz des Skins, so wird diese nicht überschrieben. Fortfahren?"
     VISUALS_TO_SKIN_TEXT1 = "Diese Aktion entfernt folgende Transmogrifikationen von eurer Ausrüstung und überträgt sie auf den Skin",
     VISUALS_TO_SKIN_TEXT2 = "Die bereits gezahlten Kosten sind im Preis verrechnet. Fortfahren?",
 
@@ -147,8 +148,8 @@ L.deDE = {
     OUTFIT_NAME_INVALID_CHARACTERS = "Outfitname enthält ungültige Zeichen.",
     OUTFIT_NAME_ALREADY_IN_USE = "Es gibt bereits ein Outfit mit diesem Namen.",
 
-    UNLOCKED_BAR_TOOLTIP_TEXT1 = "Anzahl gesammelter Aussehen, die den gewählten Filtern entsprechen.", -- "Unlocked Appearances for current selection. The upper bound includes items that might not be collectable for this character."
-    SEARCHBOX_TOOLTIP_TEXT1 = "Filtert Auswahl nach Gegenstandsname oder ID.", -- "Filter items by name or item ID.\nSearch by name only works for cached items."
+    UNLOCKED_BAR_TOOLTIP_TEXT1 = "Anzahl gesammelter Aussehen, die den gewählten Filtern entsprechen.",
+    SEARCHBOX_TOOLTIP_TEXT1 = "Filtert Auswahl nach Gegenstandsname oder ID.",
 
     SELECT_SKIN = "Skin auswählen",
 
@@ -168,6 +169,14 @@ L.deDE = {
     ENCHANT_UNLOCK_BUTTON_TOOLTIP2 = "Ihr habt keine Schriftrollen zum Freischalten von Transmogrifikationen.",
 
     ENCHANT_UNLOCK_POPUP_TEXT = "Seid ihr sicher, dass ihr folgende Verzauberungen zur Transmogrifikation freischalten wollt? Die Gegenstände werden dabei zerstört.\n",
+
+    NO_UNLOCKS_HINT_TEXT1 = "Ihr habt keine verfügbaren Transmogrifikationen für den gewählten Slot und Gegenstandsart.",
+    NO_UNLOCKS_HINT_TEXT2 = "\n\nIhr könnt Schriftrollen oder Gegenstände in eurem Inventar benutzen, um die entsprechende Verzauberung zur Transmogrifikation freizuschalten.\nNutzt dazu den Button in der rechten unteren Ecke oder das Dialogmenü des NPCs.",
+
+    APPLY_TOOLTIP_NO_PENDING = "Keine ausstehenden Transmogrifikationen.",
+    APPLY_TOOLTIP_INVALID_SLOTS = "Manche der ausstehenden Transmogrifikationen sind unzulässig:\n",
+
+    BACK_TO_GOSSIP_MENU_TEXT = "Zurück zum Dialogfenster",
 
     LEFT_CLICK = "Linksklick:",
     SHIFT_LEFT_CLICK = "Umschalt + Linksklick:",
@@ -243,7 +252,7 @@ L.enEU = {
     TRY_ON = "Try on",
     PRINT = "Print",
     SHARE = "Share",
-    SELECT_ITEM_TYPE = "Item types", -- "Select item type",
+    SELECT_ITEM_TYPE = "Item types",
     OVERVIEW = "Overview",
 
     COLLECTED_ITEMS = "Collected items",
@@ -266,7 +275,7 @@ L.enEU = {
     OVERWRITE = "Overwrite",
     CREATE = "Create",
 
-    APPLY_TO_ITEMS = "Apply to items", -- or just apply?
+    APPLY_TO_ITEMS = "Apply to items",
     APPLY_TO_SKIN = "Apply to skin",
 
     BUY_SKIN_SLOT = "Buy another skin slot",
@@ -331,6 +340,8 @@ L.enEU = {
     OPEN_OPTIONS = "Open Options",
     TOGGLE_VISIBILITY = "Change Transmog Visibility",
 
+    TRANSMOG_WINDOW = "Transmog window",
+
     TRANSMOG_STATUS = "Transmog status: ",
     TRANSMOG_STATUS_UNKNOWN = "Could not retrieve transmog configuration from server.",
 
@@ -348,7 +359,6 @@ L.enEU = {
     RESET_SKIN_TEXT1 = "Are you sure you want to reset skin ",
     RESET_SKIN_TEXT2 = "?\nAll transmogrifications on the skin will be lost.",
 
-    --"Die Transmogrifizierung aller ausgerüsteten Gegenstände wird von den Gegenständen entfernt und auf den Skin übertragen. Bereits gezahlte Kosten werden verrechnet. Existiert bereits eine Transmogrifikation auf einem Ausrüstungsplatz des Skins, so wird diese nicht überschrieben. Fortfahren?"
     VISUALS_TO_SKIN_TEXT1 = "This action removes the following transmogrifications from your gear and transfers them to skin",
     VISUALS_TO_SKIN_TEXT2 = "The costs already paid are taken into account. Continue?",
 
@@ -387,6 +397,14 @@ L.enEU = {
 
     ENCHANT_UNLOCK_POPUP_TEXT = "Are you sure you want to unlock the following enchants for transmogrification? The scrolls will be destroyed in the process.\n",
     
+    NO_UNLOCKS_HINT_TEXT1 = "You have no available transmogrifications for the selected slot and item type.",
+    NO_UNLOCKS_HINT_TEXT2 = "\n\nTo unlock weapon enchantments for transmogrifications, you can sacrifice the corresponding scrolls or consumables from your inventory. To do this, press the button in the lower right corner or use the NPC's dialogue menu.",
+    
+    APPLY_TOOLTIP_NO_PENDING = "No pending transmogrifications.",
+    APPLY_TOOLTIP_INVALID_SLOTS = "There are slots with invalid pending transmogrifications:\n",
+
+    BACK_TO_GOSSIP_MENU_TEXT = "Back to gossip menu",
+
     LEFT_CLICK = "Left Click:",
     SHIFT_LEFT_CLICK = "Shift + Left Click:",
     CONTROL_LEFT_CLICK = "Control + Left Click:",

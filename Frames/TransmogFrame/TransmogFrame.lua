@@ -79,51 +79,13 @@ local ShowApplyTransmogPopup = function()
 	local data = {}
 	data.id = id
 	data.name = id and skins[id].name or nil
-	-- data.disable = not costs.points or not costs.copper or not balance.shards or costs.points > balance.shards or costs.copper > GetMoney()
-	data.disable = not costs.points or not costs.copper or not balance.shards
+	data.disable = not costs.points or not costs.copper or not balance.shards -- or costs.points > balance.shards or costs.copper > GetMoney()
 	data.text = (id and (core.APPLY_TO_SKIN_TEXT1 .. " " .. core.SkinPopupDisplay(data.id, data.name)) or core.APPLY_TO_INVENTORY_TEXT1)
 					.. " " .. core.APPLY_TO_INVENTORY_TEXT2 .. "\n\n"
 					.. table.concat(lines) .. "\n"
 					.. (costs.points and costs.copper and core.GetPriceString(costs.points, costs.copper) or core.APPLY_ERROR1)				
 	local popup = StaticPopup_Show("ApplyTransmogPopup", nil, nil, data)
 end
-
--- not in use yet
-local TransmogFrame_OnShow = function(self)
-    HideUIPanel(WardrobeFrame) -- TODO - Probably can not make our transmog frame a standard UI Panel, if we want to be able to go back to GossipFrame after Opening
-    core.SetAtTransmogrifier(1) -- Better do an OpenTransmogWindow() function, which gets called through Gossip Hook or Button and sets this?
-
-    PlaySound("igCharacterInfoOpen")
-
-    -- TODO: check out all of this:
-    -- model:Hide() --needed?
-    -- model:Show()
-    -- for slot, updateNeeded in pairs(core.availableMogsUpdateNeeded) do --TODO all the stuff about how and when to update unlocks for slot / item
-    --     local itemID = core.TransmogGetSlotInfo(slot)
-    --     if updateNeeded and itemID then
-    --         core.RequestUnlocksSlot(slot)
-    --     end
-    -- end		
-    if not core.GetBalance().shards then
-		core.RequestBalance()
-	end
-    -- core.RequestPriceTotal()
-	local npcID = UnitExists("target") and core.GetNPCID(UnitGUID("target"))
-
-	if npcID == core.TMOG_NPC_ID then
-    	SetPortraitTexture(f.portraitTexture, "target")
-	else
-		SetPortraitToTexture(f.portraitTexture, "interface/icons/inv_mushroom_11")
-	end
-end
-
-local TransmogFrame_OnHide = function(self)
-    PlaySound("igCharacterInfoClose")
-	
-	core.UnHideGossipFrame()
-    CloseGossip()
-end
-
 
 local SavePosition = function()
 	local point, _, relativePoint, xOfs, yOfs = core.transmogFrame:GetPoint()
@@ -151,8 +113,8 @@ core.PlayApplyAnimations = function()
 end
 
 do
-	core.transmogFrame = CreateFrame("Frame", folder .. "TransmogFrame", UIParent)
-	local f = core.transmogFrame
+	local f = CreateFrame("Frame", folder .. "TransmogFrame", UIParent)
+	core.transmogFrame = f
 	f.scale = SCALE
 
 	f:SetClampedToScreen(true) 
@@ -191,13 +153,27 @@ do
 			SetPortraitToTexture(f.portraitTexture, "interface/icons/inv_mushroom_11") -- "Interface/Icons/Achievement_Boss_Algalon_01"
 		end
 
+		-- hide GossipFrame without calling CloseGossip()
+		local onHideScript = GossipFrame:GetScript("OnHide")
+		GossipFrame:SetScript("OnHide", nil)
+		HideUIPanel(GossipFrame)
+		GossipFrame:SetScript("OnHide", onHideScript)
+
 		f:update()
 		PlaySound("igCharacterInfoOpen")
 	end)
 
-	f:SetScript("OnHide", function(self)	
+	f.showGossipFrameOnHide = false
+	f:SetScript("OnHide", function(self)		
 		core.SetIsAtTransmogrifier(false)
-		core.UnHideGossipFrame()
+		
+		if self.showGossipFrameOnHide then
+			ShowUIPanel(GossipFrame)
+			self.showGossipFrameOnHide = false
+		else
+			CloseGossip()
+		end
+		
 		PlaySound("igCharacterInfoClose")
 	end)
 
@@ -279,8 +255,10 @@ do
 		"Interface\\Buttons\\UI-Panel-SmallerButton-Disabled", 90/512, 118/512, 451/512, 481/512)
 	f.minimizeButton:SetPoint("RIGHT", f.exitButton, "LEFT")
 	f.minimizeButton:SetScript("OnClick", function()
+		f.showGossipFrameOnHide = true
 		f:Hide()
 	end)
+	core.SetTooltip(f.minimizeButton, core.BACK_TO_GOSSIP_MENU_TEXT)
 	
 	-- local left, top, right, bottom = 451/512, 90/512, 481/512,118/512
 	-- f.cancelAllButton = core.CreateMeACustomTexButton(model, 24, 24, "Interface\\AddOns\\".. folder .."\\images\\Transmogrify", left, top, right, bottom)
@@ -376,7 +354,20 @@ do
 
 	applyButton = core.CreateMeATextButton(f, 112 *  SCALE, 20 * SCALE, "Apply")
 	applyButton:SetPoint("BOTTOMLEFT", 180 * SCALE, 15 * SCALE)
+	applyButton:SetMotionScriptsWhileDisabled(true) -- allows showing tooltip while button is disabled
 	applyButton:Show()
+
+	applyButton:SetScript("OnEnter", function(self)
+		if self.tooltipText then
+			GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
+			GameTooltip:SetText(self.tooltipText, nil, nil, nil, nil, 1)
+			GameTooltip:Show()
+		end
+	end)
+
+	applyButton:SetScript("OnLeave", function()
+		GameTooltip:Hide()
+	end)
 	
 	applyButton:SetScript("OnClick", function()
 		local costs = core.GetCosts()
@@ -396,46 +387,51 @@ do
 			end
 		end
 	end)
+
 	applyButton.update = function()	
 		applyButton:SetText(core.GetSelectedSkin() and core.APPLY_TO_SKIN or core.APPLY_TO_ITEMS)
 
 		local costs = core.GetCosts()
 		local balance = core.GetBalance()
 
-		local enable = true
-
-		-- for k, slot in pairs(core.itemSlots) do
-		-- 	if not enable and slot ~= "MainHandEnchantSlot" and slot ~= "SecondaryHandEnchantSlot" then
-		-- 		local itemID, visualID, _, pendingID = core.TransmogGetSlotInfo(slot)
-
-		-- 		if pendingID then
-		-- 			enable = true --applyButton:Enable()
-		-- 		end
-		-- 	end
-		-- end	
-		-- for k, slot in pairs(core.itemSlots) do
-		-- 	if enable and slot ~= "MainHandEnchantSlot" and slot~= "SecondaryHandEnchantSlot" then
-		-- 		local itemID, visualID, _, pendingID = core.TransmogGetSlotInfo(slot)
-				
-		-- 		if pendingID and not canReceiveTransmog(itemID, pendingID, slot) then
-		-- 			enable = false
-		-- 		end
-		-- 	end
-		-- end
-
-		-- if not costs.copper or not balance.shards or GetMoney() < costs.copper or balance.shards < costs.points then
-		if not costs.copper or not balance.shards then -- When not enough funds: Allow clicking button and show error message on click instead of disabling?
-			enable = false
-		end
+		-- Should we also check for sufficient funds? Blizzard Interface usually allows clicking the button anyways
+		local enable = costs.copper and balance.shards
 		
-		if enable then
-			applyButton:Enable()
-		else
-			applyButton:Disable()
+		core.SetEnabled(applyButton, enable)
+
+		-- Find out disable reason for tooltip
+		local hasPendings = false
+		local invalidSlots = {}
+		for _, slot in pairs(core.allSlots) do			
+			local itemID, visualID, skinVisualID, pendingID, pendingCostsShards, pendingCostsCopper, canTransmogrify, cannotTransmogrifyReason = core.TransmogGetSlotInfo(slot)
+
+			hasPendings = hasPendings or not not pendingID
+
+			if pendingID and not canTransmogrify then -- differentiate between slot awaiting answer and invalid slot?
+				tinsert(invalidSlots, slot)
+			end
+		end
+
+		local tooltip
+		if not balance.shards then
+			tooltip = core.APPLY_ERROR1
+		elseif hasPendings and #invalidSlots > 0 then
+			tooltip = core.APPLY_TOOLTIP_INVALID_SLOTS
+			for _, slot in pairs(invalidSlots) do
+				tooltip = tooltip .. "\n" .. core.SLOT_NAMES[slot]
+			end
+		elseif not hasPendings then
+			tooltip = core.APPLY_TOOLTIP_NO_PENDING
+		end
+		applyButton.tooltipText = tooltip
+
+		if GameTooltip:IsShown() and GameTooltip:GetOwner() == applyButton then
+			applyButton:GetScript("OnEnter")(applyButton)
 		end
 	end		
 	applyButton.update()
 	core.RegisterListener("costs", applyButton)
+	core.RegisterListener("balance", applyButton)
 	core.RegisterListener("currentChanges", applyButton)
 	core.RegisterListener("currentMogs", applyButton)
 	core.RegisterListener("money", applyButton)
@@ -448,39 +444,10 @@ do
 	costsFrame:SetJustifyH("RIGHT")
 
 	costsFrame.update = function()
-		local enable = true		
+		local costs = core.GetCosts()		
+		local enable = not not costs.copper
 
-		local costs = core.GetCosts()
-
-		-- for k, slot in pairs(core.itemSlots) do
-		-- 	if not enable and slot ~= "MainHandEnchantSlot" and slot ~= "SecondaryHandEnchantSlot" then
-		-- 		local itemID, visualID, _, pendingID = core.TransmogGetSlotInfo(slot)
-
-		-- 		if pendingID then
-		-- 			enable = true --applyButton:Enable()
-		-- 		end
-		-- 	end
-		-- end	
-
-		-- for k, slot in pairs(core.itemSlots) do
-		-- 	if enable and slot ~= "MainHandEnchantSlot" and slot~= "SecondaryHandEnchantSlot" then
-		-- 		local itemID, visualID, _, pendingID = core.TransmogGetSlotInfo(slot)
-				
-		-- 		if pendingID and not canReceiveTransmog(itemID, pendingID, slot) then
-		-- 			enable = false
-		-- 		end
-		-- 	end
-		-- end
-
-		if not costs.copper then
-			enable = false
-		end
-		
-		if enable then
-			costsFrame:SetText(core.GetPriceString(costs.points, costs.copper, true))
-		else
-			costsFrame:SetText("")
-		end
+		costsFrame:SetText(enable and core.GetPriceString(costs.points, costs.copper, true) or "")
 	end
 	costsFrame.update()
 	core.RegisterListener("costs", costsFrame)
@@ -509,9 +476,6 @@ do
 	balanceFrame.update = function()
 		local balance = core.GetBalance()
 		balanceFrame.text:SetText(core.GetPriceString(balance and balance.shards or "?", GetMoney(), true))
-		-- local balString = balance.shards
-		-- if balString == nil then balString = "?" end
-		-- balanceFrame.text:SetText(balString .. " |T" .. core.CURRENCY_ICON .. ":" .. 14 .. "|t\n" .. core.GetCoinTextureStringFull(GetMoney())) --balanceFrame:GetStringHeight()*1.3
 	end
 	balanceFrame.update()
 	core.RegisterListener("balance", balanceFrame)
@@ -519,34 +483,14 @@ do
 	
 	local titleFrame = f:CreateFontString()
 	titleFrame:SetFontObject("GameFontNormal")
-	--titleFrame:SetFont("Fonts\\FRIZQT__.TTF", 11, "OUTLINE, MONOCHROME")
 	titleFrame:SetText(core.TRANSMOGRIFY)
 	titleFrame:SetPoint("TOP", f, "TOP", 0, -19 * SCALE)
 
-
-	-- f.inventoryButton = core.CreateMeATextButton(f, 100, 24, "Inventory")
-	-- f.inventoryButton:SetPoint("BOTTOMRIGHT", model, "TOP", -5 * SCALE, 5 * SCALE)
-	-- f.inventoryButton:SetScript("OnClick", function(self, button)
-	-- 	core.SetSelectedSkin(nil)
-	-- end)
-
-	-- f.skinsButton = core.CreateMeATextButton(f, 100, 24, "Skins...")
-	-- f.skinsButton:SetPoint("BOTTOMLEFT", model, "TOP", 5 * SCALE, 5 * SCALE)
-	-- f.skinsButton:SetScript("OnClick", function(self, button)
-	-- 	ToggleDropDownMenu(1, nil, skinDropDown, "MyAddonFrame", 0, 0)
-	-- end)
-
-	---- Button to open Enchant Unlock Frame or Popup ----
-
 	f.unlockEnchantsButton = core.CreateUnlockEnchantsButton(f, 18 * SCALE, 18 * SCALE)
-	-- f.unlockEnchantsButton:SetPoint("TOP", 135 * SCALE, -76 * SCALE) -- Buttons fake pushed offset method requires single point (e.g. no "TOPRIGHT")
-	f.unlockEnchantsButton:SetPoint("RIGHT", balanceFrame, "LEFT", -4 * SCALE, 0 * SCALE)
+	f.unlockEnchantsButton:SetPoint("RIGHT", balanceFrame, "LEFT", -4 * SCALE, 0 * SCALE) -- Buttons fake push method only works with single point (e.g. no "TOPRIGHT")
 	f.unlockEnchantsButton:Hide()
-	TESTO = f.unlockEnchantsButton
 
-
-
-	------- Inventory/Skins Tabs/Buttons -------------------
+	------- Inventory, Skins Tabs -------------------
 	f.TAB_NAMES = {core.INVENTORY, core.SKINS}
 	f.tabs = {}
 	f.buttons = {}

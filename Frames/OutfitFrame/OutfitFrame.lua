@@ -26,7 +26,8 @@ core.CreateOutfitFrame = function(parent)
     end
 
     outfitFrame.ModelDiffersFromOutfit = function(self, outfit)
-        if not outfit then return false end
+        if not outfit or not core.GetOutfits()[outfit] then return false end
+        
         local model = self:GetParent()
         local modelSlots = model:GetAll()
         local outfitSlots = core.GetOutfits()[outfit]

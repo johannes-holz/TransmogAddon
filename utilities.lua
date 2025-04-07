@@ -119,13 +119,14 @@ core.am = function(...)
 	DEFAULT_CHAT_FRAME:AddMessage(printResult)
 end
 
-core.debug = function(...)
-	if not core.debug_enabled then return end
+core.Debug = function(...)
+	if not TransmoggyDB.debugEnabled then return end
 	core.am(...)
 end
 
 core.ToggleDebug = function()
-	core.debug_enabled = not core.debug_enabled
+	TransmoggyDB.debugEnabled = not TransmoggyDB.debugEnabled
+	print(folder .. " - Debug messages are now " .. (TransmoggyDB.debugEnabled and "enabled." or "disabled."))
 end
 
 core.GetTextureString = function(texturePath, height)
@@ -243,7 +244,7 @@ core.FixTooltip = function(tooltip)
 	tooltip:SetHyperlink("item:" .. initItem)
 
 	local regions = { tooltip:GetRegions() }
-	local buggoLeft, buggoRight -- are u making fun of my nose?
+	local buggoLeft, buggoRight
 	for i, region in pairs(regions) do
 		if region and region:GetObjectType() == "FontString" then
 			local _, anchor = region:GetPoint(1)
@@ -259,14 +260,6 @@ core.FixTooltip = function(tooltip)
 		_G[tooltip:GetName()  .. "TextLeft9"] = buggoLeft
 		_G[tooltip:GetName()  .. "TextRight9"] = buggoRight
 	end
-
-	-- print(buggoLeft, buggoRight)
-	-- for i = 1, 20 do
-	-- 	if _G[tooltip:GetName()  .. "TextLeft" .. i] then
-	-- 		print(i .. "left", _G[tooltip:GetName()  .. "TextLeft" .. i], _G[tooltip:GetName()  .. "TextLeft" .. i]:GetName(), _G[tooltip:GetName()  .. "TextLeft" .. i]:GetText())
-	-- 		print(i .. "right", _G[tooltip:GetName()  .. "TextRight" .. i], _G[tooltip:GetName()  .. "TextRight" .. i]:GetName(), _G[tooltip:GetName()  .. "TextRight" .. i]:GetText())
-	-- 	end
-	-- end
 
 	tooltip:Hide()
 end

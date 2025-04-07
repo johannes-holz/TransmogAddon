@@ -99,7 +99,7 @@ DressUpModel.GetAll = function(self)
     return core.DeepCopy(items)
 end
 
--- We allow setting slots to 1 (hidden) now. The original TryOn just ignores these calls anyway. Problem with enchants, as there is an enchant with ID=1 :)
+-- We allow setting slots to 1 (hidden) now. The original TryOn just ignores these calls anyway. Problem with enchants, as there is an enchant with ID=1
 -- Cached item info should not be needed at this point: We can check itemType for OH stuff with item data and we just have to call a display update on item query
 -- TODO: modify OnItemClick to allow setting hidden items?
 DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
@@ -215,7 +215,7 @@ DressUpModel.SetAll = function(self, set)
 		self:SetSlot(slot, set[slot], true)
     end
 	
-	UpdateListeners("dressUpModel")
+	core.UpdateListeners("dressUpModel")
 end
 
 local TryOnOld = DressUpModel.TryOn

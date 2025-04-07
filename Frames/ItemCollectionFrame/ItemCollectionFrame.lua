@@ -49,7 +49,6 @@ itemCollectionFrame:SetScript("OnShow", function(self)
 		self.unlockedStatusBar:SetPoint("BOTTOM", self, "TOP", 0, 10)
 		self.unlockedStatusBar:Show()
 		self.searchBox:SetPoint("LEFT", self.unlockedStatusBar, "RIGHT", 15, 1)
-		--self.searchBox:SetPoint("BOTTOMRIGHT", self.itemTypeDDM, "TOPLEFT", 3, 12)
 	else
 		self.searchBox:SetPoint("RIGHT", self.itemTypeDDM, "LEFT", 0, 3)
 		self.unlockedStatusBar:Hide()
@@ -71,11 +70,6 @@ itemCollectionFrame.SetSlotAndCategory = function(self, slot, category, update)
 	--print("set location, type", locationName, itemType)
 	if not update and itemCollectionFrame.selectedSlot == slot and itemCollectionFrame.selectedCategory == category then return end
 	
-	-- if theres only one category in slot, select it, just so it gets shown in ddm? core.SetSlotAndCategory would need this too? :/
-	-- if not category and slot and core.slotCategories[slot] and core.Length(core.slotCategories[slot]) == 1 then
-	-- 	category = core.slotCategories[1] -- TODO: why no worky?
-	-- end
-
 	self.selectedSlot = slot
 	self.selectedCategory = category
 	
@@ -87,10 +81,8 @@ itemCollectionFrame.SetSlotAndCategory = function(self, slot, category, update)
 		for _, button in pairs(self.enchantSlotButtons) do
 			core.SetShown(button.selectedTexture, button.itemSlot == slot)
 		end
-		-- core.SetShown(self.enchantSlotButton.selectedTexture, self.enchantSlotButton.itemSlot == slot)
 	end
 
-	-- TODO: setshown all the other stuff: shown = not (atNpc and not slot)
 	core.SetShown(self.noSlotSelectedText, not slot)
 	core.SetShown(self.searchBox, slot)
 	core.SetShown(self.itemTypeDDM, slot)
@@ -99,9 +91,9 @@ itemCollectionFrame.SetSlotAndCategory = function(self, slot, category, update)
 	core.SetShown(self.pageText, slot)
 
 	core.SetShown(self.enchantCheckButton, slot == "MainHandSlot" or slot == "ShieldHandWeaponSlot")
-	-- TODO: This preview enchant solution is ass at the moment. Thing of better design (caused the anoying cant equip error for example)
 	if core.IsAtTransmogrifier() then
-		-- TODO: How to handle this? For inventory ok like this? For Skin we would want ability, to select enchant? :/
+		-- TODO: This preview enchant solution is not great
+		-- How to handle this? For inventory ok like this? For Skin we would want ability, to select enchant? :/
 		if slot == "MainHandSlot" or slot == "ShieldHandWeaponSlot" then
 			self:SetPreviewEnchant(core.GetInventoryEnchantID("player", core.slotToID[slot]), true)
 		end
@@ -113,14 +105,6 @@ itemCollectionFrame.SetSlotAndCategory = function(self, slot, category, update)
 
 	self:UpdateDisplayList()
 end
-
--- Wanted to avoid using the listener pattern for itemCollection, as we do not want unnecessary calls to UpdateDisplayList
--- Using it eclusively to show correcct preview enchant on mannequins for now
--- itemCollectionFrame.update = function(self)
--- 	local enchantID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo()
--- 	self:SetPreviewEnchant(core.GetInventoryEnchantID("player", core.slotToID[slot]), true)
--- end
-
 
 ----------- TransmogLocation / InventorySlots Buttons -----------
 
@@ -143,10 +127,6 @@ for i, name in pairs(order) do
 	end
 end
 
-
---- TEST
-
--- enchantSlots = { "MainHandEnchantSlot", "OffHandEnchantSlot" }
 itemCollectionFrame.enchantSlotButtons = {}
 itemCollectionFrame.enchantSlotButtons["MainHandEnchantSlot"] = core.CreateEnchantSlotButton(itemCollectionFrame.slotButtons["MainHandWeapon"], "MainHandEnchantSlot", BUTTON_WIDTH * 0.6)
 itemCollectionFrame.enchantSlotButtons["MainHandEnchantSlot"]:SetPoint("CENTER", itemCollectionFrame.slotButtons["MainHandWeapon"], "BOTTOMRIGHT", -3, 3)
@@ -177,7 +157,7 @@ local mannequinCount = MANNEQUIN_ROWCOUNT * MANNEQUIN_COLCOUNT
 
 itemCollectionFrame.displayFrame = CreateFrame("Frame", folder.."DisplayFrame", itemCollectionFrame)
 local displayFrame = itemCollectionFrame.displayFrame
-displayFrame:SetPoint("TOPLEFT", itemCollectionFrame, "TOPLEFT", SIDE_PADDING, -HEADER_HEIGHT) -- TODO: point to upper bar with slotbuttons and options and or save dropdownmenu
+displayFrame:SetPoint("TOPLEFT", itemCollectionFrame, "TOPLEFT", SIDE_PADDING, -HEADER_HEIGHT)
 displayFrame:SetSize(WIDTH, HEIGHT)
 displayFrame:EnableMouseWheel()
 
@@ -255,7 +235,7 @@ itemCollectionFrame.pageText:SetPoint("RIGHT", itemCollectionFrame.pageDownButto
 itemCollectionFrame.pageText:SetJustifyH("CENTER")
 itemCollectionFrame.pageText:SetJustifyV("MIDDLE")
 
-------------------------------------------------------
+---------- Text to show when the list is empty --------------
 
 itemCollectionFrame.noSlotSelectedText = itemCollectionFrame:CreateFontString()
 itemCollectionFrame.noSlotSelectedText:SetFontObject(GameFontNormal)
@@ -263,6 +243,14 @@ itemCollectionFrame.noSlotSelectedText:SetPoint("CENTER", itemCollectionFrame.di
 itemCollectionFrame.noSlotSelectedText:SetJustifyH("CENTER")
 itemCollectionFrame.noSlotSelectedText:SetJustifyV("MIDDLE")
 itemCollectionFrame.noSlotSelectedText:SetText(core.NO_SLOT_SELECTED_TEXT)
+
+itemCollectionFrame.noUnlocksText = itemCollectionFrame:CreateFontString()
+itemCollectionFrame.noUnlocksText:SetFontObject(GameFontNormal)
+itemCollectionFrame.noUnlocksText:SetWidth(500)
+itemCollectionFrame.noUnlocksText:SetPoint("CENTER", itemCollectionFrame.displayFrame, "CENTER", 0, 0)
+itemCollectionFrame.noUnlocksText:SetJustifyH("CENTER")
+itemCollectionFrame.noUnlocksText:SetJustifyV("MIDDLE")
+itemCollectionFrame.noUnlocksText:SetText(textA)
 
 ------------------------------------------------------
 
@@ -376,7 +364,7 @@ itemCollectionFrame.UpdateMannequins = function(self)
 			-- end
 
 		end
-		-- if slot == "MainHandSlot" then DEB(mannequin) end -- Was used for tests showing weapons with greyed out model
+		-- if slot == "MainHandSlot" then DEB(mannequin) end -- Was used for tests showing weapons with grayed out model
 	end
 end
 
@@ -410,7 +398,7 @@ local Mannequin_OnMouseDown = function(self, button)
 	local atTransmogrifier = core.IsAtTransmogrifier()
 
 	if isEnchantSlot then
-		if not itemID then core.debug("Error: expected enchantVisualID in mannequin's OnClick") end
+		if not itemID then core.Debug("Error: expected enchantVisualID in mannequin's OnClick") end
 		local enchantID = itemCollectionFrame.displayGroups[itemID][selected] -- itemID ~= core.HIDDEN_ID and itemCollectionFrame.displayGroups[itemID][selected] or itemID
 
 		if enchantID then
@@ -459,7 +447,7 @@ local Mannequin_OnMouseDown = function(self, button)
 						ShowUIPanel(DressUpFrame)
 						DressUpModel:SetUnit("player")
 					end
-					core.debug("Call DressUpModel TryOn with", link, itemCollectionFrame.selectedSlot)
+					core.Debug("Call DressUpModel TryOn with", link, itemCollectionFrame.selectedSlot)
 					DressUpModel:TryOn(link, itemCollectionFrame.selectedSlot)
 					-- if itemCollectionFrame.model then
 					-- 	itemCollectionFrame.model:Undress()
@@ -742,6 +730,8 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 	local classFilter = self.filter.class
 	local raceFilter = self.filter.race
 	local hasExtraFilter = factionFilter or classFilter or raceFilter
+
+	local showQAEnchants = core.db.profile.General.showQAEnchants
 	
 	local unlockedCount = 0 -- For unlocked statusbar
 
@@ -753,10 +743,11 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 				local visualUnlocked
 				for _, spellID in pairs(enchantInfo.spellIDs) do
 					local enchantName = GetSpellInfo(spellID)
-					local unlocked, _, _, _, allowableClass = core.GetEnchantData(spellID)
-					-- print(enchantName, spellID)
+					local unlocked, _, _, _, allowableClass, available = core.GetEnchantData(spellID)
+					
 					if (atTransmogrifier and core.IsAvailableSourceItem(spellID, slot)) or
-							(not atTransmogrifier and (not unlockedFilter or unlocked == unlockedFilter)
+							(not atTransmogrifier and (showQAEnchants or available)
+												  and (not unlockedFilter or unlocked == unlockedFilter)
 												  and (not classFilter or band(classFilter, allowableClass) ~= 0)) then
 						if not searchTerm or spellID == searchTerm or (enchantName and strfind(enchantName, searchTerm)) then
 							self.itemUnlocked[spellID] = 1
@@ -772,23 +763,6 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 					self.visualUnlocked[enchantVisualID] = visualUnlocked and 1 or 0
 				end
 			end
-			-- core.am(self.itemUnlocked)
-
-			-- table.insert(self.displayList, hiddenID) -- Hidden/No enchant
-
-			-- for enchantVisualID, enchantInfo in pairs(core.enchants) do
-			-- 	if searchTerm then
-			-- 		for _, enchantID in pairs(enchantInfo.spellIDs) do					
-			-- 			local name = GetSpellInfo(enchantID)
-			-- 			if enchantID == searchTerm or (name and strfind(name, searchTerm)) then
-			-- 				table.insert(self.displayList, enchantVisualID)
-			-- 				break
-			-- 			end
-			-- 		end
-			-- 	else
-			-- 		table.insert(self.displayList, enchantVisualID)
-			-- 	end
-			-- end
 		else
 			local withNames = searchTerm and not searchByID
 			for itemID, itemName in core.ItemIterator(slot, category, withNames) do
@@ -797,10 +771,6 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 				if hasExtraFilter then
 					allowableClass, allowableFaction, allowableRace = core.GetItemData2(itemID)
 				end
-
-				-- if allowableFaction and bit.band(factionFilter, allowableFaction) == 0 then
-				-- 	print("nono faction", itemID, GetItemInfo(itemID))
-				-- end
 				
 				if (atTransmogrifier and core.IsAvailableSourceItem(itemID, slot)) or
 						(not atTransmogrifier and (not unlockedFilter or unlocked == unlockedFilter)) then
@@ -879,6 +849,9 @@ itemCollectionFrame.UpdateDisplayList = function(self)
 
 	itemCollectionFrame.unlockedStatusBar:SetMinMaxValues(0, table.getn(self.displayList))
 	itemCollectionFrame.unlockedStatusBar:SetValue(unlockedCount)
+	
+	itemCollectionFrame.noUnlocksText:SetText(isEnchantSlot and (core.NO_UNLOCKS_HINT_TEXT1 .. core.NO_UNLOCKS_HINT_TEXT2) or core.NO_UNLOCKS_HINT_TEXT1)
+	core.SetShown(itemCollectionFrame.noUnlocksText, atTransmogrifier and slot and (#self.displayList == 0) and core.receivedAvailableMogsAnswer)
 
 	self:SetPage(1)
 end

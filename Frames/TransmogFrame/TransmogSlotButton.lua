@@ -435,13 +435,13 @@ core.CreateItemSlotOptionsFrame = function(parent)
 	
 	core.itemSlotOptionsFrame = CreateFrame("Frame", nil, parent)
 	local itemSlotOptionsFrame = core.itemSlotOptionsFrame
-	itemSlotOptionsFrame:SetSize(itemSlotWidth / 2, itemSlotWidth)
+	itemSlotOptionsFrame:SetSize(itemSlotWidth / 2, itemSlotWidth * 1.5)
 	itemSlotOptionsFrame:Hide()
 	
 	
 	local left, top, right, bottom = 417/512, 90/512, 443/512,116/512
 	itemSlotOptionsFrame.undressButton = core.CreateMeACustomTexButton(itemSlotOptionsFrame, itemSlotWidth / 2, itemSlotWidth / 2, TRANSMOGRIFY_TEXTURE, left, top, right, bottom)
-	itemSlotOptionsFrame.undressButton:SetPoint("BOTTOMRIGHT", itemSlotOptionsFrame, "RIGHT")
+	itemSlotOptionsFrame.undressButton:SetPoint("TOPRIGHT", itemSlotOptionsFrame, "TOPRIGHT")
 	core.SetTooltip(itemSlotOptionsFrame.undressButton, core.HIDE)
 	
 	itemSlotOptionsFrame.undressButton:SetScript("OnClick", function()
@@ -450,7 +450,7 @@ core.CreateItemSlotOptionsFrame = function(parent)
 
 	local left, top, right, bottom = 451/512, 90/512, 481/512,118/512
 	itemSlotOptionsFrame.removeMogButton = core.CreateMeACustomTexButton(itemSlotOptionsFrame, itemSlotWidth / 2, itemSlotWidth / 2, TRANSMOGRIFY_TEXTURE, left, top, right, bottom)
-	itemSlotOptionsFrame.removeMogButton:SetPoint("TOPRIGHT", itemSlotOptionsFrame, "RIGHT")
+	itemSlotOptionsFrame.removeMogButton:SetPoint("TOPRIGHT", itemSlotOptionsFrame.undressButton, "BOTTOMRIGHT")
 	core.SetTooltip(itemSlotOptionsFrame.removeMogButton, core.UNMOG)
 
 	itemSlotOptionsFrame.removeMogButton:SetScript("OnClick", function()

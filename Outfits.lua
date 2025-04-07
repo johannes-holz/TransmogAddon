@@ -1,8 +1,5 @@
 local folder, core = ...
 
--- TransmoggyDB.outfits = TransmoggyDB.outfits or {}
--- Save per char or account?
-
 core.GetOutfits = function()
     if not TransmoggyDB then return end
     TransmoggyDB.outfits = TransmoggyDB.outfits or {}
@@ -24,7 +21,7 @@ end
 
 core.CreateOutfit = function(name, set)
     assert(name and set, "CreateOutfit: Missing name or set parameter")
-    -- save as [name] = {slots} or [id] = {name = "name", slots = {slots}} ??
+
     local invalidReason = core.IsInvalidOutfitName(name)
     if invalidReason then
         UIErrorsFrame:AddMessage(invalidReason, 1.0, 0.1, 0.1, 1.0)
@@ -64,7 +61,7 @@ end
 
 core.SaveOutfit = function(name, set)
     assert(name and set and TransmoggyDB.outfits[name])
-    --core.am("save", name, set)
+    
     TransmoggyDB.outfits[name] = set
     core.UpdateListeners("outfits")
     return true
@@ -80,7 +77,7 @@ ChatFrame_OnHyperlinkShow = function(self, link, text, button)
     local apiSet = type(text) == "string" and core.API.DecodeOutfitLink(text)
     if apiSet then
         local set = core.FromApiSet(apiSet)
-        -- SetItemRef would call HandleModifiedItemClick for us. When hooking into OnHyperlinkShow, we have to do this manually
+        
         if IsModifiedClick("CHATLINK") then
             if ChatEdit_InsertLink(text) then
                 return true
@@ -118,10 +115,4 @@ DressUpItemLink = function(link)
     if not OnDressUpItemLink(link) then
         return DressUpItemLinkOrig(link)
     end
-end
-
--- What is this one doing here?
-core.IsRangedWeapon = function(itemID)
-    local _, _, inventoryType = core.GetItemData(itemID)
-    return inventoryType == 15 or inventoryType == 25 or inventoryType == 26
 end

@@ -1,56 +1,21 @@
 local folder, core = ...
 
 --[[
-	Current format:
+	Current item data format:
+
 	stringDataPos = "string1string2string3 ...", where stringX is the encoded inventoryType, category and substring index of item with ID X if it exists in the data, otherwise "\0\0\0\0"
 	stringData = {inventoryType1 = {category1 = {itemIDs = "...", displayGroups = "...", nextInGroup = "...", unlockedStates = "...", names = "..."}, ...}, ...}
 	
-	So to look up an item, we first look up the place where it is stored by decoding its four bytes in stringDataPos into inventoryType, category and index.
+	To look up an item, we first look up the place where it is stored by decoding its four bytes in stringDataPos into inventoryType, category and index.
 	With this we get e.g. the unlocked state with strbyte(core.stringData[inventoryType][category].unlockedStates, index).
 
+	There are utility functions and iterators to efficiently access item data.
 
-	I went through multiple iterations how the data gets stored so that it takes up as little space as possible while keeping access and iteration times fast and unnoticeable.
-
-	Storing everything in tables is the fastest and simplest way, but takes up a lot of space, even when grouping data by field instead of itemID
-	(other AddOns like e.g. DressMe that store less Data and are overall much smaller need ~7MB).
-
-	Bit operations are very slow in Lua, so packing our data in bits of numbers or strings makes item iteration very noticeable (.1 - .2 seconds or something like that).
-
-	What does save a lot of space compared to table data while only being slightly slower is using byte strings to store our data.
-
-	First I used one big byte string to store all item information (unlocked, displayGroup, invType, class, subclass).
-	This approach works well enough and indexing is simple. But with this we need to iterate over all items every time and we can't utilize, that we only need about 1/15 of all items per slot.
-	Furthermore, if we want to store more information like class, race or level requirements etc., we need to fill a lot of empty entries (55kB per extra byte).
-
-	In the current version we still save data to byte strings, but now order them into tables by inventoryType and category (= class + subclass).
-	These substrings also do not contain empty filler data anymore, because we do not index them directly.
-	With this we can write iterators, that only look at the selection of the data that we need instead of iterating over the whole itemID range (~[1, 55000]).
-	In order to still be able to look up item data directly by index, we additionally need one byte string that stores inventoryType, category and index in the corresponding substring.
+	The data strings are cached in WTF, so that they do not have to be generated on each load. If there are updates/changes to the item data,
+	one can update 'Items.lua' (and possibly 'ItemNamesLanX.lua') and increase the stringDataVersion variable to trigger a regeneration of the dataStrings.
 	
-	Names also get stored in byte strings. Here we don't want to assign a static number of bytes per entry.
-	Instead we use a delimiter '#' between entries. With this we can still iterate somewhat quickly, but since this is slightly slower and creates a lot of temporary strings as garbage,
-	we only use the named item iterator, when we need it (there is an non-numerical search term).
-	GetItemName offers the option to get a name by itemID, but has to decompress and iterate the corresponding name substring, so this should not be used in a loop.
-	We could store additional name indices in our data to get constant time access instead (without compression),
-	but we only need name data during list searches, where we use the item iterator with names.
-	When we store our generated (+compressed) name strings in WTF, we want to keep them as is. Otherwise we could also prune names of items that are already cached during the string generation.
-
-	Display groups are now also encoded: Item data contains a field for the displayGroupID as well as the next item in the group (or itself).
-	The first gets used to create temporary groupings in the item list. The latter gets used like a linked list to be able to iterate over a group for `IsVisualUnlocked()`.
-
 	Overall item data currently takes up about 600kB with compressed names and 1mB with uncompressed names.
-
-	Enchant and Recipe data is small enough, that we can just use tables.
-
-	TODO:		
-		- Can save another 55kB in the index byte string by encoding invType + category as one number
-
-		- Lots of hardcoded magic numbers in the new version atm. (e.g. byte lengths per entry)
-			- Also the delimiter and its byte value is hardcoded atm. should fix this and also be sure to use a symbol, that does not occur in any name string of the localizations
-
-		- Generation etc. is still a bit of a mess, but at least we can now set all unlocks after the string data was generated
-			- with this we can now handle a repeated call to RequestAllUnlocks (even tho that should not be needed)
-			- also we can now think about caching slot/item/current availability (which is different from the unlock status) in our string format
+	Enchant and recipe data is small enough, that we can just use tables.
 ]]
 
 local LibDeflate = LibStub and LibStub:GetLibrary("LibDeflate")
@@ -186,21 +151,19 @@ end
 core.enchants = {}
 
 core.enchantInfo = {
-	visualID = {},		-- spellID to visualID/group
+	visualID = {},		-- spellID to visualID (the way the enchant looks and by which we group in the list)
 	enchantID = {},		-- spellID to enchantID
-	itemToSpellID = {}, -- (scroll) itemID to spellID
-	spellID = {},		-- enchantID to spellID (not always unique and no way to find out the souce spell from enchant. just choosing one of the spellIDs arbitrarily atm
+	itemToSpellID = {}, -- (scroll/consumable) itemID to spellID
+	spellID = {},		-- enchantID to spellID (not always unique and no way? to find out the source spell of an enchant. just choosing one of the spellIDs arbitrarily atm
 	itemID = {},		-- spellID to scroll itemID
 	class = {},			-- class mask
 	available = {},		-- wether the enchant should be available to players (to filter out test items etc.)
 	unlocked = {},
 }
 
--- aura_id, enchant_id, spell_id, scroll_ids, class, available
 core.AddEnchant = function(visualID, enchantID, spellID, scrollID, class, available)
 	if not (visualID and enchantID) then return false end
 	
-	--core.am(visualID..", "..enchantID)
 	if core.enchants[visualID] then
 		table.insert(core.enchants[visualID]["spellIDs"], spellID)
 	else 
@@ -213,7 +176,10 @@ core.AddEnchant = function(visualID, enchantID, spellID, scrollID, class, availa
 	core.enchantInfo["available"][spellID] = available
 	core.enchantInfo["itemID"][spellID] = scrollID
 
-	core.enchantInfo["spellID"][enchantID] = spellID
+	if available or not core.enchantInfo["spellID"][enchantID] then -- Do not overwrite valid enchantID -> spellID mapping with spellID that is unavailable to players (like QAEnchants)
+		core.enchantInfo["spellID"][enchantID] = spellID
+	end
+
 	if scrollID then
 		core.enchantInfo["itemToSpellID"][scrollID] = spellID
 	end
@@ -227,9 +193,9 @@ core.SpellToEnchantID = function(spellID)
 	return spellID and core.enchantInfo.enchantID[spellID]
 end
 
--- Any point in doing it like this or just lookup relevant stuff in enchantInfo?
+-- Any point in imitating the style of GetItemData like this or should we just lookup relevant stuff in enchantInfo?
 core.GetEnchantData = function(spellID)
-	local unlocked, enchantID, visualID = core.enchantInfo["unlocked"][spellID], core.enchantInfo["enchantID"][spellID], core.enchantInfo["visualID"][spellID]
+	local unlocked, enchantID, visualID = core.enchantInfo["unlocked"][spellID] or 0, core.enchantInfo["enchantID"][spellID], core.enchantInfo["visualID"][spellID]
 	local item, class, available = core.enchantInfo["itemID"][spellID], core.enchantInfo["class"][spellID], core.enchantInfo["available"][spellID]
 
 	return unlocked, enchantID, visualID, item, class, available
@@ -374,7 +340,7 @@ local ToByteString3 = function(inventoryType, category, index)
 end
 
 core.GenerateStringData = function()
-	-- TODO: predefine static category IDs to get rid of this locale dependend crap once and for all?
+	-- TODO: predefine static category IDs to get rid of this locale dependency?
 	core.IDToCategory, core.categoryToID = {}, {}
 	for key, category in pairs(core.CATEGORIES) do
 		tinsert(core.IDToCategory, category)
@@ -401,7 +367,7 @@ core.GenerateStringData = function()
 		classFactionMap = nil
 		collectgarbage("collect")
 
-		core.debug("Loaded stringData from cache.")
+		core.Debug("Loaded stringData from cache.")
 		return
 	end
 
@@ -434,10 +400,6 @@ core.GenerateStringData = function()
 			end
 
 			tinsert(itemData[inventoryType][category], i)
-
-			-- if i == 19866 then
-			-- 	core.am(inventoryType, category, "index", core.Length(itemData[inventoryType][category]), itemData[inventoryType][category])
-			-- end
 
 			addString(dataPositions, ToByteString3(inventoryType, category, #itemData[inventoryType][category]))
 			
@@ -501,44 +463,15 @@ core.GenerateStringData = function()
 	core.displayIDs = nil
 	classFactionMap = nil
 
-	-- if TransmoggyDB.stringData then		
-	-- 	for inventoryType, tab1 in pairs(core.stringData) do
-	-- 		for category, tab2 in pairs(tab1) do
-	-- 			for key, byteString in pairs(tab2) do
-	-- 				if byteString ~= (TransmoggyDB.stringData[inventoryType] and TransmoggyDB.stringData[inventoryType][category] and TransmoggyDB.stringData[inventoryType][category][key]) then
-	-- 					print(inventoryType, category, key, "isEqual:", byteString == (TransmoggyDB.stringData[inventoryType] and TransmoggyDB.stringData[inventoryType][category] and TransmoggyDB.stringData[inventoryType][category][key]))
-	-- 				end
-	-- 			end
-	-- 		end
-	-- 	end
-	-- end
-
 	TransmoggyDB.stringDataPos = core.stringDataPos
 	TransmoggyDB.stringData = stringData
 	TransmoggyDB.stringDataIsCompressed = useCompression
 	TransmoggyDB.stringDataLocale = GetLocale()
 	TransmoggyDB.stringDataVersion = stringDataVersion
 
-	-- local done = {}
-	-- for _, slot in pairs(core.itemSlots) do
-	-- 	for inventoryType, _ in pairs(core.slotItemTypes[slot]) do			
-	-- 		if not done[inventoryType] then
-	-- 			for cat, stringData in pairs(core.stringData[inventoryType]) do
-	-- 				if not category or category == cat then
-	-- 					stringData.unlockedStates = nil
-	-- 				end
-	-- 			end
-	-- 		end
-	-- 		done[inventoryType] = true
-	-- 	end
-	-- end
-
-	-- TransmoggyDB.stringDataPos = nil
-	-- TransmoggyDB.stringData = nil
-
 	collectgarbage("collect")
-	core.debug(folder, "Succesfully encoded string data.")
-	core.debug("time for normal stringData:", t2 - t1, ". time for compression and garbage collection:", GetTime() - t2)
+	core.Debug(folder, "Succesfully encoded string data.")
+	core.Debug("time for normal stringData:", t2 - t1, ". time for compression and garbage collection:", GetTime() - t2)
 end
 
 -- Overwrites all unlock data such that only ItemIDs in `unlocks` array will be unlocked
@@ -560,7 +493,7 @@ core.SetUnlocks = function(unlocks)
 		end
 	end
 	
-	core.debug("set all unlocks!")
+	core.Debug("set all unlocks!")
 	core.MyWaitFunction(3.0, collectgarbage, "collect")
 end
 
@@ -579,7 +512,7 @@ core.SetUnlocked = function(itemID)
 	elseif core.itemInfo then
 		core.itemInfo["unlocked"][itemID] = 1
 	else
-		core.debug("ERROR in SetUnlocked: Neither string, nor table data exists to write to!")
+		core.Debug("ERROR in SetUnlocked: Neither string, nor table data exists to write to!")
 	end
 end
 
@@ -590,8 +523,6 @@ core.GetItemData = function(itemID)
 	local category = core.IDToCategory[b]
 	if not category then return end
 	local index = lshift(c, 8) + d
-
-	-- print(itemID, inventoryType, category, index)
 
 	local unlocked = strbyte(core.stringData[inventoryType][category].unlockedStates, index)
 	local a, b = strbyte(core.stringData[inventoryType][category].displayGroups, index * 2 - 1, index * 2)
@@ -621,7 +552,6 @@ core.GetItemData2 = function(itemID)
 	-- print(itemID, inventoryType, category, index, cf)
 
 	return toClassFaction[cf][1], toClassFaction[cf][2], core.itemInfoNonTemp.allowableRace[itemID]
-	-- return core.itemInfoNonTemp.allowableClass[itemID], core.itemInfoNonTemp.allowableFaction[itemID], core.itemInfoNonTemp.allowableRace[itemID]
 end
 
 core.GetItemTypeInfo = function(itemID)
@@ -676,7 +606,7 @@ core.GetItemName = function(itemID)
 	end
 
 	if index > #names then -- If we got a valid index from stringDataPos, we should find the name in the name string.
-		core.debug("Error in GetItemName.", itemID, inventoryType, category, index, #names, names)
+		core.Debug("Error in GetItemName.", itemID, inventoryType, category, index, #names, names)
 		return
 	end
 

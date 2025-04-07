@@ -1,5 +1,6 @@
 -----------------------------------------------
 -- Created by Qhoernchen - qhoernchen@gmail.com
+-- GNU General Public License Version 3 or later
 -----------------------------------------------
 
 local folder, core = ...
@@ -10,8 +11,7 @@ local risingAPI = "RisingAPI"
 local rAPI = LibStub(risingAPI, true)
 if not rAPI then error(folder .. " missing dependency " .. risingAPI .. "."); return end
 rAPI:debug(false)
-
-if not rAPI.Transmog then error(folder .. " missing RisingAPI transmog module."); return end
+if not rAPI.Transmog then error(folder .. " missing " .. risingAPI .. " transmog module."); return end
 core.API = rAPI.Transmog
 
 ---- Ace Options ----
@@ -92,7 +92,7 @@ for name, itemID in pairs(core.DUMMY_WEAPONS) do
 	core.QueryItem(itemID)
 end
 
--- The following tables do not need to be localized manually. We overwrite these with the correct localized names using GetAuctionItemClasses() and GetAuctionItemSubClasses()
+-- The following tables do not need to be localized manually. We overwrite these with the localized names from GetAuctionItemClasses() and GetAuctionItemSubClasses()
 core.ITEM_CLASSES = {
 	ARMOR = "Rüstung",
 	WEAPON = "Waffe",
@@ -263,9 +263,6 @@ core.greyTextColor = { r = 0.53, g = 0.62, b = 0.62, a = 1, hex = "FF889D9D"}
 core.yellowTextColor = { r = 1, g = 242 / 255, b = 15 / 255, a = 1, hex = "FFfff30f"}
 core.normalFontColor = { r = 1, g = 0.82, b = 0, a = 1, hex = "ffffd200"}
 
--- scuffed listener pattern to update the correct frames on data changes
-local listeners = {}
-local RegisterListener, UpdateListeneres
 
 -- Functions that interact with the API. Trigger another Request or trigger SetX function on server answer. Convert to and from API set format
 local RequestUnlocksSlot, RequestPriceTotal, RequestPriceSlot, RequestApplyCurrentChanges, RequestBalance, RequestSkins, RequestSkinRename
@@ -284,8 +281,6 @@ local slotCostsShards = {}
 local slotValid = {}
 local slotReason = {}
 local config = nil
-
-local atTransmogrifier -- bad var name. used in e.g. itemCollectionFrame to get different behaviour depending on whether we are using it in the TransmogFrame or the WardrobeFrame
 
 ------------------- Updoots (for speed and readability) ------------------------
 local GetCoinTextureStringFull = core.GetCoinTextureStringFull
@@ -443,6 +438,10 @@ core.slotToID = slotToID
 core.GetCorrespondingSlot = function(slot)
 	local id = core.slotToID[slot]
 	return id and core.idToSlot[-id]
+end
+
+core.IsEnchantableSlot = function(slot)
+	return slot == "MainHandSlot" or slot == "ShieldHandWeaponSlot"
 end
 
 -- Backwards map to GetInventorySlotInfo("slotName")
@@ -636,6 +635,10 @@ for itemSlot, transmogLocation in pairs(itemSlotToTransmogLocation) do
 	transmogLocationToItemSlot[core.API.Slot[transmogLocation]] = itemSlot
 end
 
+core.IsOffHandItemType = function(itemType)
+	return itemType == "INVTYPE_SHIELD" or itemType == "INVTYPE_HOLDABLE"
+end
+
 -- Currently skins use api locations for some reason ...
 core.GetSkinSlotVisualID = function(skinID, slotID)
 	assert(skinID == nil or skins[skinID], "ERROR in GetSkinSlotVisualID: There is no skin with ID " .. (skinID and skinID or "nil"))
@@ -661,7 +664,7 @@ core.TransmogGetSlotInfo = function(itemSlot, skinID)
 	local inventorySlotID = slotToID[itemSlot]
 	local locationID = core.ToTransmogLocation(itemSlot)
 	--local locationID = core.GetTransmogLocationInfo(location)
-	--core.debug(itemSlot, "inventoryID", inventorySlotID, "location", location, "locationID", locationID, "selectedSkin", core.GetSelectedSkin())
+	--core.Debug(itemSlot, "inventoryID", inventorySlotID, "location", location, "locationID", locationID, "selectedSkin", core.GetSelectedSkin())
 
 	local itemID = isEnchantSlot and core.GetInventoryEnchantID("player", correspondingWeaponSlot) or core.GetInventoryItemID("player", inventorySlotID)
 	local visualID = isEnchantSlot and core.GetInventoryEnchantVisualID("player", correspondingWeaponSlot) or core.GetInventoryVisualID("player", inventorySlotID)
@@ -672,7 +675,7 @@ core.TransmogGetSlotInfo = function(itemSlot, skinID)
 	local canTransmogrify = slotValid[itemSlot]
 	local cannotTransmogrifyReason = slotReason[itemSlot]
 
-	--core.debug(slotID, itemID, visualID, skinVisualID, pendingID)
+	--core.Debug(slotID, itemID, visualID, skinVisualID, pendingID)
 	if itemID and (itemSlot == "OffHandSlot" or itemSlot == "ShieldHandWeaponSlot" or itemSlot == "SecondaryHandEnchantSlot") then
 		local offHand = core.GetInventoryItemID("player", 17)
 		local isOffHandType = offHand and core.IsOffHandItemType(select(9, GetItemInfo(offHand)))
@@ -745,7 +748,7 @@ core.HasShieldHandWeaponSlot = function()
 	return class == "WARRIOR" or class == "DEATHKNIGHT" or class == "SHAMAN" or class == "ROGUE" or class == "HUNTER"
 end
 
-local ToApiSet = function(set, withEnchants)
+core.ToApiSet = function(set, withEnchants)
 	local apiSet = {}
 	for slot, itemID in pairs(set) do
 		local isEnchantSlot = core.IsEnchantSlot(slot)
@@ -759,16 +762,15 @@ local ToApiSet = function(set, withEnchants)
 			
 			--local slotID, _ = GetInventorySlotInfo(slot)
 			local transmogLocation = core.ToTransmogLocation(slot)
-			if (transmogLocation == nil) then core.debug("Could not find transmogLocation for", slot) end
+			if (transmogLocation == nil) then core.Debug("Could not find transmogLocation for", slot) end
 			assert(transmogLocation ~= nil, "Could not find transmogLocation for " .. (slot or "nil"))
 			apiSet[transmogLocation] = (itemID == core.HIDDEN_ID and API.HideItem) or (itemID == core.UNMOG_ID and API.NoTransmog) or itemID
 		end
 	end
-	-- core.debug("From set:", set, withEnchants)
-	-- core.debug("To apiSet:", apiSet)
+	-- core.Debug("From set:", set, withEnchants)
+	-- core.Debug("To apiSet:", apiSet)
 	return apiSet
 end
-core.ToApiSet = ToApiSet
 
 core.FromApiSet = function(apiSet)
 	local set = {}
@@ -781,27 +783,27 @@ core.FromApiSet = function(apiSet)
 	return set
 end
 
-RegisterListener = function(field, frame)
+
+-- scuffed listener pattern to update the correct frames on data changes
+local listeners = {}
+core.RegisterListener = function(field, frame)
 	if not listeners[field] then listeners[field] = {} end
 	listeners[field][frame] = true
 end
-core.RegisterListener = RegisterListener
 
-UpdateListeners = function(field)
-	if not listeners[field] then core.debug("Called GUI Update for", field, ", which has no registered elements."); return end
+core.UpdateListeners = function(field)
+	if not listeners[field] then core.Debug("Called GUI Update for", field, ", which has no registered elements."); return end
 	
 	for k, v in pairs(listeners[field]) do
 		k:update()
 	end
 end
-core.UpdateListeners = UpdateListeners
-
 
 SetBalance = function(bal)
 	assert(type(bal) == "table")
 	
 	balance = core.DeepCopy(bal)
-	UpdateListeners("balance") -- balanceFrame
+	core.UpdateListeners("balance") -- balanceFrame
 end
 
 core.GetBalance = function()
@@ -819,10 +821,10 @@ local configToAPI = {
 }
 
 core.SetConfig = function(c)
-	if not c or not c.visibility or not visibilities[c.visibility] then core.debug("ERROR: Unknown visibility in SetConfig:", c); return end
+	if not c or not c.visibility or not visibilities[c.visibility] then core.Debug("ERROR: Unknown visibility in SetConfig:", c); return end
 
 	config = visibilities[c.visibility]
-	UpdateListeners("config")
+	core.UpdateListeners("config")
 end
 
 core.GetConfig = function()
@@ -832,7 +834,7 @@ end
 SetSkinCosts = function(points, copper)
 	skinCosts.points = points
 	skinCosts.copper = copper
-	UpdateListeners("skinCosts") -- no one atm. could technically close the buy skin popup here
+	core.UpdateListeners("skinCosts") -- no one atm. could technically close the buy skin popup here
 end
 
 core.GetSkinCosts = function()
@@ -859,7 +861,7 @@ SetSlotAndCategory = function(slot, cat, updateList)
 
 	CloseDropDownMenus()
 	
-	UpdateListeners("selectedSlot")
+	core.UpdateListeners("selectedSlot")
 end
 core.SetSlotAndCategory = SetSlotAndCategory
 
@@ -886,7 +888,7 @@ SetCurrentChanges = function(set)
 		SetCurrentChangesSlot(slot, set[slot], true)
 	end
 	
-	UpdateListeners("currentChanges")
+	core.UpdateListeners("currentChanges")
 end
 core.SetCurrentChanges = SetCurrentChanges
 
@@ -896,7 +898,7 @@ core.GetCurrentChanges = function()
 end
 
 SetCurrentChangesSlot = function(slot, id, silent)
-	-- core.debug("SetCurrentChangesSlot:", slot, "to", id)
+	-- core.Debug("SetCurrentChangesSlot:", slot, "to", id)
 	assert(core.Contains(itemSlots, slot) or core.Contains(core.enchantSlots, slot))
 	assert(id == nil or type(id) == "number") -- and GetItemData(id) or even GetItemInfo(id) to secure that id is valid item (that is cached?) and maybe even check slot?
 	if not TransmoggyDB.currentChanges then TransmoggyDB.currentChanges = {} end
@@ -907,7 +909,7 @@ SetCurrentChangesSlot = function(slot, id, silent)
 	local itemID, visualID, skinVisualID = core.TransmogGetSlotInfo(slot)
 	local selectedSkin = core.GetSelectedSkin()
 
-	core.debug(isEnchantSlot, itemID, visualID, id)
+	core.Debug(isEnchantSlot, itemID, visualID, id)
 
 	if selectedSkin then
 		if id == skinVisualID or (id == core.UNMOG_ID and not skinVisualID) then -- skin and no change to current skinVisual
@@ -950,7 +952,7 @@ SetCurrentChangesSlot = function(slot, id, silent)
 	core.RequestPriceSlot(slot)
 
 	if not silent then	
-		UpdateListeners("currentChanges")
+		core.UpdateListeners("currentChanges")
 		--core.RequestPriceTotal()
 	end
 end
@@ -1001,7 +1003,7 @@ SetSlotCostsAndReason = function(itemSlot, copper, shards, valid, reason)
 
 	costs.copper = copper
 	costs.points = shards
-	UpdateListeners("costs") -- moneyframe, applybutton, 
+	core.UpdateListeners("costs") -- moneyframe, applybutton, 
 end
 
 -- SetCosts = function(copper, points) -- TODO: Keep allowing setting costs even tho its basically just a view on slot costs now, which we update when changing slot costs?
@@ -1010,17 +1012,18 @@ end
 	
 -- 	costs.copper = copper
 -- 	costs.points = points
--- 	UpdateListeners("costs") --moneyframe, applybutton, 
+-- 	core.UpdateListeners("costs") --moneyframe, applybutton, 
 -- end
 
 core.GetCosts = function()
 	return costs
 end
 
-SetAvailableMogs = function(slot, items)
-	--core.debug("Updated available mogs for:", slot)
+SetAvailableMogs = function(slot, items, isServerAnswer)
 	core.availableMogs[slot] = core.availableMogs[slot] or {}
 	wipe(core.availableMogs[slot])
+
+	core.receivedAvailableMogsAnswer = isServerAnswer
 
 	for _, itemID in pairs(items) do
 		itemID = (itemID == core.API.HideItem and core.HIDDEN_ID) or (itemID == core.API.NoTransmog and core.UNMOG_ID) or itemID
@@ -1029,13 +1032,13 @@ SetAvailableMogs = function(slot, items)
 
 	if core.transmogFrame:IsShown() then
 		if slot == selectedSlot then
-			-- TODO: This the way we want to trigger rebuilt of list and stuff?
-			--(selectedSlot, selectedCategory, true) 
+			-- TODO: Is this the way we want to trigger rebuilt of list and stuff?
+			--(selectedSlot, selectedCategory, true)
 			core.itemCollectionFrame:UpdateDisplayList()
 		end
 	end
 	
-	UpdateListeners("availableMogs") --TODO update build list?
+	core.UpdateListeners("availableMogs") --TODO update build list?
 end
 
 core.IsAvailableSourceItem = function(item, slot)
@@ -1060,13 +1063,13 @@ core.SetSkin = function(skin, silent)
 	if skin.id == core.GetSelectedSkin() and not skin.name or skin.name == "" then -- If we reset our currently selected skin, flip back to inventory
 		core.SetSelectedSkin()
 	elseif not silent then 
-		UpdateListeners("selectedSkin")
+		core.UpdateListeners("selectedSkin")
 	end
 end
 
 -- SkinData now has format: { {id: SkinID, name: String, slots: SlotMap} }
 SetSkinData = function(skinData)
-	core.debug("called set skin data!")
+	core.Debug("called set skin data!")
 
 	-- for k, skin in pairs(skinData) do
 	-- 	core.am("setdata:", skin)
@@ -1085,7 +1088,7 @@ SetSkinData = function(skinData)
 		core.SetSelectedSkin()
 	else	
 		--core.SetSelectedSkin(core.GetSelectedSkin()) -- TODO: this needs fixing
-		UpdateListeners("selectedSkin") -- TODO: is this fine?
+		core.UpdateListeners("selectedSkin") -- TODO: is this fine?
 	end
 end
 
@@ -1097,7 +1100,7 @@ core.SetSelectedSkin = function(skinID)
 	if skinID == selectedSkin then return end
 
 	selectedSkin = skinID -- TODO: check if it exists in skinData?
-	UpdateListeners("selectedSkin")
+	core.UpdateListeners("selectedSkin")
 	SetCurrentChanges({})
 end
 
@@ -1113,7 +1116,7 @@ end
 core.SetActiveSkin = function(skinID) -- Setter of internal var. Asking the server to change active Skin is done with Request...
 	assert(skinID == nil or type(skinID) == "number", "Error in SetActiveSkin: skinID has wrong type")
 	activeSkin = skinID
-	UpdateListeners("activeSkin")
+	core.UpdateListeners("activeSkin")
 end
 
 core.GetActiveSkin = function()
@@ -1131,8 +1134,9 @@ core.GetActiveSkinName = function()
 end
 
 -- This is used to modify behaviour of shared frames between the wardrobe and transmog frame
--- (Could've probably just checked which frame is shown for that)
+-- Needs to be set before ItemCollectionFrame's OnShow
 -- It does not really say whether we are at the npc :^)
+local atTransmogrifier
 core.SetIsAtTransmogrifier = function(atNPC)
 	atTransmogrifier = atNPC
 end
@@ -1142,7 +1146,7 @@ core.IsAtTransmogrifier = function()
 end
 
 local OnVisualUnlocked = function(payload)
-	core.debug(payload)
+	core.Debug(payload)
 	local enchantSpellID, itemID, available = payload.spellId, payload.itemId, payload.available and 1 or 0
 
 	if itemID then
@@ -1156,27 +1160,34 @@ local OnVisualUnlocked = function(payload)
 	if core.db and core.db.profile.General.playSpecialSounds then
 		PlaySound(core.sounds.unlockVisual, "SFX")
 	end
-	core.debug("OnVisualUnlock!", itemID, GetItemInfo(itemID or 0), enchantSpellID, GetSpellInfo(enchantSpellID or 0))	
-	UpdateListeners("unlocks")
+
+	-- TODO: Unsure if its more confusing when slot gets cleared unexpectedly or when new items do not show up until a manually triggered list update
+	-- Maybe only do this for enchants, where the user must have triggered the unlock manually?
+	if core.transmogFrame:IsShown() then
+		core.SetSlotAndCategory(nil, nil)
+	end
+
+	core.Debug("OnVisualUnlock!", itemID, GetItemInfo(itemID or 0), enchantSpellID, GetSpellInfo(enchantSpellID or 0))	
+	core.UpdateListeners("unlocks")
 end
 rAPI:registerEvent("transmog/visual/unlocked", OnVisualUnlocked)
 
 local OnSkinActivated = function(payload)
 	--SetSelectedSkin(payload.skinId)
-	core.debug("OnSkinActivate", payload.skinId)
+	core.Debug("OnSkinActivate", payload.skinId)
 	core.SetActiveSkin(payload.skinId)
 end
 rAPI:registerEvent("transmog/skin/activated", OnSkinActivated)
 
 local OnSkinChanged = function(payload)
-	core.debug("OnSkinUpdate", payload)
+	core.Debug("OnSkinUpdate", payload)
 	core.SetSkin(payload)
 	core.UpdateSkinDropdown()
 end
 rAPI:registerEvent("transmog/skin/changed", OnSkinChanged)
 
 local OnBalanceChanged = function(payload)
-	core.debug("Balance Update!")
+	core.Debug("Balance Update!")
 	
 	if core.db and core.db.profile.General.playSpecialSounds then
 		local balance = core.GetBalance()
@@ -1190,7 +1201,7 @@ end
 rAPI:registerEvent("transmog/balance/changed", OnBalanceChanged)
 
 local OnConfigChanged = function(payload)
-	core.debug("Config Update!")
+	core.Debug("Config Update!")
 	core.SetConfig(payload)
 end
 rAPI:registerEvent("transmog/config/changed", OnConfigChanged)
@@ -1199,7 +1210,7 @@ core.RequestGetConfig = function()
 	API.GetConfig():next(function(config)
 		core.SetConfig(config)
 	end):catch(function(err)
-		core.debug("RequestGetConfig: An error occured:", err.message)
+		core.Debug("RequestGetConfig: An error occured:", err.message)
 	end)
 end
 
@@ -1208,9 +1219,9 @@ core.RequestUpdateConfig = function(config)
 	if not config or not configToAPI[config] then core.am("Wrong usage of RequestUpdateConfig! Parameter:", config); return end
 
 	API.UpdateConfig( { ["visibility"] = configToAPI[config] } ):next(function()
-		--core.debug("Transmog visibility successfully changed to:", configToAPI[config]) -- have event now
+		--core.Debug("Transmog visibility successfully changed to:", configToAPI[config]) -- have event now
 	end):catch(function(err)
-		core.debug("RequestUpdateConfig: An error occured:", err.message)
+		core.Debug("RequestUpdateConfig: An error occured:", err.message)
 	end)
 end
 
@@ -1219,15 +1230,15 @@ core.RequestActiveSkin = function()
 	API.GetActiveSkin():next(function(skinID)
 		core.SetActiveSkin(skinID)
 	end):catch(function(err)
-		core.debug("RequestActiveSkin: An error occured:", err.message)
+		core.Debug("RequestActiveSkin: An error occured:", err.message)
 	end)
 end
 
 core.RequestActivateSkin = function(skinID)
 	API.ActivateSkin(skinID):next(function(answer)
-		core.debug("Active skin activate!") -- Changes trigered by OnSkinUpdate
+		core.Debug("Active skin activate!") -- Changes trigered by OnSkinUpdate
 	end):catch(function(err)
-		core.debug("RequestSetActiveSkin: An error occured:", err.message)
+		core.Debug("RequestSetActiveSkin: An error occured:", err.message)
 	end)
 end
 
@@ -1240,40 +1251,40 @@ core.RequestSkins = function(id)
 		-- 	SelectSet(id)
 		-- end
 	end):catch(function(err)
-		core.debug("RequestSkins: An error occured:", err.message)
+		core.Debug("RequestSkins: An error occured:", err.message)
 	end)
 end
 
 core.RequestSkinRename = function(id, newName)
 	API.RenameSkin(id, newName):next(function(answer)
-		core.debug("RenameSkinSuccess!") -- Changes triggered by OnSkinUpdate
+		core.Debug("RenameSkinSuccess!") -- Changes triggered by OnSkinUpdate
 	end):catch(function(err)
-		core.debug("RequestSkinRename: An error occured:", err.message)
+		core.Debug("RequestSkinRename: An error occured:", err.message)
 	end)
 end
 
 core.RequestSkinReset = function(id)	
 	API.ResetSkin(id):next(function(answer)
-		core.debug("ResetSkinSuccess!") -- Changes triggered by OnSkinUpdate
+		core.Debug("ResetSkinSuccess!") -- Changes triggered by OnSkinUpdate
 	end):catch(function(err)
-		core.debug("RequestSkinReset: An error occured:", err.message)
+		core.Debug("RequestSkinReset: An error occured:", err.message)
 	end)
 end
 
 core.RequestTransferPriceAndOpenPopup = function(id)
 	API.GetTransferVisualsToSkinPrice(id):next(function(answer)
-		core.debug("SkinPriceGet!")
+		core.Debug("SkinPriceGet!")
 		core.ShowVisualsToSkinPopup(id, answer) -- TODO: Add check that nothing has changed in the meantime, time limit etc?
 	end):catch(function(err)
-		core.debug("RequestTransferVisualsToSkin: An error occured:", err.message)
+		core.Debug("RequestTransferVisualsToSkin: An error occured:", err.message)
 	end)
 end
 
 core.RequestTransferVisualsToSkin = function(id)	
 	API.TransferVisualsToSkin(id):next(function(answer)
-		core.debug("SkinAbsorbSuccess!") -- Changes will be registered by OnSkinUpdate. TODO: Maybe play sound?
+		core.Debug("SkinAbsorbSuccess!") -- Changes will be registered by OnSkinUpdate. TODO: Maybe play sound?
 	end):catch(function(err)
-		core.debug("RequestTransferVisualsToSkin: An error occured:", err.message)
+		core.Debug("RequestTransferVisualsToSkin: An error occured:", err.message)
 	end)
 end
 
@@ -1286,7 +1297,7 @@ core.RequestSkinCosts = function()
 		if requestID ~= requestCounterSkinCosts then return end
 		SetSkinCosts(answer.shards, answer.copper)
 	end):catch(function(err)
-		core.debug("RequestSkinCosts: An error occured:", err.message)
+		core.Debug("RequestSkinCosts: An error occured:", err.message)
 	end)
 end
 
@@ -1295,10 +1306,10 @@ core.RequestBuySkin = function()
 	requestCounterBuySkin = requestCounterBuySkin + 1
 	local requestID = requestCounterBuySkin
 	API.BuySkin():next(function(answer)
-		core.debug("skin get!")
+		core.Debug("skin get!")
 		core.RequestSkinCosts()
 	end):catch(function(err)
-		core.debug("RequestSkinCosts: An error occured:", err.message)
+		core.Debug("RequestSkinCosts: An error occured:", err.message)
 	end)
 end
 
@@ -1306,14 +1317,13 @@ local requestCounterUnlockVisuals = 0
 core.RequestUnlockVisuals = function(items) -- Consumes enchant scrolls from inventory to unlock their visual
 	requestCounterUnlockVisuals = requestCounterUnlockVisuals + 1
 	local requestID = requestCounterUnlockVisual
-	API.UnlockVisualAll(items):next(function(answer)
-		core.debug(answer)
+	core.UnlockVisualAll(items):next(function(answer)
+		core.Debug(answer)
 	end):catch(function(err)
-		core.debug("RequestUnlockVisuals: An error occured:", err.message)
+		core.Debug("RequestUnlockVisuals: An error occured:", err.message)
 		UIErrorsFrame:AddMessage(err.message, 1.0, 0.1, 0.1, 1.0)
 	end)
 end
-
 
 local requestCounterUS = {}
 core.RequestUnlocksSlot = function(slot)
@@ -1332,18 +1342,15 @@ core.RequestUnlocksSlot = function(slot)
 	local requestID = requestCounterUS[transmogLocation]
 	f(unpack(p)):next(function(answer)
 		if requestID == requestCounterUS[transmogLocation] then
-			-- Imo we still want to show our current item/mog in the list of available transmogs to "deselect mog/pending"?
-			-- A bit confusing that items with the same displayID as the equipped item also get hidden, why even disallow this?
-			-- TODO: Instead of adding itemID to this list, we might wanna just add it at the start of the list together with 'hidden slot item'
-			core.debug(answer)
 			local items = core.IsEnchantSlot(slot) and answer.spellIds or answer.itemIds
+			-- TODO: Instead of adding itemID to the list, we might want to always add it at the start of the display list together with a 'hidden slot' item
 			if itemID and not skin then
 				table.insert(items, itemID)
 			end
-			SetAvailableMogs(slot, items)
+			SetAvailableMogs(slot, items, true)
 		end
 	end):catch(function(err)
-		core.debug("RequestUnlocksSlot: An error occured:", err.message)
+		core.Debug("RequestUnlocksSlot: An error occured:", err.message)
 	end)
 end
 
@@ -1358,7 +1365,6 @@ core.RequestUnlocksAll = function(slot)
 			if requestID == requestCounterUA then
 				core.SetUnlocks(answer.itemIds or {})
 				core.SetEnchantUnlocks(answer.spellIds or {})
-				-- core.MyWaitFunction(0.1, core.SetUnlocks, items) -- used delay to be able to see errors, can remove this now
 			end
 		end
 	end):catch(function(err)		
@@ -1366,7 +1372,7 @@ core.RequestUnlocksAll = function(slot)
 			core.requestUnlocksAllFailed = 1
 			core.SetUnlocks({})
 			core.SetEnchantUnlocks({})
-			core.debug("RequestUnlocksAll: An error occured:", err.message)
+			core.Debug("RequestUnlocksAll: An error occured:", err.message)
 		end
 	end)
 end
@@ -1375,15 +1381,17 @@ local requestCounterACC = 0
 core.RequestApplyCurrentChanges = function()
 	requestCounterACC = requestCounterACC + 1
 	local requestID = requestCounterACC
-	API.ApplyAll(ToApiSet(TransmoggyDB.currentChanges, true), core.GetSelectedSkin()):next(function(answer)
+	API.ApplyAll(core.ToApiSet(TransmoggyDB.currentChanges, true), core.GetSelectedSkin()):next(function(answer)
 		if requestID == requestCounterACC then
 			PlaySound(core.sounds.applySuccess)
 			core.PlayApplyAnimations()
-			SetCurrentChanges(core.GetCurrentChanges()) -- or just {}, since apply should have been successfull?
+			SetCurrentChanges(core.GetCurrentChanges()) -- should result in empty table for successfull apply
 		end
 	end):catch(function(err)
-		core.debug("RequestApplyCurrentChanges: An error occured:", err.message)		
-		SetCurrentChanges(core.GetCurrentChanges()) -- unknown number of slots might have successfully applied. this clears pendings where changes went through
+		core.Debug("RequestApplyCurrentChanges: An error occured:", err.message)
+		-- an unknown number of slots might have successfully applied before a slot has encountered an error
+		-- this clears pendings where changes went through
+		SetCurrentChanges(core.GetCurrentChanges())
 		UIErrorsFrame:AddMessage(err.message, 1.0, 0.1, 0.1, 1.0)
 	end)
 end	
@@ -1394,62 +1402,13 @@ core.RequestBalance = function()
 	local requestID = requestCounterB
 	API.GetBalance():next(function(balance)
 		if requestID == requestCounterB then
-			-- core.debug("Your balance is: " .. balance.shards .. " moggies.")
 			SetBalance(balance)
 		end
 	end):catch(function(err)
 		SetBalance({})
-		core.debug("RequestBalance: An error occured:", err.message)
+		core.Debug("RequestBalance: An error occured:", err.message)
 	end)
 end
-
--- Not used. Instead of tracking the total price we keep track of the costs+validity of each slot
--- local requestCounterPOA = 0
--- core.RequestPriceTotal = function()
--- 	requestCounterPOA = requestCounterPOA + 1
--- 	SetCosts() -- Setting costs to nil disables apply button and cost display while we are waiting for an answer
-
--- 	if core.Length(TransmoggyDB.currentChanges) == 0 then return end -- No changes, so nothing to apply and no costs to display
-
--- 	local requestID = requestCounterPOA
--- 	API.GetPriceAll(ToApiSet(TransmoggyDB.currentChanges), core.GetSelectedSkin()):next(function(price)
--- 		if requestID == requestCounterPOA then
--- 			SetCosts(price.copper, price.shards)
--- 		end
--- 	end):catch(function(err)
--- 		core.debug("RequestPriceTotal: An error occured:", err.message)
--- 		if requestID == requestCounterPOA then
--- 			SetCosts()
--- 		end
--- 	end)
--- end
-
--- local requestCounterSlotPrices = {}
--- core.RequestPriceSlot = function(itemSlot)
--- 	requestCounterSlotPrices[itemSlot] = (requestCounterSlotPrices[itemSlot] or 0) + 1
--- 	--SetSlotCostsAndReason(itemSlot) -- Resetting data in SetCurrentChanges(Slot) atm
-
--- 	local itemID, _, _, pendingID = core.TransmogGetSlotInfo(itemSlot)
--- 	local selectedSkin = core.GetSelectedSkin()
--- 	local location = core.ToTransmogLocation(itemSlot)
-	
--- 	if not pendingID then return end -- No pending change, so no price to request
-
--- 	if not (selectedSkin or itemID) then core.debug("ERROR in RequestPriceSlot, requesting price for empty slot") end
-
--- 	local requestID = requestCounterSlotPrices[itemSlot]
--- 	API.GetPrice(pendingID, not selectedSkin and itemID or nil, location):next(function(price)
--- 		if requestID == requestCounterSlotPrices[itemSlot] then
--- 			--core.debug("Got an answer Poggers Prices", itemSlot, price.copper, price.shards)
--- 			SetSlotCostsAndReason(itemSlot, price.copper, price.shards)
--- 		end
--- 	end):catch(function(err)
--- 		if requestID == requestCounterSlotPrices[itemSlot] then
--- 			core.debug("RequestPriceSlot " .. (itemSlot or "nil") .. ": An error occured:", err.message)
--- 			SetSlotCostsAndReason(itemSlot, nil, nil, err.message)
--- 		end
--- 	end)
--- end
 
 -- Combines price + validity check
 local requestCounterSlotPrices = {}
@@ -1466,47 +1425,27 @@ core.RequestPriceSlot = function(itemSlot)
 	
 	if not pendingID then return end -- No pending change, so no price to request
 
-	pendingID = (pendingID == core.HIDDEN_ID and API.HideItem) or (pendingID == core.UNMOG_ID and API.NoTransmog) or pendingID -- translate to API ID
+	pendingID = (pendingID == core.HIDDEN_ID and API.HideItem) or (pendingID == core.UNMOG_ID and API.NoTransmog) or pendingID -- translate to API IDs
 
-	if not (selectedSkin or itemID) then core.debug("ERROR in RequestPriceSlot, requesting price for empty slot") end
+	if not (selectedSkin or itemID) then core.Debug("ERROR in RequestPriceSlot, requesting price for empty slot") end
 
 	local requestID = requestCounterSlotPrices[itemSlot]
-	API.GetPriceAndCheck(pendingID, not selectedSkin and itemID or nil, location, selectedSkin):next(function(result)
+	core.GetPriceAndCheck(pendingID, not selectedSkin and itemID or nil, location, selectedSkin):next(function(result)
 		if requestID == requestCounterSlotPrices[itemSlot] then
-			-- core.debug(result)
 			SetSlotCostsAndReason(itemSlot, result.copper, result.shards, result.valid, result.message)
 		end
 	end):catch(function(err)
 		if requestID == requestCounterSlotPrices[itemSlot] then
-			core.debug("RequestPriceSlot " .. (itemSlot or "nil") .. ": An error occured:", err.message)
+			core.Debug("RequestPriceSlot " .. (itemSlot or "nil") .. ": An error occured:", err.message)
 			SetSlotCostsAndReason(itemSlot, nil, nil, false, err.message)
 		end
 	end)
 end
 
--- Unused. We now always allow setting a slot and then ask the server for a check + price.
--- After the server answer, this info can be retrieved with TransmogGetSlotInfo
-core.CanReceiveTransmog = function(mogTarget, mogSource, slot)
-	local canMog = false
-	--local targetSubtype = select(7,GetItemInfo(mogTarget))
-	--local sourceSubtype = select(7,GetItemInfo(mogSource))
-	--if targetSubtype == sourceSubtype then canMog = true end
-	-- hidden id is part of availables list, if it is valid for the slot
-	if core.availableMogs[slot] and core.availableMogs[slot][mogSource] or mogSource == core.UNMOG_ID then
-		canMog = true
-	end
-	return canMog
+core.IsRangedWeapon = function(itemID)
+    local _, _, inventoryType = core.GetItemData(itemID)
+    return inventoryType == 15 or inventoryType == 25 or inventoryType == 26
 end
-
--- local function canBeEnchanted(itemSlot)
--- 	local itemID = TransmoggyDB.currentChanges[itemSlot]
--- 	--local itemID = GetInventoryItemID("player", GetInventorySlotInfo(itemSlot))
--- 	if not itemID then return false end
--- 	local itemSubType = select(7, GetItemInfo(itemID))
--- 	--core.am(itemSubType)
--- 	return core.Contains({core.ITEM_SUB_CLASSES.DAGGERS, core.ITEM_SUB_CLASSES.FIST_WEAPONS, core.ITEM_SUB_CLASSES["1H_AXES"], core.ITEM_SUB_CLASSES["1H_MACES"], core.ITEM_SUB_CLASSES["1H_SWORDS"],
--- 						core.ITEM_SUB_CLASSES.POLEARMS, core.ITEM_SUB_CLASSES.STAVES, core.ITEM_SUB_CLASSES["2H_AXES"], core.ITEM_SUB_CLASSES["2H_MACES"], core.ITEM_SUB_CLASSES["2H_SWORDS"]}, itemSubType)	
--- end
 
 core.HasTitanGrip = function()
 	return select(2, UnitClass("player")) == "WARRIOR" and select(5, GetTalentInfo(2, 27)) == 1
@@ -1563,7 +1502,7 @@ core.ShowMeleeWeapons = function(mod, mainHand, offHand, callID)
 	local hasTitanGrip = core.HasTitanGrip()
 	local canDualWield = core.CanDualWield()
 
-	-- core.debug("equipMWeps", mainHand, offHand)
+	-- core.Debug("equipMWeps", mainHand, offHand)
 
 	if mainHand then
 		TryOn(mod, core.DUMMY_WEAPONS.POLEARM)
@@ -1633,71 +1572,32 @@ core.OnEquippedItemChange = function(itemSlot, itemEquipped)
 		end
 	end
 
-	-- Just clear slot and request again when selecting a slot instead
-	-- if not core.transmogFrame:IsShown() then
-	-- 	if not itemEquipped then
-	-- 		core.availableMogs[itemSlot] = {}
-	-- 	else
-	-- 		-- core.availableMogsUpdateNeeded[itemSlot] = true -- Update when we open Transmogwindow. (not used atm. instead we always update when selecting a slot)
-	-- 	end
-	-- else
-	-- 	core.RequestUnlocksSlot(itemSlot) -- does nothing if slot is nil
-	-- end
-
-	UpdateListeners("inventory")
-end
-
-
-core.IsOffHandItemType = function(itemType)
-	return itemType == "INVTYPE_SHIELD" or itemType == "INVTYPE_HOLDABLE"
+	core.UpdateListeners("inventory")
 end
 
 core.OpenTransmogWindow = function(fromGossip)
 	core.wardrobeFrame:Hide()
 	core.SetIsAtTransmogrifier(true)
 	core.SetShown(core.transmogFrame.minimizeButton, fromGossip)
-	-- core.transmogFrame:SetParent(fromGossip and GossipFrame or UIParent)
 	core.transmogFrame:Show()
 end
 
-core.gossipBlocker = CreateFrame("Frame", nil, GossipFrame)
-core.gossipBlocker:SetAllPoints()
-core.gossipBlocker:EnableMouse()
-core.gossipBlocker:Hide()
+-- core.OpenTransmogFromGossip = function()
+-- 	-- hide frame without calling CloseGossip()
+-- 	local onHideScript = GossipFrame:GetScript("OnHide")
+-- 	GossipFrame:SetScript("OnHide", nil)
+-- 	HideUIPanel(GossipFrame)
+-- 	GossipFrame:SetScript("OnHide", onHideScript)
+	
+-- 	core.OpenTransmogWindow(true)
+-- end
 
-core.HideGossipFrame = function()
-	GossipFrameGreetingPanel:Hide() --here or onshow
-	GossipFrameCloseButton:Hide()
-	GossipFrame:SetAlpha(0)
-	core.gossipBlocker:Show()
-	-- core.defaultGossipFrameWidth = core.defaultGossipFrameWidth or GossipFrame:GetWidth()
-	-- UIPanelWindows["GossipFrame"].width = 2000
-	-- core.gossipFramedefaultWidth = core.gossipFramedefaultWidth or UIPanelWindows.GossipFrame.width or GossipFrame:GetWidth()
-	-- GossipFrame:SetWidth(1020)
-	-- GossipFrame:SetAttribute("UIPanelLayout-" .. "width", 1020)
-	-- GossipFrame:SetAttribute("UIPanelLayout-" .. "pushable", 0)
-	-- GossipFrame:SetAttribute("UIPanelLayout-" .. "area", "center")
-	-- UIPanelWindows["GossipFrame"].width = 1020
-	-- UIPanelWindows["GossipFrame"].pushable = 0
-	-- UIPanelWindows["GossipFrame"].area = "center"
-	-- UpdateUIPanelPositions(GossipFrame)
-end
-
-core.UnHideGossipFrame = function()
-	core.gossipBlocker:Hide()
-	GossipFrameGreetingPanel:Show() --here or onshow
-	GossipFrameCloseButton:Show()
-	GossipFrame:SetAlpha(1)
-end
-
-
-
-core.gossipOpenTransmogButton = core.CreateMeATextButton(GossipFrame, 112, 24, "Transmogrify")
+core.gossipOpenTransmogButton = core.CreateMeATextButton(GossipFrame, 126, 22, core.TRANSMOG_WINDOW)
 core.gossipOpenTransmogButton:SetScript("OnClick", function()	
-	core.HideGossipFrame()
 	core.OpenTransmogWindow(true)
 end)
 core.gossipOpenTransmogButton:SetPoint("TOP", GossipNpcNameFrame, "BOTTOM", 0, -10)
+core.SetTooltip(core.gossipOpenTransmogButton, core.OPEN_TRANSMOG)
 
 ------------------------------------------------------
 -- loading and event stuff
@@ -1709,7 +1609,6 @@ a:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
 a:RegisterEvent("GOSSIP_SHOW")
 a:RegisterEvent("GOSSIP_CLOSED")
 a:RegisterEvent("PLAYER_MONEY")
--- a:RegisterEvent("PLAYER_REGEN_ENABLED")
 
 local lastClosed = 0
 a:SetScript("OnEvent", function(self, event, ...)
@@ -1780,8 +1679,9 @@ a:SetScript("OnEvent", function(self, event, ...)
 			core.OnEquippedItemChange(itemSlot, itemEquipped)
 		end
 
-	elseif event == "GOSSIP_SHOW" then -- TODO: Alternatively could hook gossipframe stuff and check the button names or smth to see if its the tmog npc?
-		if GetTime() - lastClosed < 0.2 then return end -- ignore refresh when clicking around the menu
+	elseif event == "GOSSIP_SHOW" then
+		if GetTime() - lastClosed < 0.5 then return end -- ignore refresh when clicking around the menu
+
 		local npcID = core.GetNPCID(UnitGUID("target"))
 		local isTransmogNPC = npcID == core.TMOG_NPC_ID
 
@@ -1793,14 +1693,9 @@ a:SetScript("OnEvent", function(self, event, ...)
 
 	elseif event == "GOSSIP_CLOSED" then
 		lastClosed = GetTime()
-		--GossipFrame:SetWidth(gossipFrameWidthBackup)
-		core.UnHideGossipFrame()
 		core.transmogFrame:Hide()
-		-- GossipFrame:SetAttribute("UIPanelLayout-" .. "area", "left")
-		-- UpdateUIPanelPositions(GossipFrame)
-		-- UIPanelWindows["GossipFrame"].width = core.defaultGossipFrameWidth
 
 	elseif event == "PLAYER_MONEY" then
-		UpdateListeners("money")
+		core.UpdateListeners("money")
 	end
 end)

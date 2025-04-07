@@ -3,7 +3,7 @@ local folder, core = ...
 local Icon_OnFirstTooltip = function(self)
 	self.update = function(self)
 		if GameTooltip:IsShown() and GameTooltip:GetOwner() == self then
-			GameTooltip:ClearLines()				
+			GameTooltip:ClearLines()		
 			self.dataObject.OnTooltipShow(GameTooltip)
 		end
 	end
@@ -59,7 +59,7 @@ core.InitLDB = function()
 					end
 				end
 			elseif msg == "RightButton" then
-				-- TODDO: Temporary. Undecided how/where to this
+				-- TODO: Undecided how/where to this
 				local config = core.GetConfig()
 				if not config then return end
 				local nextConfig = config % 3 + 1
@@ -83,10 +83,7 @@ core.InitLDB = function()
 			GameTooltip:AddDoubleLine(core.LEFT_CLICK, core.OPEN_WARDROBE, cl.r, cl.g, cl.b, cr.r, cr.g, cr.b)
 			GameTooltip:AddDoubleLine(core.SHIFT_LEFT_CLICK, core.OPEN_TRANSMOG, cl.r, cl.g, cl.b, cr.r, cr.g, cr.b)
 			GameTooltip:AddDoubleLine(core.CONTROL_LEFT_CLICK, core.OPEN_OPTIONS, cl.r, cl.g, cl.b, cr.r, cr.g, cr.b)
-			GameTooltip:AddDoubleLine(core.RIGHT_CLICK, core.TOGGLE_VISIBILITY, cl.r, cl.g, cl.b, cr.r, cr.g, cr.b)
-			-- tooltip:AddLine(core.MINIMAP_TOOLTIP_TEXT1, 1, 1, 1)
-			-- tooltip:AddLine(core.MINIMAP_TOOLTIP_TEXT2, 1, 1, 1)
-			-- tooltip:AddLine(core.MINIMAP_TOOLTIP_TEXT3, 1, 1, 1)
+			GameTooltip:AddDoubleLine(core.RIGHT_CLICK, core.TOGGLE_VISIBILITY, cl.r, cl.g, cl.b, cr.r, cr.g, cr.b)			
 			tooltip:AddLine(" ")
 			local text = RED_FONT_COLOR_CODE .. core.TRANSMOG_STATUS_UNKNOWN .. FONT_COLOR_CODE_CLOSE 
 			if config then
@@ -96,10 +93,8 @@ core.InitLDB = function()
 				end
 			end
 			tooltip:AddLine(text, nil, nil, nil, nil)
-			--tooltip:AddLine(config and "Transmog Status: " .. core.CONFIG_NAMES[config] or "Transmog Status konnte nicht abgefragt werden.")
 		end,
 	})
-
 
 	TransmoggyDB["minimapIcon"] = TransmoggyDB["minimapIcon"] or
 	{

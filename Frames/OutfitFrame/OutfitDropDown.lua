@@ -177,7 +177,16 @@ core.CreateOutfitDDM = function(parent)
 		outfitDropDown.update()
 
         local outfits = core.GetOutfits()
-		local selectedOutfit = parent:GetSelectedOutfit()		
+		local selectedOutfit = parent:GetSelectedOutfit()
+		
+		local outfitNames = {}
+		for name, _ in pairs(outfits) do
+			tinsert(outfitNames, name)
+		end
+		table.sort(outfitNames, function(a, b)
+			local la, lb = a:lower(), b:lower()
+			return la == lb and b < a or la < lb
+		end)
 
 		local info
 		if level == 1 then
@@ -195,7 +204,7 @@ core.CreateOutfitDDM = function(parent)
 			-- UIDropDownMenu_AddButton(info, level)
 
 			-- outfits
-			for name, slots in pairs(outfits) do
+			for _, name in ipairs(outfitNames) do
 				info = UIDropDownMenu_CreateInfo()
 				info.text = core.GetShortenedString(name, DROPDOWN_DISPLAY_LENGTH)
 				info.arg1 = name

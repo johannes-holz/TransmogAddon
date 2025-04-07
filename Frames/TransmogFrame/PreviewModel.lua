@@ -237,7 +237,7 @@ core.CreatePreviewModel = function(parent, width, height)
 		local selectedSlot = core.GetSelectedSlot()
 
 		local itemsToShow = {}
-		for _, slot in pairs(core.allSlots) do        
+		for _, slot in pairs(core.allSlots) do
             local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo(slot, skin)
 			local isEnchantSlot = core.IsEnchantSlot(slot)
 			local correspondingSlot = isEnchantSlot and core.GetCorrespondingSlot(slot)
@@ -245,30 +245,42 @@ core.CreatePreviewModel = function(parent, width, height)
 
 			local show = pendingID or (skin and skinVisualID) or ((not skin or self.showItemsUnderSkin) and (visualID or itemID)) or nil
 
-			if self.showItemsUnderSkin and
-					(isEnchantSlot and not correspondingWeaponID or not isEnchantSlot and not itemID) then
-				show = nil 	-- skin won't show if there is no item in slot (enchantmogs don't need an enchant in "slot")
+			if self.showItemsUnderSkin and (isEnchantSlot and not correspondingWeaponID or not isEnchantSlot and not itemID) then
+				show = nil													 	-- skin won't show if there is no item in slot (or corresponding weapon slot for enchants)
 			end
 
 			if show == core.UNMOG_ID then
-				show = (not skin or self.showItemsUnderSkin) and itemID or nil	-- pending or visual is nomog/unmog: show item
+				show = (not skin or self.showItemsUnderSkin) and itemID or nil	-- pending or visual is nomog/unmog: show base item
 			elseif show == core.HIDDEN_ID and not includeHidden then
-				show = nil														-- show hidden item: nothing to show
+				show = nil														-- Outfit's GetAll method wants explicit hidden slots, our update method does not
 			end
 
             itemsToShow[slot] = show
 		end
+
+		-- Don't display incompatible weapon visuals, if show on equip is enabled?
+		if self.showItemsUnderSkin then
+            local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo("MainHandSlot", skin)
+			local skinVisual = pendingID or skinVisualID
+			local mhType = itemID and select(7, GetItemInfo(itemID))
+			local skinVisualType = skinVisual and select(7, GetItemInfo(skinVisual))
+			if mhType == core.ITEM_SUB_CLASSES.FISHING_POLES and mhType ~= skinVisualType then
+				itemsToShow["MainHandSlot"] = itemID
+			end
+		end
+
 		return itemsToShow
 	end
 	
+	-- TODO: Bug with 1h going in wrong hand on inventory change, probably because the event gets triggered multiple times and our 1h hand assignment trick somehow bugs out from that?
 	model.update = function(self)
 		if not model:IsShown() then return end
 
 		local selectedSlot = core.GetSelectedSlot()
 		local skin = core.GetSelectedSkin()
 
-		-- make displayed weapon depend on last selected weapon slot?
-		-- not sure if this would confuse people
+		-- Remember if we last selected melee (wep/shield) or ranged weapon and display that instead of always defaulting to melee weapons?
+		-- Might confuse people
 		-- if core.IsWeaponSlot(selectedSlot) then
 		-- 	model.lastWeaponSlot = selectedSlot 
 		-- elseif model.lastWeaponSlot then
@@ -285,31 +297,27 @@ core.CreatePreviewModel = function(parent, width, height)
 			end
 		end
 
-		-- TODO: Are we happy with this offhand display behaviour?. maybe remember last offhand slot and also range slot/melee slot and show that one instead of always melee weps?
-
 		-- Weapon display logic:
+
+		-- If selected, show selected secondary hand slot (even if empty), otherwise show weapon over shield/oh
+		local ohSlotToDisplay = (selectedSlot == "ShieldHandWeaponSlot" or selectedSlot == "OffHandSlot") and selectedSlot or
+									itemsToShow["ShieldHandWeaponSlot"] and "ShieldHandWeaponSlot" or "OffHandSlot"
+
 		local mh = itemsToShow["MainHandSlot"]
-		local oh = (selectedSlot == "OffHandSlot" or selectedSlot == "ShieldHandWeaponSlot") and itemsToShow[selectedSlot]
-					or not (selectedSlot == "OffHandSlot" or selectedSlot == "ShieldHandWeaponSlot") and (itemsToShow["ShieldHandWeaponSlot"] or itemsToShow["OffHandSlot"]) or nil
+		local oh = itemsToShow[ohSlotToDisplay]
 
-        local mhWeaponType = mh and select(7, GetItemInfo(mh))
-        local ohWeaponType = oh and select(7, GetItemInfo(oh))
-
-        local mhInvType = mh and select(9, GetItemInfo(mh))
-        local ohInvType = oh and select(9, GetItemInfo(oh))
+        local _, _, _, _, _, _, mhWeaponType, _, mhInvType = GetItemInfo(mh or 0)
+        local _, _, _, _, _, _, ohWeaponType, _, ohInvType = GetItemInfo(oh or 0)
 
 		-- Staff/polearm/fishing pole transmogs will not be shown while in the offhand. Similar for MH/OH exclusive weapons in the wrong slot. Confusing ...
 		local mhTransmogHidden = mhWeaponType and core.OHOnly[mhInvType]
 		local ohTransmogHidden = ohWeaponType and core.TwoHandExclusive[ohWeaponType] or core.MHOnly[ohInvType]
-
-		-- TODO: Check mh in oh, oh in mh, mh is fishing pole
 		
 		mh = mhTransmogHidden and core.TransmogGetSlotInfo("MainHandSlot") or mh
 		oh = ohTransmogHidden and core.TransmogGetSlotInfo("SecondaryHandSlot") or oh
 		
-		-- How to handle enchants? :)
 		local mhEnchant = core.SpellToEnchantID(itemsToShow["MainHandEnchantSlot"])
-		local ohEnchant = core.SpellToEnchantID(itemsToShow["SecondaryHandEnchantSlot"])
+		local ohEnchant = core.IsEnchantableSlot(ohSlotToDisplay) and core.SpellToEnchantID(itemsToShow["SecondaryHandEnchantSlot"])
 		if mh and mhEnchant then mh = "item:" .. mh .. ":" .. mhEnchant end
 		if oh and ohEnchant then oh = "item:" .. oh .. ":" .. ohEnchant end
         
@@ -343,11 +351,9 @@ core.CreatePreviewModel = function(parent, width, height)
 
 	---- Outfit Stuff ----
 
-	-- TODO: Why are we not using the same method for model update and GetAll?
-		-- What do we want to save in an outfit here? Whats visible (then see previous question)?
-		-- Or do we want to allow saving all weapon slots, so we can remember a full skin?
+	-- TODO: Do we allow setting all slots in outfits or just what is currently visible (e.g. mh + oh, but not ranged weapon)
 	model.GetAll = function(self)
-		local items = self:GetItemsToDisplay(true)		
+		local items = self:GetItemsToDisplay(true)
 		local selectedSlot = core.GetSelectedSlot()
 
         -- Only allow Offhand or ShieldHandWeapon in outfits?
@@ -425,12 +431,6 @@ core.CreatePreviewModel = function(parent, width, height)
 			return self.shadowFormEnabled
 		end
 	end
-
-	-- model.too = model.TryOn
-	-- model.TryOn = function(self, ...)
-	-- 	-- print("previeModel", ...)
-	-- 	self:too(...)
-	-- end
 
 	-----------------------------------
 	

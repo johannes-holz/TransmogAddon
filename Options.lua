@@ -49,7 +49,7 @@ local SetWidgetValue = function(info, input)
 	
 	-- Update our stuff
 	core.OnSettingsUpdate(arg)
-    core.debug("Options changed:", caller, arg, input)
+    core.Debug("Options changed:", caller, arg, input)
 end
 
 core.OnSettingsUpdate = function(arg)
@@ -172,6 +172,16 @@ core.options = {
                     set = SetWidgetValue,
                     arg = "hideControlHints",
                 },		
+				ShowUnavailableEnchants = {
+                    type = "toggle",
+                    order = 10.1,
+                    name = "List unavailable enchants in collection.",
+					width = "full",
+                    desc = "Activate to list enchantments in collection that are probably unavailable to players.",
+                    get = GetWidgetValue,
+                    set = SetWidgetValue,
+                    arg = "showQAEnchants",
+                },		
 				ActiveSkinDropdown = {
                     type = "select",
                     order = 11,
@@ -240,6 +250,7 @@ core.defaults = {
 			playSpecialSounds = true,
 			doNotResetDressUp = false,
 			hideControlHints = false,
+			showQAEnchants = false,
 			activeSkinDropdown = "_02_dropdown",
 		},
     },

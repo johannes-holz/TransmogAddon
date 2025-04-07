@@ -318,11 +318,11 @@ _G.NotifyInspect = function(unit)
     addon = string.gsub(addon or "unknown",'I?n?t?e?r?f?a?c?e\\AddOns\\',"")
 
 	if InspectFrame and InspectFrame:IsShown() and not strfind(addon, "Blizzard_InspectUI") then
-		-- core.debug("blocked notify from", addon)
+		-- core.Debug("blocked notify from", addon)
 		return
 	end
 
-	-- core.debug(addon, "yo u can come in")
+	-- core.Debug(addon, "yo u can come in")
 	core.NotifyInspectOld(unit)
 end
 

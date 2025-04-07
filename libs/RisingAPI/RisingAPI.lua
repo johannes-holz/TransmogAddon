@@ -46,7 +46,6 @@ function RisingAPI:debug(level)
 		print("Debug mode disabled.")
 	end
 end
-RisingAPI:debug(logger.DEBUG)
 
 -- #######################################
 -- ## Client to server communication

@@ -5,7 +5,7 @@ local API = LibStub("RisingAPI", true)
 local M = API and API.Transmog
 if not deferred or not API or not M then print(folder, "ERROR: Could not find all required transmog libraries."); return end
 
-M.GetPriceAndCheck = function(visualItemId, itemId, slotId, skinId)
+core.GetPriceAndCheck = function(visualItemId, itemId, slotId, skinId)
     local futures = {
         M.GetPrice(visualItemId, itemId, slotId),
         M.Check(visualItemId, skinId, slotId),
@@ -26,7 +26,7 @@ M.GetPriceAndCheck = function(visualItemId, itemId, slotId, skinId)
     end)
 end
 
-M.UnlockVisualAll = function(items)
+core.UnlockVisualAll = function(items)
 	local futures = {}
 	for i, itemID in ipairs(items) do
         table.insert(futures, M.UnlockVisual(itemID))
