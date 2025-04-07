@@ -67,14 +67,15 @@ core.CURRENCY_FAKE_ITEMID = 43949 -- -1337
 core.HIDDEN_ID = -1		-- any ID that is not already used by items or enchants. enchant visual ID 1 is in use. currently display list uses those, so dont use 1 :^)
 core.UNMOG_ID = 0 		-- changing this from 0 is not fully supported (e.g. GetInventoryEnchantID)
 
--- 11755 -- SimonGame_Visual_LevelStart
--- 4140	 -- HumanExploration
--- 12891 -- AchievementSound
--- 1202 -- "Sound\\interface\\PickUp\\PickUpParchment_Paper.wav"
--- 1204 -- PutDownGems
+-- 11755, SimonGame_Visual_LevelStart
+-- 4140, HumanExploration
+-- 12891, AchievementSound
+-- 1202, "Sound\\interface\\PickUp\\PickUpParchment_Paper.wav"
+-- 1204, PutDownGems
+-- 6199 :D apply, 12009 :D unlock
 core.sounds = {
-	applySuccess = 6199, -- 6555, -- 888,
-	unlockVisual = 12009, -- 1204, 
+	applySuccess = 6555, -- 6555, 888, 6199
+	unlockVisual = 1202, -- 1204, 
 	gainBalance = 1204,
 }
 
