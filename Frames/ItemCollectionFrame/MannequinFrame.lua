@@ -43,6 +43,17 @@ local Model_OnShow = function(self)
 	if self.itemID and self.slot then self:TryOn(self.itemID, self.slot) end
 end
 
+-- Another DressUpModel feature: How far the model moves with SetPosition depends on the aspect ratio
+local Model_SetPosition = function(self, x, y, z)
+	local width = GetScreenWidth()
+	local height = GetScreenHeight()
+	local screenRatio = width / height
+	local factor = (screenRatio / (16 / 9)) ^ 0.8 -- This conversion seems to work good enough for most realistic aspect ratios (tested between 5:4 and 3:1)
+	x, y, z = x / factor, y / factor, z / factor
+	
+	self:SetPositionOld(x, y, z)
+end
+
 local Model_GetID = function(self)
 	return self.id
 end
@@ -228,7 +239,10 @@ core.CreateMannequinFrame = function(parent, id, width, height)
 	m.GetID = Model_GetID	
 
 	m.SetUnitOld = m.SetUnit
-	m.SetUnit = Model_SetUnit		
+	m.SetUnit = Model_SetUnit
+
+	m.SetPositionOld = m.SetPosition
+	m.SetPosition = Model_SetPosition
 	
 	-- m.borderFrame = CreateFrame("Frame", nil, m)
 	-- m.borderFrame:SetAllPoints()

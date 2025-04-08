@@ -38,21 +38,20 @@ core.CreateItemTypeDDM = function(parent)
         --     end
         -- end        
     
-        if not atTransmogrifier then
-            info.text = ALL
-            info.arg1 = nil
-            info.checked = not cat
-            info.func = ItemTypeDDM_ButtonOnClick
-            --info.justifyH = "RIGHT" -- doesn't do anything?? Only takes "CENTER" or nil as arguments, but somehow not even Center seems to work here. Could try scuffed solution with space/pixel? padding
-            UIDropDownMenu_AddButton(info, level)
-        end
+        -- if not atTransmogrifier then
+        info.text = ALL
+        info.arg1 = nil
+        info.checked = not cat
+        info.func = ItemTypeDDM_ButtonOnClick
+        --info.justifyH = "RIGHT" -- doesn't do anything?? Only takes "CENTER" or nil as arguments, but somehow not even Center seems to work here. Could try scuffed solution with space/pixel? padding
+        UIDropDownMenu_AddButton(info, level)
+        -- end
         
         for _, itemType in pairs(types) do
             info.text = core.CATEGORY_DISPLAY_NAME[itemType] or core.RemoveFirstWordInString(itemType) -- TODO: Make all this category stuff less scuffed?
             info.arg1 = itemType
             info.checked = cat == itemType
             info.func = ItemTypeDDM_ButtonOnClick
-            --info.justifyH = "RIGHT" -- doesn't do anything?? Only takes "CENTER" or nil as arguments, but somehow not even Center seems to work here. Could try scuffed solution with space/pixel? padding
             UIDropDownMenu_AddButton(info, level)
         end
     end

@@ -263,6 +263,7 @@ itemCollectionFrame.noUnlocksText:SetText(textA)
 -- 	end
 -- end
 
+-- TODO: Most of this code should probably be moved to MannequinFrame
 itemCollectionFrame.UpdateMannequins = function(self)
 	-- print("UpdateMannequins")
 	local _, race = UnitRace("player")
