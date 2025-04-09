@@ -33,6 +33,7 @@ StaticPopupDialogs["UnlockEnchantsPopup"] = {
 	timeout = 0,
 	exclusive = 1,
 	hideOnEscape = 1,
+    preferredIndex = 3,
 }
 
 --Expects a valid selection of enchant scrolls or similar items that can be used to unlock enchants

@@ -2,17 +2,20 @@ local folder, core = ...
 
 -- SetLight(enabled, omni, dirX, dirY, dirZ, ambIntensity, ambR, ambG, ambB, dirIntensity, dirR, dirG, dirB)
 local LIGHT = {
-	default = {1,			-- enabled
+	default = {
+		1,					-- enabled
 		0, 0, 1, 0,			-- omni (enabled, r, g, b)
 		1, 0.7, 0.7, 0.7,	-- ambient (enabled, r, g, b)
 		1, 0.8, 0.8, 0.64,	-- directional (enabled, r, g, b)
 	},
-	shadowForm = {1,
+	shadowForm = {
+		1,
 		0, 0, 1, 0,
 		1, 0.16, 0, 0.23,
 		0,
 	},
-	locked = {1,
+	locked = {
+		1,
 		0, 0, 1, 0,
 		0.8, 0.7, 0.7, 0.7,
 		0.8, 0.8, 0.8, 0.64,

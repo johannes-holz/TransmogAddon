@@ -55,6 +55,8 @@ L.deDE = {
     BUY_SKIN_SLOT = "Weiteren Skinplatz kaufen",
     EMPTY_SKIN_SLOT = "[Freier Skinplatz]",
 
+    TOGGLE_URL = "DB wechseln",
+
     OUTFIT = "Outfit",
     NEW_OUTFIT = "Neues Outfit erstellen",
     NO_OUTFIT = "Kein Outfit",
@@ -283,6 +285,8 @@ L.enEU = {
 
     BUY_SKIN_SLOT = "Buy another skin slot",
     EMPTY_SKIN_SLOT = "[Free skin slot]",
+    
+    TOGGLE_URL = "Change DB",
 
     OUTFIT = "Outfit",
     NEW_OUTFIT = "Create new outfit",

@@ -31,6 +31,7 @@ StaticPopupDialogs["BuySkinPopup"] = {
 	timeout = 0,
 	exclusive = 1,
 	hideOnEscape = 1,
+    preferredIndex = 3,
 }
 
 StaticPopupDialogs["RenameSkinPopup"] = {
@@ -43,23 +44,24 @@ StaticPopupDialogs["RenameSkinPopup"] = {
 	end,
 	OnShow = function(self, data)
 		self.text:SetText(data.text)
-		self.editBox:SetFocus();
+		self.editBox:SetFocus()
 		self.editBox:SetMaxLetters(50)
 	end,
 	OnHide = function(self)
-		ChatEdit_FocusActiveWindow();
-		self.editBox:SetText("");
+		ChatEdit_FocusActiveWindow()
+		self.editBox:SetText("")
 	end,
 	EditBoxOnEnterPressed = function(self, data)
 		core.AttemptSkinRename(data.id, self:GetText())
 		self:GetParent():Hide()
 	end,
 	EditBoxOnEscapePressed = function(self)
-		self:GetParent():Hide();
+		self:GetParent():Hide()
 	end,
 	timeout = 0,
 	exclusive = 1,
 	hideOnEscape = 1,
+    preferredIndex = 3,
 }
 
 -- core.popupDelayEnabled = true
@@ -85,6 +87,7 @@ StaticPopupDialogs["ResetSkinPopup"] = {
 	timeout = 0,
 	exclusive = 1,
 	hideOnEscape = 1,
+    preferredIndex = 3,
 }
 
 StaticPopupDialogs["TransferVisualsToSkinPopup"] = {
@@ -112,6 +115,7 @@ StaticPopupDialogs["TransferVisualsToSkinPopup"] = {
 	timeout = 0,
 	exclusive = 1,
 	hideOnEscape = 1,
+    preferredIndex = 3,
 }
 
 core.SkinPopupDisplay = function(id, name)

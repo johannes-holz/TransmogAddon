@@ -47,6 +47,7 @@ StaticPopupDialogs["CreateOutfitPopup"] = {
 	timeout = 0,
 	exclusive = 1,
 	hideOnEscape = 1,
+    preferredIndex = 3,
 }
 
 StaticPopupDialogs["RenameOutfitPopup"] = {
@@ -76,6 +77,7 @@ StaticPopupDialogs["RenameOutfitPopup"] = {
 	timeout = 0,
 	exclusive = 1,
 	hideOnEscape = 1,
+    preferredIndex = 3,
 }
 
 StaticPopupDialogs["DeleteOutfitPopup"] = {
@@ -95,6 +97,7 @@ StaticPopupDialogs["DeleteOutfitPopup"] = {
 	timeout = 0,
 	exclusive = 1,
 	hideOnEscape = 1,
+    preferredIndex = 3,
 }
 
 StaticPopupDialogs["OverwriteOutfitPopup"] = {
@@ -114,6 +117,7 @@ StaticPopupDialogs["OverwriteOutfitPopup"] = {
 	timeout = 0,
 	exclusive = 1,
 	hideOnEscape = 1,
+    preferredIndex = 3,
 }
 
 local ShowCreateOutfitPopup = function(set, outfitFrame)

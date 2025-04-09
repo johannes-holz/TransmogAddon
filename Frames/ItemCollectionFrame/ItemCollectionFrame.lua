@@ -369,7 +369,6 @@ itemCollectionFrame.UpdateMannequins = function(self)
 	end
 end
 
-
 local selected = 1
 local Mannequin_SelectNextSourceItem = function(self, backwards)
 	local itemID = itemCollectionFrame.displayList[mannequinCount * (itemCollectionFrame.page - 1) + self:GetID()]
@@ -409,6 +408,7 @@ local Mannequin_OnMouseDown = function(self, button)
 				if ChatEdit_InsertLink(enchantLink) then
 					return true
 				end
+				core.ShowURLPopup(enchantID, isEnchantSlot)
 				return
 			else
 				if atTransmogrifier then
@@ -436,7 +436,8 @@ local Mannequin_OnMouseDown = function(self, button)
 			if IsModifiedClick("CHATLINK") then
 				if ChatEdit_InsertLink(itemLink) then
 					return true
-				end
+				end				
+				core.ShowURLPopup(itemID, isEnchantSlot)
 				return
 			else			
 				if atTransmogrifier then
@@ -937,3 +938,72 @@ itemCollectionFrame.enchantCheckButton:SetScript("OnClick", function(self, butto
 	itemCollectionFrame:UpdateMannequins()
 end)
 core.SetTooltip(itemCollectionFrame.enchantCheckButton, core.ENCHANT_PREVIEW_BUTTON_TOOLTIP_TEXT, nil, nil, nil, nil, 1)
+
+
+--------------- Link Popup ---------------
+
+local urlBases = {
+	"https://db.rising-gods.de/?",
+	"https://www.wowhead.com/wotlk/",
+}
+local urlTexts = {
+	"Rising Gods URL:",
+	"Wowhead URL:"
+}
+local copyURLPopup = strupper(folder) .. "_COPY_URL_POPUP"
+
+StaticPopupDialogs[copyURLPopup] = {
+    text = "",
+    button1 = core.TOGGLE_URL,
+    button2 = CLOSE,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    hasEditBox = true,
+    hasWideEditBox = true,
+    preferredIndex = 3,
+
+    OnShow = function(self, data)
+		TransmoggyDB.preferredURL = TransmoggyDB.preferredURL or 1
+        self.text:SetText(urlTexts[TransmoggyDB.preferredURL])
+        self.wideEditBox:SetText(urlBases[TransmoggyDB.preferredURL] .. (data.isSpell and "spell" or "item") .. "=" .. data.itemID)
+        self.wideEditBox:HighlightText()
+    end,
+
+    OnAccept = function(self, data)
+        TransmoggyDB.preferredURL = ((TransmoggyDB.preferredURL or 1) + #urlBases) % #urlBases + 1
+    end,
+
+    OnCancel = function(self, data)
+        data.close = true
+    end,
+
+    OnHide = function(self, data)
+        if not data.close then
+            StaticPopup_Show(copyURLPopup, nil, nil, data)
+        end
+    end,
+	
+	EditBoxOnEscapePressed = function(self, data)
+		data.close = true
+		self:GetParent():Hide()
+	end,
+
+	EditBoxOnEnterPressed = function(self, data)
+		data.close = true
+		self:GetParent():Hide()
+	end,
+}
+
+core.ShowURLPopup = function(itemID, isSpell)
+	if StaticPopup_Visible(copyURLPopup) then
+        StaticPopup_Hide(copyURLPopup)
+    end
+
+	local data = {
+		itemID = itemID or 0,
+		isSpell = isSpell,
+	}
+
+	return StaticPopup_Show(copyURLPopup, nil, nil, data)
+end

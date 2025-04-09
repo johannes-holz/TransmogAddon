@@ -36,6 +36,7 @@ StaticPopupDialogs["ApplyTransmogPopup"] = {
 	timeout = 0,
 	exclusive = 1,
 	hideOnEscape = 1,
+    preferredIndex = 3,
 }
 
 local ShowApplyTransmogPopup = function()

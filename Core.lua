@@ -25,7 +25,6 @@ TransmoggyDB = TransmoggyDB or {}
 local risingAPI = "RisingAPI"
 local rAPI = LibStub(risingAPI, true)
 if not rAPI then error(folder .. " missing dependency " .. risingAPI .. "."); return end
-rAPI:debug(false)
 if not rAPI.Transmog then error(folder .. " missing " .. risingAPI .. " transmog module."); return end
 core.API = rAPI.Transmog
 
