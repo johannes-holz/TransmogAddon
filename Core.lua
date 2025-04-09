@@ -1,6 +1,21 @@
 -----------------------------------------------
 -- Created by Qhoernchen - qhoernchen@gmail.com
--- GNU General Public License Version 3 or later
+
+-- License: GNU General Public License Version 3 or later
+
+-- This program is free software: you can redistribute it and/or modify
+-- it under the terms of the GNU General Public License as published by
+-- the Free Software Foundation, either version 3 of the License, or
+-- (at your option) any later version.
+
+-- This program is distributed in the hope that it will be useful,
+-- but WITHOUT ANY WARRANTY; without even the implied warranty of
+-- MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+-- GNU General Public License for more details.
+
+-- You should have received a copy of the GNU General Public License
+-- along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 -----------------------------------------------
 
 local folder, core = ...
@@ -58,11 +73,11 @@ core.TMOG_NPC_ID = 1010969
 --"inv_enchant_shardgleamingsmall"
 core.CURRENCY_ICON = "Interface\\Icons\\inv_misc_gem_sapphire_03"
 
--- Using any invalid ID works fine with standard interface
--- Some Inventory AddOns use item ids for currencies tho. In that case an invalid item id here causes an error.
--- Only solution for this would probably be to choose an existing but unavailable item id here and hook GameTooltip to always replace the tooltip for this item?
+-- Using any unused ID works fine with standard interface
+-- Some inventory AddOns use item ids for currencies tho. In that case an invalid item id here causes an error.
+-- Best solution for this would probably be to choose an existing but unavailable item id here and hook GameTooltip to always replace the tooltip for this item?
 -- 43949 - 'zzzOLDDaily Quest Faction Token'
-core.CURRENCY_FAKE_ITEMID = 43949 -- -1337
+core.CURRENCY_FAKE_ITEMID = 43949
 
 core.HIDDEN_ID = -1		-- any ID that is not already used by items or enchants. enchant visual ID 1 is in use. currently display list uses those, so dont use 1 :^)
 core.UNMOG_ID = 0 		-- changing this from 0 is not fully supported (e.g. GetInventoryEnchantID)
@@ -270,7 +285,7 @@ local RequestUnlocksSlot, RequestPriceTotal, RequestPriceSlot, RequestApplyCurre
 -- Functions setting data and trigger update function of registered GUI elements
 local SetCosts, SetSlotCostsAndReason, SetSkinCosts, SetCurrentChanges, SetCurrentChangesSlot, SetSlotAndCategory, SetBalance, SetSkinData, SetAvailableMogs
 
-------------------- Data we modify through Setters, that cause frames registered with RegisterListener to call their .update function -----------------------------------
+------------------- Data we modify through Setters, which cause frames registered with RegisterListener to call their .update function -----------------------------------
 
 -- TransmoggyDB.currentChanges = TransmoggyDB.currentChanges or {} -- Get reset on Login and all the time atm., so no point in saving it in DB. Would have to save per character anyways
 local balance = {}
@@ -405,13 +420,6 @@ core.availableMogs = {
 	["SecondaryHandEnchantSlot"] = {},
 	["RangedSlot"] = {},
 }
-
--- see above. we could try to catch all events, that might change our available mogs and their unlock status, but that will probably not be reliable
--- core.availableMogsUpdateNeeded = {}
-
--- for k, v in pairs(itemSlots) do
--- 	core.availableMogsUpdateNeeded[v] = true
--- end
 
 -- itemSlots to game inventorySlot IDs
 local slotToID = {

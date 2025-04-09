@@ -137,7 +137,9 @@ local SlotButton_OnEnter = function(self)
         local rR, gR, bR = GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b
         GameTooltip:AddLine(" ")
         GameTooltip:AddDoubleLine(core.LEFT_CLICK, core.SELECT, rL, gL, bL, rR, gR, bR)
-        GameTooltip:AddDoubleLine(core.SHIFT_LEFT_CLICK, core.HIDE, rL, gL, bL, rR, gR, bR)
+		if not core.IsWeaponSlot(self.itemSlot) then
+        	GameTooltip:AddDoubleLine(core.SHIFT_LEFT_CLICK, core.HIDE, rL, gL, bL, rR, gR, bR)
+		end
         GameTooltip:AddDoubleLine(core.CONTROL_LEFT_CLICK, core.UNMOG, rL, gL, bL, rR, gR, bR)
         GameTooltip:AddDoubleLine(core.ALT_LEFT_CLICK, core.CLEAR_PENDING, rL, gL, bL, rR, gR, bR)
     end
@@ -155,7 +157,9 @@ local SlotButton_OnMouseDown = function(self, button)
 	if self.blockedTex:IsShown() then return end
 	
 	if IsShiftKeyDown() then
-		core.UndressSlot(self.itemSlot)
+		if not core.IsWeaponSlot(self.itemSlot) then
+			core.UndressSlot(self.itemSlot)
+		end
 	elseif IsControlKeyDown() then
 		core.UnmogSlot(self.itemSlot)
 	elseif IsAltKeyDown() then
@@ -484,7 +488,8 @@ core.CreateItemSlotOptionsFrame = function(parent)
 	
 	itemSlotOptionsFrame:SetScript("OnShow", function(self)
 		if not self.owner then self:Hide(); return end
-		self:SetPoint("RIGHT", self.owner, "LEFT")
+		self:SetPoint("RIGHT", self.owner, "LEFT", 0, core.IsWeaponSlot(self.owner.itemSlot) and itemSlotWidth / 4 or 0)
+		core.SetShown(self.undressButton, not core.IsWeaponSlot(self.owner.itemSlot))
 	end)
 	
 	local children = { itemSlotOptionsFrame:GetChildren() }

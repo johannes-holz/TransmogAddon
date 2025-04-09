@@ -72,7 +72,6 @@ local Model_SetLoading = function(self, loading)
 end
 
 -- Set and show display item. If we don't have the item cached, we query it and show a loading frame. The loading frame also periodically checks, if the item has been loaded
--- TODO: might wanna move most of this into UpdateMannequins and just tell the model to show item X, enchant Y in slot Z ...
 local Model_TryOn = function(self, itemID, slot)
 	assert(type(itemID) == "number")  -- expects clean numerical itemID!
 	self.itemID = itemID
@@ -194,7 +193,7 @@ local Model_update = function(self)
 	self:UpdateBorders()
 end
 
-local Model_SetAnimation = function(self, sequenceID, sequenceTime, sequenceSpeed) -- requires that SetSequence(...) is called in OnUpdate
+local Model_SetAnimation = function(self, sequenceID, sequenceTime, sequenceSpeed) -- requires that SetSequenceTime(seq, time) is called in OnUpdate
 	-- core.am("Set Model Animation:", sequenceID, sequenceTime, sequenceSpeed)
 	self.sequence = (sequenceID and sequenceID >= 0 and sequenceID <= 506) and sequenceID or 15 -- sequence ID must be in the range 0, 506
 	self.sequenceTime = sequenceTime or 0

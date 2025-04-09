@@ -16,9 +16,9 @@ local folder, core = ...
 --     end
 -- end
 
--- Might wanna move the masks into a Constants.lua
 -- Filter selection is currently exclusive, but could be easily modified to allow selection of multiple classes/races
 -- Just have to modify the filter setter to xor the selected field (and handle the "all" case differently)
+-- TODO: Might wanna move the masks into a Constants.lua
 
 -- localizedClass, ->englishClass, classIndex = UnitClass("unit")
 core.classes = {
@@ -40,7 +40,7 @@ core.factions = {
 	["Horde"] = 1,
 	["Alliance"] = 2
 }
--- race, ->raceEn = UnitRace("unit");
+-- race, ->raceEn = UnitRace("unit")
 core.races = {
 	["Human"] = 1,
 	["Orc"] = 2,
@@ -77,21 +77,21 @@ end
 
 local factionFilterButtons = { { text = ALL, arg1 = nil } }
 for _, faction in ipairs({ "Alliance", "Horde" }) do
-    tinsert(factionFilterButtons, { text = core[strupper(faction)], arg1 = core.factions[faction] }) -- TODO: where to get localized faction + races
+    tinsert(factionFilterButtons, { text = core[strupper(faction)], arg1 = core.factions[faction] })
 end
 
 local raceFilterButtons = { { text = ALL, arg1 = nil } }
 for _, race in ipairs({ "Human", "Dwarf", "NightElf", "Gnome", "Draenei", "Orc", "Undead", "Tauren", "Troll", "BloodElf" }) do
-    tinsert(raceFilterButtons, { text = core[strupper(race)], arg1 = core.races[race] }) -- TODO: localize
+    tinsert(raceFilterButtons, { text = core[strupper(race)], arg1 = core.races[race] })
 end
 
 core.CreateOptionsDDM = function(parent)
 	local optionsDDM = CreateFrame("Frame", folder .. "ItemOptionsDropDown", parent, "UIDropDownMenuTemplate")
 
-    optionsDDM.SetEnchant = function(self, arg1, arg2, checked)
-        optionsDDM:GetParent():SetPreviewEnchant(arg1)
-        -- CloseDropDownMenus()
-    end
+    -- optionsDDM.SetEnchant = function(self, arg1, arg2, checked)
+    --     optionsDDM:GetParent():SetPreviewEnchant(arg1)
+    --     -- CloseDropDownMenus()
+    -- end
 
     optionsDDM.SetUnlockedFilter = function(self, arg1, arg2, checked)
         optionsDDM:GetParent():SetUnlockedFilter(arg1)
@@ -108,6 +108,19 @@ core.CreateOptionsDDM = function(parent)
         optionsDDM:GetParent():ClearFilters()
         -- CloseDropDownMenus()
     end
+
+    optionsDDM.SetFilterToCharacter = function(self)
+        local _, classEn, _ = UnitClass("player")
+        local factionEn, _ = UnitFactionGroup("player")
+        local _, raceEn = UnitRace("player")
+
+        local class, faction, race = core.classes[classEn], core.factions[factionEn], core.races[raceEn]
+
+        optionsDDM:GetParent():SetFilter("class", class)
+        optionsDDM:GetParent():SetFilter("faction", faction)
+        optionsDDM:GetParent():SetFilter("race", race)
+    end
+
 
 	optionsDDM.Initialize = function(self, level)
         local keys = { ENCHANT = 1, UNLOCKED_FILTER = 2, CLASS_FILTER = 3, FACTION_FILTER = 4, RACE_FILTER = 5 }
@@ -140,6 +153,16 @@ core.CreateOptionsDDM = function(parent)
             info.notCheckable = true
             info.hasArrow = nil
             info.func = self.ClearFilters
+			UIDropDownMenu_AddButton(info, level)
+            
+			info = UIDropDownMenu_CreateInfo()
+			info.text = core.FILTER_FOR_CHARACTER
+			info.arg1 = nil
+			info.arg2 = nil
+			info.padding = 0
+            info.notCheckable = true
+            info.hasArrow = nil
+            info.func = self.SetFilterToCharacter
 			UIDropDownMenu_AddButton(info, level)
 
             -- unlocked filter
@@ -186,31 +209,31 @@ core.CreateOptionsDDM = function(parent)
 		elseif level == 2 then            
 			local levelOneKey = UIDROPDOWNMENU_MENU_VALUE["levelOneKey"]
             
-            if levelOneKey == keys.ENCHANT then
-                info = UIDropDownMenu_CreateInfo()
-                info.text = NONE
-                info.arg1 = nil
-                info.arg2 = nil
-                info.func = self.SetEnchant
-                info.checked = self:GetParent().enchant == info.arg1
-                info.padding = 0
-                UIDropDownMenu_AddButton(info, level)
+            -- if levelOneKey == keys.ENCHANT then
+            --     info = UIDropDownMenu_CreateInfo()
+            --     info.text = NONE
+            --     info.arg1 = nil
+            --     info.arg2 = nil
+            --     info.func = self.SetEnchant
+            --     info.checked = self:GetParent().enchant == info.arg1
+            --     info.padding = 0
+            --     UIDropDownMenu_AddButton(info, level)
 
-                for _, enchantInfo in pairs(core.enchants) do
-                    local id = enchantInfo.spellIDs[1]
-                    local name, _, tex = GetSpellInfo(id)
-                    info = UIDropDownMenu_CreateInfo()
-                    info.text = name and (core.GetTextureString(tex, 12) .. " " .. name) or id
-                    info.arg1 = id
-                    info.arg2 = nil
-                    info.func = self.SetEnchant
-                    info.checked = enchant == info.arg1
-                    info.padding = 0
-                    info.disabled = nil -- TODO: strange bug, that sometimes lowest ~5 enchant buttons are disabled
-                    UIDropDownMenu_AddButton(info, level)
-                end
+            --     for _, enchantInfo in pairs(core.enchants) do
+            --         local id = enchantInfo.spellIDs[1]
+            --         local name, _, tex = GetSpellInfo(id)
+            --         info = UIDropDownMenu_CreateInfo()
+            --         info.text = name and (core.GetTextureString(tex, 12) .. " " .. name) or id
+            --         info.arg1 = id
+            --         info.arg2 = nil
+            --         info.func = self.SetEnchant
+            --         info.checked = enchant == info.arg1
+            --         info.padding = 0
+            --         info.disabled = nil
+            --         UIDropDownMenu_AddButton(info, level)
+            --     end
 
-            elseif levelOneKey == keys.UNLOCKED_FILTER then
+            if levelOneKey == keys.UNLOCKED_FILTER then
                 local buttons = { {text = ALL, arg1 = nil}, {text = YES, arg1 = 1}, {text = NO, arg1 = 0} }
                 for _, button in ipairs(buttons) do
                     info = UIDropDownMenu_CreateInfo()
@@ -261,18 +284,13 @@ core.CreateOptionsDDM = function(parent)
             end
         end
 	end
-
-	-- optionsDDM.update = function()
-	-- 	local skinName = core.GetActiveSkinName()
-	-- 	local text = skinName or NONE
-	-- 	UIDropDownMenu_SetText(optionsDDM, text)
-	-- end
-	-- optionsDDM.update()	
-
-	-- core.RegisterListener("activeSkin", optionsDDM)
-	-- core.RegisterListener("skins", optionsDDM)
 	
-	UIDropDownMenu_SetText(optionsDDM, core.OPTIONS)
+    -- TODO: Update name to give indication if and which filters are active?
+    -- optionsDDM.update = function()
+	--     UIDropDownMenu_SetText(optionsDDM, core.FILTERS)
+    -- end
+
+	UIDropDownMenu_SetText(optionsDDM, core.FILTERS)
 	UIDropDownMenu_JustifyText(optionsDDM, "RIGHT") 
 	UIDropDownMenu_Initialize(optionsDDM, optionsDDM.Initialize)
     UIDropDownMenu_SetButtonWidth(optionsDDM, 40) -- Buttons get extended to fit biggest info.text

@@ -13,6 +13,7 @@ L.deDE = {
     TRANSMOGRIFY = "Transmogrifizieren",
     PAGE = "Seite",
     OPTIONS = "Optionen",
+    FILTERS = "Filter",
     ENCHANT_PREVIEW = "Verzauberungsvorschau",
     UNLOCKED_FILTER = "Gesammelt",
     INVENTORY = "Inventar",
@@ -212,6 +213,7 @@ L.deDE = {
     },
 
     CLEAR_FILTERS = "Filter zurücksetzen",
+    FILTER_FOR_CHARACTER = "Für Charakter filtern",
 
     ALLIANCE = "Allianz", -- Localized name lookup for Faction and Race seems to be unavailable before 8.0.1
     HORDE = "Horde",
@@ -240,6 +242,7 @@ L.enEU = {
     TRANSMOGRIFY = "Transmogrify",
     PAGE = "Page",
     OPTIONS = "Options",
+    FILTERS = "Filters",
     ENCHANT_PREVIEW = "Enchant preview",
     UNLOCKED_FILTER = "Collected",
     INVENTORY = "Inventory",
@@ -439,6 +442,7 @@ L.enEU = {
     },
     
     CLEAR_FILTERS = "Reset filters",
+    FILTER_FOR_CHARACTER = "Filter for character",
 
     ALLIANCE = "Alliance",
     HORDE = "Horde",

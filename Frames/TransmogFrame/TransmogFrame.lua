@@ -260,8 +260,6 @@ do
 	end)
 	core.SetTooltip(f.minimizeButton, core.BACK_TO_GOSSIP_MENU_TEXT)
 	
-	-- local left, top, right, bottom = 451/512, 90/512, 481/512,118/512
-	-- f.cancelAllButton = core.CreateMeACustomTexButton(model, 24, 24, "Interface\\AddOns\\".. folder .."\\images\\Transmogrify", left, top, right, bottom)
 	f.cancelAllButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\PaperDollInfoFrame\\UI-GearManager-LeaveItem-Transparent", 0, 0, 1, 1)
 	f.cancelAllButton:SetPoint("TOPRIGHT", model, "TOPRIGHT", -4 * SCALE, -4 * SCALE)
 	f.cancelAllButton:SetScript("OnClick", function()
@@ -269,21 +267,9 @@ do
 	end)
 	core.SetTooltip(f.cancelAllButton, core.RESET_ALL)
 	
-	local left, top, right, bottom = 417/512, 90/512, 443/512,116/512
-	f.undressAllButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\AddOns\\" .. folder .. "\\images\\Transmogrify", left, top, right, bottom)
-	f.undressAllButton:SetPoint("TOPRIGHT", f.cancelAllButton, "TOPLEFT", -doAllButtonDistance * SCALE, 0)	
-	f.undressAllButton:SetScript("OnClick", function()
-		local tar = {}
-		for _, slot in pairs(core.allSlots) do
-			tar[slot] = core.HIDDEN_ID
-		end
-		core.SetCurrentChanges(tar)
-	end)
-	core.SetTooltip(f.undressAllButton, core.HIDE_ALL)
-
 	local left, top, right, bottom = 451/512, 90/512, 481/512,118/512
 	f.removeAllMogButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\AddOns\\".. folder .."\\images\\Transmogrify", left, top, right, bottom) --CreateMeATextButton(bar, 70, 24, "Undress")
-	f.removeAllMogButton:SetPoint("RIGHT", f.undressAllButton, "LEFT", -doAllButtonDistance * SCALE, 0)	
+	f.removeAllMogButton:SetPoint("RIGHT", f.cancelAllButton, "LEFT", -doAllButtonDistance * SCALE, 0)	
 	f.removeAllMogButton:SetScript("OnClick", function()
 		local tar = {}
 		for _, slot in pairs(core.allSlots) do
@@ -292,6 +278,21 @@ do
 		core.SetCurrentChanges(tar)
 	end)	
 	core.SetTooltip(f.removeAllMogButton, core.UNMOG_ALL)
+	
+	local left, top, right, bottom = 417/512, 90/512, 443/512,116/512
+	f.undressAllButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\AddOns\\" .. folder .. "\\images\\Transmogrify", left, top, right, bottom)
+	f.undressAllButton:SetPoint("TOPRIGHT", f.removeAllMogButton, "TOPLEFT", -doAllButtonDistance * SCALE, 0)	
+	f.undressAllButton:SetScript("OnClick", function()
+		local tar = {}
+		for _, slot in pairs(core.allSlots) do
+			if not core.IsWeaponSlot(slot) then
+				tar[slot] = core.HIDDEN_ID
+			end
+		end
+		core.SetCurrentChanges(tar)
+	end)
+	core.SetTooltip(f.undressAllButton, core.HIDE_ALL)
+
 
 	model.showItemsUnderSkin = false
 	f.showItemsUnderSkinCheckButton = CreateFrame("CheckButton", folder .. "ShowItemsUnderSkinCheckButton", model, "UICheckButtonTemplate")
