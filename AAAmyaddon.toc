@@ -1,5 +1,5 @@
 ## Interface: 30300
-## Title: AAAmyaddon
+## Title: Transmoggy
 ## Version: 1.0
 ## Notes: Transmog, Outfits and Wardrobe Features for WotLK
 ## Author: Qhoernchen

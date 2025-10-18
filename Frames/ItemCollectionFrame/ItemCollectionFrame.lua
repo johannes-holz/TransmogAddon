@@ -498,6 +498,7 @@ local TooltipAddItemLineHelper = function(mannequin, itemID)
 end
 
 -- This lets us restore the normal TAB bindings, incase we get infight while hovering a mannequin
+-- (It might even be possible to set TAB bind OnEnter/OnLeave infight via SecureHandlerEnterLeaveTemplate, but making everything protected just for that functionality is not worth the hassle imo)
 local BindingManager = CreateFrame("Frame", folder .. "BindingManager", UIParent, "SecureHandlerStateTemplate")
 RegisterStateDriver(BindingManager, "combatstate", "[combat] infight; outfight")
 BindingManager:SetAttribute("_onstate-combatstate", [[ -- arguments: self, stateid, newstate
@@ -941,10 +942,11 @@ core.SetTooltip(itemCollectionFrame.enchantCheckButton, core.ENCHANT_PREVIEW_BUT
 
 
 --------------- Link Popup ---------------
+local locale = string.sub(GetLocale(), 1, 2)
 
 local urlBases = {
 	"https://db.rising-gods.de/?",
-	"https://www.wowhead.com/wotlk/",
+	"https://www.wowhead.com/wotlk/" .. locale .. "/",
 }
 local urlTexts = {
 	"Rising Gods URL:",
@@ -957,41 +959,40 @@ StaticPopupDialogs[copyURLPopup] = {
     button1 = core.TOGGLE_URL,
     button2 = CLOSE,
     timeout = 0,
-    whileDead = true,
-    hideOnEscape = true,
-    hasEditBox = true,
-    hasWideEditBox = true,
+    whileDead = 1,
+    hideOnEscape = 1,
+    hasEditBox = 1,
+    hasWideEditBox = 1,
     preferredIndex = 3,
-
     OnShow = function(self, data)
 		TransmoggyDB.preferredURL = TransmoggyDB.preferredURL or 1
         self.text:SetText(urlTexts[TransmoggyDB.preferredURL])
         self.wideEditBox:SetText(urlBases[TransmoggyDB.preferredURL] .. (data.isSpell and "spell" or "item") .. "=" .. data.itemID)
         self.wideEditBox:HighlightText()
     end,
-
     OnAccept = function(self, data)
         TransmoggyDB.preferredURL = ((TransmoggyDB.preferredURL or 1) + #urlBases) % #urlBases + 1
     end,
-
     OnCancel = function(self, data)
         data.close = true
     end,
-
     OnHide = function(self, data)
         if not data.close then
             StaticPopup_Show(copyURLPopup, nil, nil, data)
         end
-    end,
-	
+    end,	
 	EditBoxOnEscapePressed = function(self, data)
 		data.close = true
 		self:GetParent():Hide()
 	end,
-
 	EditBoxOnEnterPressed = function(self, data)
 		data.close = true
 		self:GetParent():Hide()
+	end,	
+	OnUpdate = function(self, ellapsed) -- EditBoxOnTextChanged doesn't seem to work for wideEditBox -.-
+		TransmoggyDB.preferredURL = TransmoggyDB.preferredURL or 1
+        self.wideEditBox:SetText(urlBases[TransmoggyDB.preferredURL] .. (self.data.isSpell and "spell" or "item") .. "=" .. self.data.itemID)
+        self.wideEditBox:HighlightText()
 	end,
 }
 

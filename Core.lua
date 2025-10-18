@@ -81,16 +81,10 @@ core.CURRENCY_FAKE_ITEMID = 43949
 core.HIDDEN_ID = -1		-- any ID that is not already used by items or enchants. enchant visual ID 1 is in use. currently display list uses those, so dont use 1 :^)
 core.UNMOG_ID = 0 		-- changing this from 0 is not fully supported (e.g. GetInventoryEnchantID)
 
--- 11755, SimonGame_Visual_LevelStart
--- 4140, HumanExploration
--- 12891, AchievementSound
--- 1202, "Sound\\interface\\PickUp\\PickUpParchment_Paper.wav"
--- 1204, PutDownGems
--- 6199 :D apply, 12009 :D unlock
 core.sounds = {
-	applySuccess = 6555, -- 6555, 888, 6199
-	unlockVisual = 1202, -- 1204, 
-	gainBalance = 1204,
+	applySuccess = 6555, -- 6555 (ShaysBell), 6199 (Work complete :]), 888 (level up), 11755 (SimonGame_Visual_LevelStart, gnomish sounds)
+	unlockVisual = 1202, -- 1202 (put down leather), 1204 (put down gem), 1519 (taxinode), 12009 (forest troll male aggro)
+	gainBalance = 1210, -- 1210 (pick up ring), 1204 (put down gem)
 }
 
 core.DUMMY_WEAPONS = {
@@ -437,7 +431,7 @@ local slotToID = {
 	["SecondaryHandSlot"] = 17,
 	["ShieldHandWeaponSlot"] = 17,
 	["OffHandSlot"] = 17,
-	["MainHandEnchantSlot"] = -16, --TODO: allowed? better to add a ToCorrespondingSlot function instead of this hacky minus stuff?
+	["MainHandEnchantSlot"] = -16,
 	["SecondaryHandEnchantSlot"] = -17,
 	["RangedSlot"] = 18,
 }
@@ -902,7 +896,7 @@ core.SetCurrentChanges = SetCurrentChanges
 
 core.GetCurrentChanges = function()
 	if not TransmoggyDB.currentChanges then TransmoggyDB.currentChanges = {} end
-	return TransmoggyDB.currentChanges
+	return core.DeepCopy(TransmoggyDB.currentChanges)
 end
 
 SetCurrentChangesSlot = function(slot, id, silent)
@@ -926,7 +920,7 @@ SetCurrentChangesSlot = function(slot, id, silent)
 	elseif itemID or (isEnchantSlot and correspondingWeaponID) then
 		if isEnchantSlot then
 			itemID = itemID or core.UNMOG_ID
-			visualID = visualID or core.UNMOG_ID 	-- TODO: currently no way to know what enchant mog is used
+			visualID = visualID or core.UNMOG_ID
 			if itemID == core.UNMOG_ID and id == core.HIDDEN_ID then -- hiding without enchant not possible. allow and show the error or catch like this?
 				id = core.UNMOG_ID
 			end
@@ -1068,6 +1062,10 @@ core.SetSkin = function(skin, silent)
 		skins[id].slots[slotID] = (itemID == API.NoTransmog and nil) or (itemID == API.HideItem and core.HIDDEN_ID) or itemID
 	end
 
+	if skin.id == core.GetSelectedSkin() then		
+		SetCurrentChanges(core.GetCurrentChanges()) -- Check changes against new skin state
+	end
+
 	if skin.id == core.GetSelectedSkin() and not skin.name or skin.name == "" then -- If we reset our currently selected skin, flip back to inventory
 		core.SetSelectedSkin()
 	elseif not silent then 
@@ -1077,27 +1075,13 @@ end
 
 -- SkinData now has format: { {id: SkinID, name: String, slots: SlotMap} }
 SetSkinData = function(skinData)
-	core.Debug("called set skin data!")
+	wipe(skins)
 
-	-- for k, skin in pairs(skinData) do
-	-- 	core.am("setdata:", skin)
-	-- end
 	for _, skin in pairs(skinData) do
-		-- assert correct format?
-
 		core.SetSkin(skin, true)
-
-		-- core.am("setdata:", skin)
-		-- core.am("copied data:", skins[id])
 	end
 
-	local selectedName = core.GetSelectedSkinName()
-	if not selectedName or selectedName == "" then -- If we reset our currently selected skin, flip back to inventory
-		core.SetSelectedSkin()
-	else	
-		--core.SetSelectedSkin(core.GetSelectedSkin()) -- TODO: this needs fixing
-		core.UpdateListeners("selectedSkin") -- TODO: is this fine?
-	end
+	core.UpdateListeners("selectedSkin")
 end
 
 core.GetSkins = function()
@@ -1105,11 +1089,14 @@ core.GetSkins = function()
 end
 
 core.SetSelectedSkin = function(skinID)
+	assert(skinID == nil or skins[skinID], "Error in SetSelectedSkin: there is no skin with given skinID")
+
 	if skinID == selectedSkin then return end
 
-	selectedSkin = skinID -- TODO: check if it exists in skinData?
+	selectedSkin = skinID
 	core.UpdateListeners("selectedSkin")
 	SetCurrentChanges({})
+	SetSlotAndCategory()
 end
 
 core.GetSelectedSkin = function()
@@ -1122,7 +1109,7 @@ core.GetSelectedSkinName = function()
 end
 
 core.SetActiveSkin = function(skinID) -- Setter of internal var. Asking the server to change active Skin is done with Request...
-	assert(skinID == nil or type(skinID) == "number", "Error in SetActiveSkin: skinID has wrong type")
+	assert(skinID == nil or skins[skinID], "Error in SetActiveSkin: there is no skin with given skinID")
 	activeSkin = skinID
 	core.UpdateListeners("activeSkin")
 end
@@ -1250,14 +1237,12 @@ core.RequestActivateSkin = function(skinID)
 	end)
 end
 
+ -- Changes should also get tracked by OnSkinUpdate, but need to request once on login
 local requestCounterS = 0
 core.RequestSkins = function(id)
 	API.GetSkins():next(function(skinData)
 		-- core.am("received skinData:", skinData)
 		SetSkinData(skinData)
-		-- if id then
-		-- 	SelectSet(id)
-		-- end
 	end):catch(function(err)
 		core.Debug("RequestSkins: An error occured:", err.message)
 	end)
@@ -1389,17 +1374,20 @@ local requestCounterACC = 0
 core.RequestApplyCurrentChanges = function()
 	requestCounterACC = requestCounterACC + 1
 	local requestID = requestCounterACC
-	API.ApplyAll(core.ToApiSet(TransmoggyDB.currentChanges, true), core.GetSelectedSkin()):next(function(answer)
+	local requestedChanges = core.GetCurrentChanges()
+	local skinID = core.GetSelectedSkin()
+	API.ApplyAll(core.ToApiSet(requestedChanges, true), skinID):next(function(answer)
 		if requestID == requestCounterACC then
 			PlaySound(core.sounds.applySuccess)
-			core.PlayApplyAnimations()
-			SetCurrentChanges(core.GetCurrentChanges()) -- should result in empty table for successfull apply
+			core.PlayApplyAnimations(requestedChanges)
+			core.SetCurrentChanges(core.GetCurrentChanges()) -- Trigger comparison of changes versus applied visuals
+			-- RequestSkins() -- should not be needed as we are registered to skin change events
 		end
 	end):catch(function(err)
 		core.Debug("RequestApplyCurrentChanges: An error occured:", err.message)
-		-- an unknown number of slots might have successfully applied before a slot has encountered an error
-		-- this clears pendings where changes went through
-		SetCurrentChanges(core.GetCurrentChanges())
+		-- We could try to restict the animation to successfully applied slots, but this should never happen anyway
+		core.PlayApplyAnimations(requestedChanges)
+		core.SetCurrentChanges(core.GetCurrentChanges())
 		UIErrorsFrame:AddMessage(err.message, 1.0, 0.1, 0.1, 1.0)
 	end)
 end	

@@ -1,18 +1,17 @@
-local RisingAPI = LibStub:NewLibrary("RisingAPI", 2)
+local NAME, VERSION = "RisingAPI", 3
+local RisingAPI = LibStub:NewLibrary(NAME, VERSION)
+LibStub(NAME)._currentModuleVersion = VERSION -- for module registration only (NOT necessarily the actual library version)
 if not RisingAPI then return end
 
 
 -- #######################################
 -- ## Includes
-local CallbackHandler = LibStub:GetLibrary("CallbackHandler-1.0")
 local Promise = LibStub:GetLibrary("deferred")
 local JSON = LibStub:GetLibrary("json.lua")
 local logger = LibStub:GetLibrary("RAPI_Logger").New(YELLOW_FONT_COLOR_CODE .. "[API:%s] " .. FONT_COLOR_CODE_CLOSE)
 local Utils = LibStub:GetLibrary("RAPI_Utils")
 
 local wait, splitAt, doAfterLogin, dump = Utils.Wait, Utils.SplitAt, Utils.DoAfterLogin, Utils.Dump
-
-local YELLOW, CLOSE = YELLOW_FONT_COLOR_CODE, FONT_COLOR_CODE_CLOSE
 
 
 -- #######################################
@@ -31,6 +30,8 @@ local MAX_CONTENT_LENGTH = 255 - PREFIX_LENGTH - 2 -- message length (prefix + w
 
 -- #######################################
 -- ## Misc
+RisingAPI.Utils = Utils
+
 function RisingAPI:debug(level)
 	if (type(level) == "nil") then
 		level = logger.INFO
@@ -41,9 +42,9 @@ function RisingAPI:debug(level)
 	logger:setLevel(level)
 
 	if (logger:isEnabled()) then
-		print("Debug mode enabled.")
+		print("[API] Debug mode enabled.")
 	else
-		print("Debug mode disabled.")
+		print("[API] Debug mode disabled.")
 	end
 end
 
@@ -124,13 +125,13 @@ function RisingAPI:request(opcode, params, requestedValues)
 	requestBody.params.__json_object = true
 	requestBody.request.__json_object = true
 
-	logger:logInfo(LOG_OUT, function() return "sending request (%d): %s", id, dump(requestBody) end)
-	logger:logTrace(LOG_OUT, "outgoing request messages:")
+	logger:info(LOG_OUT, function() return "sending request (%d): %s", id, dump(requestBody) end)
+	logger:trace(LOG_OUT, "outgoing request messages:")
 
 	local messages = splitContent(JSON.Encode(requestBody))
 	for i, message in ipairs(messages) do
 		local header = (i == #messages) and headerEnd or headerMid
-		logger:logTrace(LOG_OUT, YELLOW .. "%d:" .. CLOSE .. " %s", i, message)
+		logger:trace(LOG_OUT, YELLOW_FONT_COLOR_CODE .. "%d:" .. FONT_COLOR_CODE_CLOSE .. " %s", i, message)
 
 		-- SendAddonMessage seems to drop messages if called too early in the loading process, but after PLAYER_LOGIN seems fine
 		doAfterLogin(function()
@@ -141,7 +142,7 @@ function RisingAPI:request(opcode, params, requestedValues)
 	wait(REQUEST_TIMEOUT):next(function()
 		local request = self._clientRequests[id]
 		if request and request.promise == promise then -- check whether our request is still open
-			logger:logInfo(LOG_OUT, "request (%d) timeout", id)
+			logger:info(LOG_OUT, "request (%d) timeout", id)
 			promise:reject({ message = "request failed (timeout)" })
 			self._clientRequests[id] = nil
 		end
@@ -151,7 +152,7 @@ function RisingAPI:request(opcode, params, requestedValues)
 end
 
 function RisingAPI:_handleServerResponse(id, message, done)
-	logger:logTrace(LOG_IN, "incoming server response message (%d): %s", id, message)
+	logger:trace(LOG_IN, "incoming server response message (%d): %s", id, message)
 
 	local request = self._clientRequests[id]
 	if not request then
@@ -164,11 +165,11 @@ function RisingAPI:_handleServerResponse(id, message, done)
 	if done then
 		local response = JSON.Decode(table.concat(request.response))
 		if type(response) == "table" and response.error ~= nil then
-			logger:logInfo(LOG_IN, "rejecting with error (%d): %s", id, response.error)
+			logger:info(LOG_IN, "rejecting with error (%d): %s", id, response.error)
 			response.error, response.message = nil, response.error
 			request.promise:reject(response)
 		else
-			logger:logInfo(LOG_IN, function() return "resolving (%d): %s", id, dump(response) end)
+			logger:info(LOG_IN, function() return "resolving (%d): %s", id, dump(response) end)
 			request.promise:resolve(response)
 		end
 		self._clientRequests[id] = nil
@@ -193,7 +194,7 @@ RisingAPI._events = RisingAPI._events or Utils.CreateEventRegistry(
 )
 
 function RisingAPI:_handleServerRequest(id, message, done)
-	logger:logTrace(LOG_IN, "incoming server request message (%d): %s", id, message)
+	logger:trace(LOG_IN, "incoming server request message (%d): %s", id, message)
 
 	if not self._serverRequests[id] then
 		self._serverRequests[id] = {
@@ -206,23 +207,23 @@ function RisingAPI:_handleServerRequest(id, message, done)
 	table.insert(request.parts, message)
 
 	if done then
+		self._serverRequests[id] = nil
 		local content = JSON.Decode(table.concat(request.parts))
-		logger:logInfo(LOG_IN, function() return "incoming server request (%d): %s", id, dump(content) end)
+		logger:info(LOG_IN, function() return "incoming server request (%d): %s", id, dump(content) end)
 
-		logger:assert(type(content) == "table", "invalid request format (expected table, got %s)", type(content))
+		if type(content) ~= "table" then
+			error(("invalid request format (expected table, got %s)"):format(type(content)))
+			return
+		end
 
 		-- note: The client library currently only supports events (= server requests with opcode "event/fire"
 		-- and no response of the client). More complex requests may be implemented in the future.
-		logger:assert(
-			content.opcode == "event/fire",
-			"recieved server request with opcode \"%s\", but only \"event/fire\" supported", content.opcode
-		)
-		if (content.opcode == "event/fire") then
-			logger:logInfo(LOG_IN, "firing event: %s", content.event)
-			self._events:fire(content.event, content.payload)
+		if content.opcode ~= "event/fire" then
+			error(("recieved server request with opcode \"%s\", but only \"event/fire\" supported"):format(content.opcode))
 		end
 
-		self._serverRequests[id] = nil
+		logger:info(LOG_IN, "firing event: %s", content.event)
+		self._events:fire(content.event, content.payload)
 	end
 end
 
@@ -256,7 +257,7 @@ end
 RisingAPI._frame = RisingAPI._frame or CreateFrame("Frame")
 RisingAPI._frame:RegisterEvent("CHAT_MSG_ADDON")
 RisingAPI._frame:SetScript("OnEvent", function(self, event, prefix, message, dist, sender)
-	logger:logTrace(LOG_IN, "incoming message (prefix: %s, sender: %s): %s", prefix, sender, message)
+	logger:trace(LOG_IN, "incoming message (prefix: %s, sender: %s): %s", prefix, sender, message)
 	if sender ~= SERVER_NAME then
 		return
 	end
@@ -271,8 +272,11 @@ end)
 -- #######################################
 -- ## Modules
 function RisingAPI:newModule(name)
+	local old = self[name]
+	if old and old._version >= self._currentModuleVersion then
+		return nil
+	end
 	self[name] = self[name] or {}
+	self[name]._version = self._currentModuleVersion
 	return self[name], self
 end
-
-RisingAPI.Utils = Utils

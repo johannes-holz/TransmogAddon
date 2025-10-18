@@ -2,11 +2,6 @@
 
 The transmog module is available at `LibStub("RisingAPI").Transmog`.
 
-# ToDo
-
-* Change / document how `ApplyAll()` behaves if some transmogrifications fail
-* Mention rate limiting
-
 # Syntax
 
 `value: Type` denotes a parameter or table key with name `value` of type `Type`. A type followed by a question mark like `Type?` is optional and its type is `Type` or `nil`. `Type[]` denotes an array of type `Type`.
@@ -67,6 +62,7 @@ Set of transmog visuals represented as a mapping of slots to visuals.
 	* If the character has a BoE item in its inventory that is not yet bound to the player and whose visual was not unlocked before.
 	* If the character has a soulbound item in its inventory that can still be traded with other raid members or refunded at a vendor.
 * An unlocked item visual is considered "unavailable" if the player does not currently satisfy all requirements needed to use the item visual for transmogrification. Such requirements include: level, profession, profession specialization.
+* Rate limiting is in place for the API. If you send too many requests in a short amount of time, your requests will fail with the message `too many requests`. The exact limits vary between different requests and may change.
 
 # API Functions
 
@@ -167,6 +163,7 @@ Applies the given transmog visual to the given skin or the currently equipped it
 ## `ApplyAll()`
 Applies the given transmog visuals to the given skin or the currently equipped items if no skin id is provided.
 **Note:** When applying a visual that is not yet permanently unlocked, but a corresponding item exists in the player's inventory, that item will be bound to the player and can no longer be traded or refunded.
+**Warning:** This is only a client-side wrapper around multiple calls to `Apply()`. If one of those calls fails this call will fail with a map of error messages `{ [slot: SlotId]: string }`. In this case, some transmogs may have been applied while others have not. You can prevent such partial results, by first verifying that all requested transmogs are allowed using `CheckAll()` and that the character has sufficient balance using `GetPriceAll()`.
 #### Parameters
 * `slots: SlotMap`
 * `skinId: SkinId?`

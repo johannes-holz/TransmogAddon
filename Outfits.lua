@@ -8,7 +8,7 @@ end
 
 core.IsInvalidOutfitName = function(name)    
 	local denyMessage
-	if string.len(name) < 1 then -- or require visible char with name:gsub(" ", "") ?
+	if string.len(name) < 1 then
 		denyMessage = core.OUTFIT_NAME_TOO_SHORT
 	elseif string.find(name, "[^ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz _.,'1234567890]") then
 		denyMessage = core.OUTFIT_NAME_INVALID_CHARACTERS

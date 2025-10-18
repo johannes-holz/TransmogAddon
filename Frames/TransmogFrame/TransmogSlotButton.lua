@@ -132,7 +132,7 @@ local SlotButton_OnEnter = function(self)
 		GameTooltip:AddLine("Error: " .. cannotTransmogrifyReason, 1, 0, 0, 1)
 	end
 
-	if not (core.db and core.db.profile.General.hideControlHints) then
+	if core.db and core.db.profile.General.showControlHints then
         local rL, gL, bL = GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b
         local rR, gR, bR = GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b
         GameTooltip:AddLine(" ")
@@ -403,17 +403,17 @@ core.CreateSlotButton = function(parent, width, itemSlot)
 	
 	
 	f.PlayApply = function(self)
-         local itemID, visualID, skinVisualID, pendingID, _, _, canTransmogrify = core.TransmogGetSlotInfo(self.itemSlot)
-		 local selectedSkin = core.GetSelectedSkin()
+        --  local itemID, visualID, skinVisualID, pendingID, _, _, canTransmogrify = core.TransmogGetSlotInfo(self.itemSlot)
+		--  local selectedSkin = core.GetSelectedSkin()
 
-		if pendingID and (f.isEnchantSlot or canTransmogrify) then
-			self.applying = true
-			applyingMulti = 0
-			applyingCount = 0
-			self.changedTex:Show()
-			self.changedTex2:Show()
-			self:SetScript("OnUpdate", self.OnUpdate_Animation)
-		end
+		-- if pendingID and (f.isEnchantSlot or canTransmogrify) then
+		self.applying = true
+		applyingMulti = 0
+		applyingCount = 0
+		self.changedTex:Show()
+		self.changedTex2:Show()
+		self:SetScript("OnUpdate", self.OnUpdate_Animation)
+		-- end
 	end
 
 	

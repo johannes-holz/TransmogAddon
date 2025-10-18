@@ -1,4 +1,5 @@
 local M, API = LibStub:GetLibrary("RisingAPI"):newModule("General")
+if not M then return end
 local Utils = API.Utils
 
 function M.GetSupportedFeatures(features)

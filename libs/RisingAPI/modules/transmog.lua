@@ -1,4 +1,5 @@
 local M, API = LibStub:GetLibrary("RisingAPI"):newModule("Transmog")
+if not M then return end
 local Utils = API.Utils
 local deferred = LibStub("deferred")
 
@@ -118,10 +119,27 @@ function M.ApplyAll(slots, skinId)
 			error("invalid slot: " .. tostring(slot))
 		end
 
-		table.insert(futures, M.Apply(visualId, skinId, slot))
+		table.insert(futures, M.Apply(visualId, skinId, slot):catch(function(err)
+			return deferred.Rejected({ message = err.message, slot = slot })
+		end))
 	end
 
-	return deferred.All(futures):next(Utils.Noop)
+	return deferred.AllSettled(futures):next(function(results)
+		local messages = {}
+		local success = true
+		for _, result in ipairs(results) do
+			if (result.status == "rejected") then
+				success = false
+				messages[result.reason.slot] = result.reason.message
+			end
+		end
+
+		if (success) then
+			return nil
+		else
+			return deferred.Rejected(messages)
+		end
+	end)
 end
 
 function M.Check(visualId, skinId, slot)
@@ -214,7 +232,11 @@ function M.GetVisualFromItemLink(itemLink)
 	local enchantVisual = nil
 	if (suffixId == 0) then
 		enchantVisual = bit.band(uniqueId, 0xFFFF)
+		if (enchantVisual == 65000) then
+			enchantVisual = 70164
+		end
 	end
+
 	return itemVisual, enchantVisual
 end
 

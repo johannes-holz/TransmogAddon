@@ -1,8 +1,7 @@
 local folder, core = ...
 
--- Hooking this would need fixes to interact with other addons, even Blizzard Auction UI already overwrites this one.
--- The latter could be fixed by overwriting again on Auction UI's ADDON_LOADED event
--- Probably no need tho, hooking onto DressUpModel seems to work fine
+-- Hooking this would need fixes to interact with other addons, even Blizzard Auction UI already overwrites this OnLoad
+-- We modify the behaviour of DressUpModel instead
 --[==[
 DressUpItemLink = function(link, slot)
 	if not link or not IsDressableItem(link) then
@@ -35,15 +34,6 @@ end)
 core.SetTooltip2(DressUpModel.shadowFormButton, core.SHADOW_FORM_TOOLTIP_TITLE, 1, 1, 1, nil,
                                                 core.SHADOW_FORM_TOOLTIP_TEXT, nil, nil, nil, 1)
 
--- DressUpModel.testButton = core.CreateCustomCheckButton(DressUpModel, "$parentTestButton", 20, 20)
--- DressUpModel.testButton:SetPoint("BOTTOMRIGHT", -50, 8)
--- DressUpModel.testButton:SetScript("OnClick", function(self, button)
---     print("hi", self:GetChecked())
---     core.PlayButtonSound()
---     DressUpModel:SetShadowForm(not DressUpModel:GetShadowForm())
--- end)
--- core.SetTooltip2(DressUpModel.testButton, core.SHADOW_FORM_TOOLTIP_TITLE, 1, 1, 1, nil,
---                                           core.SHADOW_FORM_TOOLTIP_TEXT, nil, nil, nil, 1)
 
 DressUpModel.SetShadowForm = function(self, form)
     self:SetLight(unpack(form and core.LIGHT.shadowForm or core.LIGHT.default))
@@ -61,8 +51,8 @@ DressUpModel.GetShadowForm = function(self)
     return self.shadowFormEnabled
 end
 
--- These equip locations can be uniquely mapped to a slot
 core.equipLocToInventorySlot = {
+    -- These equip locations can be uniquely mapped to a slot
 	INVTYPE_HEAD = "HeadSlot",
 	INVTYPE_SHOULDER = "ShoulderSlot",
 	INVTYPE_BODY = "ShirtSlot",
@@ -89,8 +79,8 @@ core.equipLocToInventorySlot = {
 
 local items = {}
 
-DressUpModel.GetSlotInfo = function(self, itemSlot)
-	assert(core.slotToID[itemSlot], "Invalid slot in DressUpModel.GetSlotInfo")
+DressUpModel.GetSlot = function(self, itemSlot)
+	assert(core.slotToID[itemSlot], "Invalid slot in DressUpModel.GetSlot")
 
     return items[itemSlot]
 end
@@ -99,8 +89,6 @@ DressUpModel.GetAll = function(self)
     return core.DeepCopy(items)
 end
 
--- We allow setting slots to 1 (hidden) now. The original TryOn just ignores these calls anyway. Problem with enchants, as there is an enchant with ID=1
--- Cached item info should not be needed at this point: We can check itemType for OH stuff with item data and we just have to call a display update on item query
 -- TODO: modify OnItemClick to allow setting hidden items?
 DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
 	assert(itemSlot and core.slotToID[itemSlot], "Invalid slot in DressUpModel.SetSlot:" .. (itemSlot or "nil"))
@@ -112,27 +100,23 @@ DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
     end
 
     local isEnchantSlot = core.IsEnchantSlot(itemSlot)
-    local isValidEnchant = true -- TODO: check whether this is a weapon enchant?
-
+    -- local isValidEnchant = true -- TODO: check whether this is a weapon enchant?
     -- assert(itemID == nil or itemID == core.HIDDEN_ID or ((isEnchantSlot and isValidEnchant) or core.GetItemData(itemID) ~= nil), "Invalid itemID in DressUpModel.SetSlot")
 
     if itemID then
         if isEnchantSlot then
             -- TODO: e.g. check if its valid weapon enchant?
         else
-            local itemSubType, itemEquipLoc
+            local itemSubType, itemEquipLoc, _
             if itemID ~= core.HIDDEN_ID then
-                local _, _, _, _, _, _, subType, _, equipLoc = GetItemInfo(itemID)
-                if not subType then -- TODO: Hide this scuffness in data function?
+                _, _, _, _, _, _, itemSubType, _, itemEquipLoc = GetItemInfo(itemID)
+                if not itemSubType then
                     local unlocked, displayGroup, inventoryType, class, subClass = core.GetItemData(itemID)
                     itemSubType = class and core.classSubclassToType[class][subClass] -- contains categories (type + subtype) now, but CanBeTitanGripped accepts either
                     itemEquipLoc = inventoryType and core.inventoryTypes[inventoryType]
-                else
-                    itemSubType, itemEquipLoc = subType, equipLoc
                 end
                 local equipLocID = core.inventoryTypeToID[itemEquipLoc]
-                -- Wrong slot+item combination might arise, if we implement slot click preview, e.g. mh has oh enchant and we try to preview that in mh
-                -- assert(equipLocID and core.slotItemTypes[itemSlot][equipLocID], "Incompatible item and slot in DressUpModel.SetSlot")
+                -- Invalid slot+item combination might arise, e.g. mh has oh visual and we try to preview that in mh
                 if not (equipLocID and core.slotItemTypes[itemSlot][equipLocID]) then
                     UIErrorsFrame:AddMessage("Can not preview this item in this slot.", 1.0, 0.1, 0.1, 1.0)
                     return
@@ -142,7 +126,7 @@ DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
             -- Only allow Offhand or ShieldHandWeapon?
             if itemSlot == "OffHandSlot" then
                 items["ShieldHandWeaponSlot"] = nil
-            elseif itemSlot == "ShieldHandWeaponSlot" then -- TODO: or only clear when we can preview it?
+            elseif itemSlot == "ShieldHandWeaponSlot" then
                 items["OffHandSlot"] = nil
             end
             -- Only allow melee or ranged Weapons?        
@@ -167,18 +151,14 @@ DressUpModel.SetSlot = function(self, itemSlot, itemID, silent)
                         itemID = items[itemSlot] -- or just return? if we return instead and dont update view, we need to do this check before we do any other changes to items
                         UIErrorsFrame:AddMessage(core.CAN_NOT_DRESS_OFFHAND, 1.0, 0.1, 0.1, 1.0)
                     end
-                    -- Should we allow setting these freely instead and then check in Dress instead what we can display + indicate somehow if we cant display offhand?
-                    -- Otherwise kinda cringe behaviour for especially enhas and furies with different dual spec?
                 end
             end
         end
     end
 
-    -- if items[itemSlot] == itemID then return end -- no changes (lastWeaponSlot might have changed. could be included here too ofc)
-
     items[itemSlot] = itemID
     if not silent then
-        core.UpdateListeners("dressUpModel") -- Wieder so? Wird nicht aufgerufen bei tryon, wenn model nicht schon angezeigt wird, weil es zu diesem Zeitpunkt versteckt ist?
+        core.UpdateListeners("dressUpModel")
     end
 
     if itemID and itemID ~= core.HIDDEN_ID and not GetItemInfo(itemID) then
@@ -218,7 +198,6 @@ DressUpModel.SetAll = function(self, set)
 	core.UpdateListeners("dressUpModel")
 end
 
-local TryOnOld = DressUpModel.TryOn
 DressUpModel.TryOnOld = DressUpModel.TryOn
 DressUpModel.TryOn = function(self, itemLink, itemSlot)
     local itemID = core.GetRecipeInfo(itemLink) or core.GetItemIDFromLink(itemLink)
@@ -232,21 +211,15 @@ DressUpModel.TryOn = function(self, itemLink, itemSlot)
 
     local _, _, _, _, _, _, itemSubClass, _, itemEquipLoc = GetItemInfo(itemID)
     if not itemEquipLoc then
-        core.QueryItem(itemID)        
-        -- oder automatisch anlegen onItemInfo? Doof, wenn wir grade locked out sind und nach ewigkeiten nen random TryOn aufgerufen wird
-        -- Ist zwar abfangbar mit maxTime, Model lnicht ausgeblendet und Slot nicht anders überschrieben in der Zeit, aber trotzdem unentschlossen                                                                                  
-        print("Could not preview item " .. itemLink .. ", because it has not been cached yet. Try again after a few seconds.")
+        core.QueryItem(itemID) -- Uncached items from chat links don't even reach this point. Might wanna query in ModifiedItemClick
         return
     end
-
-    -- print("DressUp", itemLink, itemSlot, itemEquipLoc, itemID, enchantID)
 
     -- Try to determine itemSlot from equipLocation
     itemSlot = itemSlot or core.equipLocToInventorySlot[itemEquipLoc]
     
     -- Not one of the visible itemSlots. Don't have to do anything in this case
     if not itemSlot then
-        -- print("Could not find proper Inventory Slot for " .. itemLink .. ". Maybe it is an invisible inventory item like rings or trinkets.")
         return
     end
 
@@ -261,10 +234,11 @@ DressUpModel.TryOn = function(self, itemLink, itemSlot)
         self.lastWeaponSlot = itemSlot -- TODO: Revisit weapon slot logic. Should we reset on equipping sets? prioritize empty slot? etc.
     end
 
-    -- print("tryOn", itemID, itemEquipLoc, inventorySlot)
     self:SetSlot(itemSlot, itemID)
-    if enchantID and core.IsWeaponSlot(itemSlot) then
-        self:SetSlot(core.GetCorrespondingSlot(itemSlot), enchantID)
+
+    local correspondingEnchantSlot = core.IsWeaponSlot(itemSlot) and core.GetCorrespondingSlot(itemSlot)
+    if enchantID and correspondingEnchantSlot then
+        self:SetSlot(correspondingEnchantSlot, enchantID)
     end
 end
 
@@ -286,6 +260,7 @@ local doesNotMix = {
     [core.CATEGORIES.ARMOR_SHIELDS] = true,
 }
 
+-- e.g. MH-only visual will not be shown in OH, MH skin will not be shown, if fishing pole is equiped
 local IsCompatible = function(source, target, slot)
     local sCat, sEquipLoc, sEquipLocID = core.GetItemTypeInfo(source)
     local tCat, tEquipLoc, tEquipLocID = core.GetItemTypeInfo(target)
@@ -313,7 +288,7 @@ local GetShownItem = function(slot, skin)
         visualID = visualID and IsCompatible(visualID, itemID, slot) and visualID
     end
 
-    local shown = (itemID and skin and skinVisualID) or visualID or itemID or nil
+    local shown = ((itemID or isEnchantSlot) and skin and skinVisualID) or visualID or itemID or nil
     if shown == core.UNMOG_ID then
         shown = itemID or nil
     end
@@ -329,7 +304,13 @@ DressUpModel.Dress = function(self)
         shownItems[slot] = GetShownItem(slot, skin)
     end
 
-    -- core.am(shownItems)
+    -- Don't display skin enchant, if there is no weapon? Redundant if we disallow enchants without weapons in SetSlot
+    for _, slot in pairs(core.enchantSlots) do
+        local correspondingWeaponSlot = core.GetCorrespondingSlot(slot)
+        if not shownItems[correspondingWeaponSlot] then
+            shownItems[slot] = nil
+        end
+    end
 
     self:SetAll(shownItems)
 end
@@ -349,21 +330,13 @@ DressUpModel.SetCreature = function(self, creatureID)
     self:update()
 end
 
--- TODO: Weapon Display Logic. Allow only what we can display? Transmog allows more than what we can display anyway, so we can't even show what we wear in some cases
+-- TODO: Weapon Display Logic. Allow only what we can display? Transmog allows more than what we can display, so we can't even show what we wear in some cases
 -- Also what do we do with outfits, we created on dualwield char/spec or titangrip spec, that we are now unable to display ...
 DressUpModel.update = function(self)
-    -- local debug = {}
-    -- for slot, itemID in pairs(items) do
-    --     if core.IsWeaponSlot(slot) then
-    --         debug[slot] = GetItemInfo(itemID)
-    --     end
-    -- end
-    -- core.am(debug)
-
     UndressOld(self)
     for slot, itemID in pairs(items) do
         if not core.IsWeaponSlot(slot) and not core.IsEnchantSlot(slot) then
-            TryOnOld(self, itemID)
+            self:TryOnOld(itemID)
         end
     end
 
@@ -377,7 +350,7 @@ DressUpModel.update = function(self)
     -- taken from previewmodel code. melee/ranged should be exclusive here anyway
     if (not mh and not oh) then -- or self.lastWeaponSlot == "RangedSlot" then -- TODO: not needed here if we only allow melee or ranged. Still using it for toggling 1h equip slot
         if ranged and ranged ~= core.HIDDEN_ID then
-            TryOnOld(self, ranged)
+            self:TryOnOld(ranged)
         end
     else
         core.ShowMeleeWeapons(self, mh, oh)
@@ -400,7 +373,6 @@ DressUpModel.update = function(self)
                     DressUpFrame.itemListFrame.slotButtons[slot]:SetText(core.GetTextureString(texture, 16) .. " " .. (link or core.LOADING2))
                 end
             else
-                -- local isHidden = itemID == (isEnchantSlot and -1 or 1)
                 DressUpFrame.itemListFrame.slotButtons[slot]:SetText("      " .. (itemID == core.HIDDEN_ID and core.GetColoredString(core.HIDDEN, core.mogTooltipTextColor.hex)
                                                                                             or core.GetColoredString("(" .. core.SLOT_NAMES[slot] .. ")", core.greyTextColor.hex)))
             end
@@ -449,23 +421,16 @@ end)
 DressUpFrame.printButton = core.CreateMeATextButton(DressUpFrame, 80, 22, core.SHARE)
 DressUpFrame.printButton:SetPoint("BOTTOMRIGHT", DressUpFrame.undressButton, "BOTTOMLEFT")
 DressUpFrame.printButton:SetScript("OnClick", function(self)
-    local link = core.API.EncodeOutfitLink(core.ToApiSet(items, true)) -- , "I bims, 1 Outfit. Now with enchants!")
-
-    -- core.am("Input:", core.ToApiSet(items, true))
-    -- core.am("Decoded:", core.API.DecodeOutfitLink(link))
-    -- link = "\124cffaa00ff\124Houtfit:0:0:0:0:0:0:0:0:1:0:0:0:0:0:0\124h[Transmog Outfit]\124h\124r"
-    -- link = "\124cffaa00ff\124Houtfit:0:0:0:0:0:0:0:0:1:0:0:0:0:0:0\124h[Transmog Outfit uwu " .. core.GetTextureString("Interface/Buttons/UI-CheckBox-Check") .. "]\124h\124r"
-    -- link = "\124cffaa00ff\124Houtfit:0" ..core.GetTextureString("Interface/Buttons/UI-CheckBox-Check") .. ":0:0:0:0:0:0:0:1:0:0:0:0:0:0\124h[Transmog Outfit]\124h\124r"
-    -- print(link)
-
+    local link = core.API.EncodeOutfitLink(core.ToApiSet(items, true)) -- TODO: Allow adding outfit name to link?
     local chatFrame = SELECTED_CHAT_FRAME or ChatFrame1
     local editBox = _G[chatFrame:GetName() .. "EditBox"]
+
     editBox:SetFocus()
     ChatEdit_InsertLink(link)
     core.PlayButtonSound()
 end)
 
--- List of current items on the model. TODO: nicer background, Button Hover Texture?, Modifier Click explanation
+-- List of current items on the model
 DressUpFrame.itemListFrame = CreateFrame("Frame", "ItemListFrame", DressUpFrame)
 DressUpFrame.itemListFrame:SetSize(200, 400)
 DressUpFrame.itemListFrame:SetPoint("TOPLEFT", DressUpFrame, "TOPRIGHT", -40, -30)
@@ -522,7 +487,7 @@ local SlotListButton_OnEnter = function(self)
         GameTooltip:SetText((itemID and (core.HIDDEN .. " - ") or "") .. core.SLOT_NAMES[self.slot])
     end
 
-    if not (core.db and core.db.profile.General.hideControlHints) then
+    if core.db and core.db.profile.General.showControlHints then
         local rL, gL, bL = GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b
         local rR, gR, bR = GRAY_FONT_COLOR.r, GRAY_FONT_COLOR.g, GRAY_FONT_COLOR.b
         GameTooltip:AddLine(" ")
@@ -614,10 +579,10 @@ DressUpFrame.itemListFrame:SetScript("OnHide", function(self)
 	PlaySound("igCharacterInfoClose")
 end)
 
-DressUpFrame.listButton = core.CreateMeACustomTexButton(DressUpFrame, 28, 28, GetItemIcon(2725), 9/64, 9/64, 54/64, 54/64) -- core.CreateMeATextButton(DressUpFrame, 22, 22, "L")
+DressUpFrame.listButton = core.CreateMeACustomTexButton(DressUpFrame, 28, 28, GetItemIcon(2725), 9/64, 9/64, 54/64, 54/64)
 DressUpFrame.listButton:SetPoint("TOPRIGHT", -44, -40)
 DressUpFrame.listButton:SetScript("OnClick", function(self)
     TransmoggyDB.ShowItemListFrame = not TransmoggyDB.ShowItemListFrame
-    core.SetShown(self:GetParent().itemListFrame, TransmoggyDB.ShowItemListFrame) -- not self:GetParent().itemListFrame:IsShown())
+    core.SetShown(self:GetParent().itemListFrame, TransmoggyDB.ShowItemListFrame)
 end)
 

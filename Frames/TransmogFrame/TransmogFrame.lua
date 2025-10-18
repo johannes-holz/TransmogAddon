@@ -107,9 +107,11 @@ local LoadPosition = function()
 	end
 end
 
-core.PlayApplyAnimations = function()	
-	for k, v in pairs(itemSlotFrames) do
-		v:PlayApply()	
+core.PlayApplyAnimations = function(changes)
+	for slot, slotButton in pairs(itemSlotFrames) do
+		if changes[slot] then
+			slotButton:PlayApply()
+		end
 	end
 end
 

@@ -1,25 +1,5 @@
 local folder, core = ...
 
---[[
-Possible options:
-	- Automaticly open transmog frame at npc?
-	- Outfit features:
-		- enable
-		- Dont reset on close, in options or in frame?
-		- Maybe not as options but in general:
-			Remember visibility of list frame? Show Cloak/Helmet according to interface setting like default DressUpFrame? Allow OH-only weapons for non-dualwield?
-	- Extra tooltip for transmogification source:
-		- enable, used modifier?
-	- Active Skin Dropdown:
-		- enable, position?
-	- Tooltip modifications:
-		- enable
-	- Option for Data Compression?
-	- Balance display/hooks?
-	- Show/Hide Minimap Icon?
-
-]]
-
 local FullAlign = {
 	TOPLEFT = "TOPLEFT",
 	TOP = "TOP",
@@ -47,7 +27,6 @@ local SetWidgetValue = function(info, input)
 	
 	core.db.profile[caller][arg] = input
 	
-	-- Update our stuff
 	core.OnSettingsUpdate(arg)
     core.Debug("Options changed:", caller, arg, input)
 end
@@ -59,6 +38,7 @@ end
 
 core.options = {
 	type = "group", 
+	childGroups = "tab",
 	args = {
 	    --[==[ Options Frames ]==]--
 		OptionsHeader = {
@@ -70,121 +50,61 @@ core.options = {
 		General = {
 			order = 2.1,
 			type  = "group",
-			name  = "General Options",
+			name  = "General",
 			args = {
-				Header = {
+				GeneralHeader = {
 					type = "header",
 					order = 1,
-					name = "Header Title"
+					name = "General Options"
 				},
-				MobaDescription = {
-					type = "description",
-					order = 2,
-					name = "blablabla description",
-				},		
+				-- GeneralDescription = {
+				-- 	type = "description",
+				-- 	order = 2,
+				-- 	name = "blablabla description",
+				-- },		
 				ShowMinimapIcon = {
                     type = "toggle",
                     order = 2.1,
                     name = "Show minimap icon",
-					width = "full",
-                    desc = "Activate in order to show a minimap icon for this AddOn.",
+					-- width = "full",
+                    desc = "Show an icon on the minimap for this AddOn.",
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "showMinimapIcon",
                 },
-                ClothedMannequins = {
-                    type = "toggle",
-                    order = 3,
-                    name = "Clothed mannequins",
-					width = "full",
-                    desc = "Put some cloth on for Anzu's sake.",
-                    get = GetWidgetValue,
-                    set = SetWidgetValue,
-                    arg = "clothedMannequins",
-                },
-				TooltipNoCollected = {
-                    type = "toggle",
-                    order = 4,
-                    name = "Hide collection status in tooltips",
-					width = "full",
-                    desc = "Activate in order to not show whether in item has been collected in tooltips.",
-                    get = GetWidgetValue,
-                    set = SetWidgetValue,
-                    arg = "tooltipNoCollectedStatus",
-                },
 				AutoOpen = {
                     type = "toggle",
-                    order = 6,
-                    name = "Open transmog window automatically",
-					width = "full",
-                    desc = "When activated, the transmog window will open automatically when you talk to the transmog NPC.",
+                    order = 3,
+                    name = "Auto open at NPC",
+					-- width = "full",
+                    desc = "Directly open the AddOn's interface when talking to the transmog NPC.",
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "autoOpen",
-                },				
-				ExtraItemTooltip = {
-                    type = "toggle",
-                    order = 7,
-                    name = "Show extra item tooltip.",
-					width = "full",
-                    desc = "Activate to show the transmogrification source in an extra tooltip when pressing shift.",
-                    get = GetWidgetValue,
-                    set = SetWidgetValue,
-                    arg = "extraItemTooltip",
-                },			
-				UseWrongTextures = {
-                    type = "toggle",
-                    order = 8,
-                    name = "Show wrong icons.",
-					width = "full",
-                    desc = "Activate to not fix the bug where inventory slots show the icon of the respective transmog item instead of the original item.",
-                    get = GetWidgetValue,
-                    set = SetWidgetValue,
-                    arg = "useWrongTextures",
-                },	
+                },		
 				PlaySpecialSounds = {
                     type = "toggle",
-                    order = 8.1,
+                    order = 4,
                     name = "Play unlock sounds.",
-					width = "full",
-                    desc = "Activate to play a sound when you gain Shards of Illusion or unlock visuals.",
+					-- width = "full",
+                    desc = "Play a sound when you gain Shards of Illusion or unlock visuals.",
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "playSpecialSounds",
+                },	
+				FixItemIcons = {
+                    type = "toggle",
+                    order = 5,
+                	name = "Fix inventory icons.",
+					-- width = "full",
+                    desc = "Display the icons of the equipped items (instead of their visuals) in inventory and inspect frame.",
+                    get = GetWidgetValue,
+                    set = SetWidgetValue,
+                    arg = "fixItemIcons",
                 },
-				DoNotResetDressUp = {
-                    type = "toggle",
-                    order = 9,
-                    name = "Do not reset dressing room on closing.",
-					width = "full",
-                    desc = "Active to have the dressing room remember its last state when closing.",
-                    get = GetWidgetValue,
-                    set = SetWidgetValue,
-                    arg = "doNotResetDressUp",
-                },				
-				HideControlHints = {
-                    type = "toggle",
-                    order = 10,
-                    name = "Hide control hints in slot tooltips.",
-					width = "full",
-                    desc = "Activate to hide certain lines regarding the controls in tooltip.",
-                    get = GetWidgetValue,
-                    set = SetWidgetValue,
-                    arg = "hideControlHints",
-                },		
-				ShowUnavailableEnchants = {
-                    type = "toggle",
-                    order = 10.1,
-                    name = "List unavailable enchants in collection.",
-					width = "full",
-                    desc = "Activate to list enchantments in collection that are probably unavailable to players.",
-                    get = GetWidgetValue,
-                    set = SetWidgetValue,
-                    arg = "showQAEnchants",
-                },		
 				ActiveSkinDropdown = {
                     type = "select",
-                    order = 11,
+                    order = 6,
                     name = "Active skin selection",
 					-- width = "full",
                     desc = "Select method to select active skin in the Characterframe.",
@@ -192,35 +112,96 @@ core.options = {
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "activeSkinDropdown",
+                },		
+				TooltipHeader = {
+					type = "header",
+					order = 20,
+					name = "Tooltip Options"
+				},
+				TooltipNoCollected = {
+                    type = "toggle",
+                    order = 21,
+                    name = "Show collected status",
+					-- width = "full",
+                    desc = "Add a Tooltip line that indicates if a item or visual is not collected.",
+                    get = GetWidgetValue,
+                    set = SetWidgetValue,
+                    arg = "tooltipCollectedStatus",
                 },
+				ExtraItemTooltip = {
+                    type = "toggle",
+                    order = 22,
+                    name = "Show visual source tooltip.",
+					-- width = "full",
+                    desc = "Display an extra tooltip for an item's visual by pressing shift.",
+                    get = GetWidgetValue,
+                    set = SetWidgetValue,
+                    arg = "extraItemTooltip",
+                },	
+				ShowControlHints = {
+                    type = "toggle",
+                    order = 23,
+                    name = "Show usage hints.",
+					-- width = "full",
+                    desc = "Display usage hints in certain AddOn tooltips.",
+                    get = GetWidgetValue,
+                    set = SetWidgetValue,
+                    arg = "showControlHints",
+                },
+				CollectionHeader = {
+					type = "header",
+					order = 30,
+					name = "Collection Options"
+				},		
+                ClothedMannequins = {
+                    type = "toggle",
+                    order = 31,
+                    name = "Clothed mannequins",
+					-- width = "full",
+                    desc = "...",
+                    get = GetWidgetValue,
+                    set = SetWidgetValue,
+                    arg = "clothedMannequins",
+                },	
+				ShowUnavailableEnchants = {
+                    type = "toggle",
+                    order = 32,
+                    name = "List unavailable enchants.",
+					-- width = "full",
+                    desc = "Display enchants in collection that are probably unavailable to the player.",
+                    get = GetWidgetValue,
+                    set = SetWidgetValue,
+                    arg = "showQAEnchants",
+                },
+				DressingRoomHeader = {
+					type = "header",
+					order = 40,
+					name = "Dressing Room Options"
+				},
+				DoNotResetDressUp = {
+                    type = "toggle",
+                    order = 41,
+                    name = "Prevent reset on closing.",
+					-- width = "full",
+                    desc = "Dressing Room remembers the selected items during a session instead of resetting to the player's inventory.",
+                    get = GetWidgetValue,
+                    set = SetWidgetValue,
+                    arg = "doNotResetDressUp",
+                },				
             },		
         },
         
-		-- CCTracker = {		
+		-- AnotherTab = {		
 		-- 	order = 4,
 		-- 	type  = "group",
-		-- 	name  = "Aura Widget",
+		-- 	name  = "Yet another tab",
 		-- 	args = {			
 		-- 		Header2 = {
 		-- 			order = 1,
 		-- 			type = "header",
-		-- 			name = "Aura Widget",
+		-- 			name = "Header",
 		-- 		},	
-		-- 		description1 = {
-		-- 			type = "description",
-		-- 			order = 2,
-		-- 			name = "Shows the strongest type of CC or certain buffs beside nameplates, similar to LoseControl.",
-		-- 		},		
-		-- 		CCTrackerEnable = {
-		-- 			type = "toggle",
-		-- 			order = 3,
-		-- 				width = "full",
-		-- 			name = "Enable",
-		-- 			get = GetWidgetValue,
-		-- 			set = SetWidgetValue,
-		-- 			arg = "Enable",
-		-- 		},
-        --     },
+        --   },
         -- },
 		
 		About = {
@@ -233,6 +214,12 @@ core.options = {
 					order = 1,
 					name = "Does transmog things.",
 				},
+				
+				description10 = {
+					type = "description",
+					order = 10,
+					name = "Made by Qhoernchen - qhoernchen@gmail.com",
+				},
 			},
 		},
     },
@@ -242,14 +229,14 @@ core.defaults = {
 	profile = {
 		General = {
 			clothedMannequins = false,
-			tooltipNoCollectedStatus = false,
+			tooltipCollectedStatus = true,
 			showMinimapIcon = true,
 			autoOpen = true,
 			extraItemTooltip = true,
-			useWrongTextures = false,
+			fixItemIcons = true,
 			playSpecialSounds = true,
 			doNotResetDressUp = false,
-			hideControlHints = false,
+			showControlHints = true,
 			showQAEnchants = false,
 			activeSkinDropdown = "_02_dropdown",
 		},

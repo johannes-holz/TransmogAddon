@@ -315,14 +315,14 @@ core.CreateSkinDropDown = function(parent)
 				UIDropDownMenu_AddButton(info, level)	
 				----- Activate -----------------------------------------------------------------------
 				info = UIDropDownMenu_CreateInfo()						
-				info.text = core.ACTIVATE
-				info.arg1 = id
+				info.text = id ~= core.GetActiveSkin() and ACTIVATE or DISABLE -- make button deactivate the skin if it's already active
+				info.arg1 = id ~= core.GetActiveSkin() and id or nil
 				info.arg2 = name
-				info.value = { ["levelOneKey"] = id, ["levelTwoKey"] = core.ACTIVATE}
+				info.value = { ["levelOneKey"] = id, ["levelTwoKey"] = ACTIVATE}
 				info.notCheckable = true
 				info.padding = 0
 				info.func = skinDropDown.SetActiveSkin
-				info.disabled = id == core.GetActiveSkin()
+				info.disabled = nil
 				UIDropDownMenu_AddButton(info, level)	
 				----- Rename -----------------------------------------------------------------------
 				info = UIDropDownMenu_CreateInfo()						
