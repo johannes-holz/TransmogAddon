@@ -87,17 +87,18 @@ local Model_TryOn = function(self, itemID, slot)
 	
 	if core.db.profile.General.clothedMannequins then
 		if not (slot == "ChestSlot" or slot == "ShirtSlot" or slot == "TabardSlot" or slot == "WristSlot" or slot == "HandsSlot") then
-			self:TryOnOld(3427) -- Black Shirt
+			-- self:TryOnOld(3427) -- Black Shirt
 			-- self:TryOnOld(41253) -- Darkblue Shirt		
-			-- self:TryOnOld(9998) -- Black West			
+			self:TryOnOld(9434) -- Black West			
 			-- self:TryOnOld(14637) -- Black West2		
 			-- self:TryOnOld(7110) -- Black Sweater
 			-- self:TryOnOld(6834) -- Black Smoking	
 			-- self:TryOnOld(41254) -- Dark Shirt	
+			-- self:TryOnOld(41254) -- Dark Shirt	
 			self:TryOnOld(39519) -- Black Gloves
 		end
 		if slot == "WristSlot" or slot == "HandsSlot" then		
-			self:TryOnOld(14637) -- Black West2
+			self:TryOnOld(14637) -- Black West2, has short sleeves
 		end
 		if slot ~= "LegsSlot" and slot ~= "FeetSlot" then
 			self:TryOnOld(11731) -- Black Shoes

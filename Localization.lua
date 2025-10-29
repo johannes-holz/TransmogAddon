@@ -230,6 +230,68 @@ L.deDE = {
     TROLL = "Troll",
     BLOODELF = "Blutelf",
     DRAENEI = "Draenei",
+
+    ----- Options -----
+    NONE = "Nichts",
+    DROPDOWN = "Dropdown-Menü oben",
+    BUTTON_LEFT = "Button links",
+    BUTTON_RIGHT = "Button rechts",
+
+    GENERAL_TAB_NAME = "Allgemein",
+    GENERAL_OPTIONS_NAME = "Allgemeine Optionen",
+
+    SHOW_MINIMAP_ICON_NAME = "Minikarten-Symbol",
+    SHOW_MINIMAP_ICON_DESC = "Zeigt ein Symbol für dieses AddOn auf der Minikarte an",
+
+    AUTO_OPEN_NAME = "Automatisch öffnen",
+    AUTO_OPEN_DESC = "Öffnet die Benutzeroberfläche des Add-ons automatisch beim Ansprechen des Transmog-NPCs.",
+
+    PLAY_SPECIAL_SOUNDS_NAME = "Freischalt-Sounds",
+    PLAY_SPECIAL_SOUNDS_DESC = "Spielt einen Sound ab, wenn Aussehen oder Splittern der Illusion gesammelt werden.",
+
+    FIX_ITEM_ICONS_NAME = "Symbolfix",
+    FIX_ITEM_ICONS_DESC = "Es werden wieder die Symbole der wirklich ausgerüsteten Gegenstände im Charakterfenster angezeigt.",
+
+    ACTIVE_SKIN_SELECTION_NAME = "Charakterfenster Skinauswahl",
+    ACTIVE_SKIN_SELECTION_DESC = "Legt fest wie im Charakterfenster die Skinauswahl ermöglicht wird.",
+
+    TOOLTIP_OPTIONS_NAME = "Tooltip-Optionen",
+
+    EXTRA_ITEM_TOOLTIP_NAME = "Freischaltstatus zeigen",
+    EXTRA_ITEM_TOOLTIP_DESC = "Zeigt in Gegenstandstooltips an, ob der Gegenstand oder das zugehörige Aussehen freigeschaltet ist.",
+
+    TOOLTIP_COLLECTED_STATUS_NAME = "Extra Aussehen-Tooltip",
+    TOOLTIP_COLLECTED_STATUS_DESC = "Wenn die Umschalttaste gedrückt ist, wird ein weiterer Tooltip für das Aussehen auf einem Gegenstand angezeigt.",
+
+    SHOW_CONTROL_HINTS_NAME = "Verwendungstipps",
+    SHOW_CONTROL_HINTS_DESC = "Fügt bestimmten AddOn-Tooltips Verwendungshinweise hinzu.",
+
+    COLLECTION_OPTIONS_NAME = "Sammlung-Optionen",
+
+    CLOTHED_MANNEQUINS_NAME = "Bekleidete Modelle",
+    CLOTHED_MANNEQUINS_DESC = "Modelle zur Gegenstandsvorschau müssen nicht mehr frieren.",
+
+    SHOW_UNAVAILABLE_ENCHANTS_NAME = "Nicht verfügbare Verzauberungen anzeigen",
+    SHOW_UNAVAILABLE_ENCHANTS_DESC = "Listet Verzauberungen in Sammlung, die im normalen Spiel vermutlich nicht erhaltbar sind.",
+
+    DRESSING_ROOM_OPTIONS_NAME = "Anprobe-Optionen",
+
+    DRESSING_ROOM_NO_RESET_NAME = "Zurücksetzen verhindern",
+    DRESSING_ROOM_NO_RESET_DESC = "Die Anprobe merkt sich die ausgewählten Gegenstände während einer Sitzung, anstatt sie auf das Inventar des Spielers zurückzusetzen.",
+
+    ABOUT_TAB_NAME = "Über", 
+
+    ABOUT_HEADER_NAME = "%s - Über",
+
+    ABOUT_NAME1 = "Transmog-Features für WotLK.\n\n",
+
+    ABOUT_NAME2 = YELLOW_FONT_COLOR_CODE .. "Sammlung: " .. FONT_COLOR_CODE_CLOSE .. "Listet die im Spiel enthaltene Gegenstände und Aussehen. Mithilfe der API kann zudem angezeigt werden, welche Gegenstände bereits freigeschaltet sind.\n\n",
+    
+    ABOUT_NAME3 = YELLOW_FONT_COLOR_CODE .. "Anprobe: " .. FONT_COLOR_CODE_CLOSE .. "Die Anprobe wird um eine Liste der angezeigten Gegenstände erweitert. Zudem können Outfits lokal gespeichert und im Chat als Outfit-Link geteilt werden.\n\n",
+
+    ABOUT_NAME4 = YELLOW_FONT_COLOR_CODE .. "Transmogrifizieren: " .. FONT_COLOR_CODE_CLOSE .. "Interface zum Transmogrifizieren der Ausrüstung oder Skins mittels der Rising Gods API. Im Gegensatz zur Sammlung werden hier nur freigeschaltete Gegenstände oder solche aus dem Inventar gelistet.\n\n",
+
+    ABOUT_MADE_BY_NAME = "Entwickelt von Qhoernchen. Für Feedback oder Anfragen zum AddOn bin ich unter |cfffff0b0qhoernchen@gmail.com|r erreichbar.",
 }
 
 
@@ -461,6 +523,68 @@ L.enEU = {
     TROLL = "Troll",
     BLOODELF = "Blood Elf",
     DRAENEI = "Draenei",
+
+    ----- Options -----
+    NONE = "None",
+    DROPDOWN = "Dropdown menu top",
+    BUTTON_LEFT = "Button left",
+    BUTTON_RIGHT = "Button right",
+
+    GENERAL_TAB_NAME = "General",
+    GENERAL_OPTIONS_NAME = "General Options",
+
+    SHOW_MINIMAP_ICON_NAME = "Show minimap icon",
+    SHOW_MINIMAP_ICON_DESC = "Show an icon on the minimap for this AddOn.",
+
+    AUTO_OPEN_NAME = "Auto open at NPC",
+    AUTO_OPEN_DESC = "Directly open the AddOn's interface when talking to the transmog NPC.",
+
+    PLAY_SPECIAL_SOUNDS_NAME = "Play unlock sounds",
+    PLAY_SPECIAL_SOUNDS_DESC = "Play a sound when you gain Shards of Illusion or unlock visuals.",
+
+    FIX_ITEM_ICONS_NAME = "Fix inventory icons",
+    FIX_ITEM_ICONS_DESC = "Display the icons of the equipped items (instead of their visuals) in inventory and inspect frame.",
+
+    ACTIVE_SKIN_SELECTION_NAME = "Active skin selection",
+    ACTIVE_SKIN_SELECTION_DESC = "Select method to select your active skin in the Characterframe.",
+
+    TOOLTIP_OPTIONS_NAME = "Tooltip Options",
+
+    EXTRA_ITEM_TOOLTIP_NAME = "Show collected status",
+    EXTRA_ITEM_TOOLTIP_DESC = "Add a Tooltip line that indicates if a item or visual is not collected.",
+
+    TOOLTIP_COLLECTED_STATUS_NAME = "Show visual source tooltip",
+    TOOLTIP_COLLECTED_STATUS_DESC = "Display an extra tooltip for an item's visual by pressing shift.",
+
+    SHOW_CONTROL_HINTS_NAME = "Show usage hints",
+    SHOW_CONTROL_HINTS_DESC = "Display usage hints in certain AddOn tooltips.",
+
+    COLLECTION_OPTIONS_NAME = "Collection Options",
+
+    CLOTHED_MANNEQUINS_NAME = "Clothed mannequins",
+    CLOTHED_MANNEQUINS_DESC = "Equip collection preview models with some garments.",
+
+    SHOW_UNAVAILABLE_ENCHANTS_NAME = "List unavailable enchants",
+    SHOW_UNAVAILABLE_ENCHANTS_DESC = "Display enchants in collection that are probably unavailable to the player.",
+
+    DRESSING_ROOM_OPTIONS_NAME = "Dressing Room Options",
+
+    DRESSING_ROOM_NO_RESET_NAME = "Prevent reset",
+    DRESSING_ROOM_NO_RESET_DESC = "Dressing Room remembers the selected items during a session instead of resetting to the player's inventory.",
+
+    ABOUT_TAB_NAME = "About", 
+
+    ABOUT_HEADER_NAME = "%s - About",
+
+    ABOUT_NAME1 = "Transmog-Features für WotLK.\n\n",
+
+    ABOUT_NAME2 = YELLOW_FONT_COLOR_CODE .. "Collection: " .. FONT_COLOR_CODE_CLOSE .. "Lists items and their visuals included in the game. Using the Rising Gods API, it can also show which items have already been unlocked.\n\n",
+    
+    ABOUT_NAME3 = YELLOW_FONT_COLOR_CODE .. "Wardrobe: " .. FONT_COLOR_CODE_CLOSE .. "The wardrobe is extended with a list of displayed items. Additionally, outfits can be saved locally and shared in chat as outfit links.\n\n",
+
+    ABOUT_NAME4 = YELLOW_FONT_COLOR_CODE .. "Transmogrify: " .. FONT_COLOR_CODE_CLOSE .. "Interface for transmogrifying equipment or skins via the API. Unlike the collection, only unlocked items or those from the inventory are listed here.\n\n",
+
+    ABOUT_MADE_BY_NAME = "Made by Qhoernchen. Feel free to send feedback or requests regarding the AddOn to |cfffff0b0qhoernchen@gmail.com|r",
 }
 
 

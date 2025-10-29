@@ -36,26 +36,27 @@ core.OnSettingsUpdate = function(arg)
 	core.UpdateSkinDropdown()
 end
 
+
 core.options = {
 	type = "group", 
 	childGroups = "tab",
 	args = {
 	    --[==[ Options Frames ]==]--
-		OptionsHeader = {
-			order = 2,
-			type = "header",
-			name = "", -- core.titleFull, --GetAddOnMetadata(folder, "title")," v",GetAddOnMetadata(folder, "version")
-		},
+		-- OptionsHeader = {
+		-- 	order = 2,
+		-- 	type = "header",
+		-- 	name = "", -- core.titleFull, --GetAddOnMetadata(folder, "title")," v",GetAddOnMetadata(folder, "version")
+		-- },
 		
 		General = {
 			order = 2.1,
 			type  = "group",
-			name  = "General",
+			name  = core.GENERAL_TAB_NAME,
 			args = {
 				GeneralHeader = {
 					type = "header",
 					order = 1,
-					name = "General Options"
+					name = core.GENERAL_OPTIONS_NAME,
 				},
 				-- GeneralDescription = {
 				-- 	type = "description",
@@ -65,9 +66,9 @@ core.options = {
 				ShowMinimapIcon = {
                     type = "toggle",
                     order = 2.1,
-                    name = "Show minimap icon",
+                    name = core.SHOW_MINIMAP_ICON_NAME,
 					-- width = "full",
-                    desc = "Show an icon on the minimap for this AddOn.",
+                    desc = core.SHOW_MINIMAP_ICON_DESC,
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "showMinimapIcon",
@@ -75,9 +76,9 @@ core.options = {
 				AutoOpen = {
                     type = "toggle",
                     order = 3,
-                    name = "Auto open at NPC",
+                    name = core.AUTO_OPEN_NAME,
 					-- width = "full",
-                    desc = "Directly open the AddOn's interface when talking to the transmog NPC.",
+                    desc = core.AUTO_OPEN_DESC,
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "autoOpen",
@@ -85,9 +86,9 @@ core.options = {
 				PlaySpecialSounds = {
                     type = "toggle",
                     order = 4,
-                    name = "Play unlock sounds.",
+                    name = core.PLAY_SPECIAL_SOUNDS_NAME,
 					-- width = "full",
-                    desc = "Play a sound when you gain Shards of Illusion or unlock visuals.",
+                    desc = core.PLAY_SPECIAL_SOUNDS_DESC,
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "playSpecialSounds",
@@ -95,9 +96,9 @@ core.options = {
 				FixItemIcons = {
                     type = "toggle",
                     order = 5,
-                	name = "Fix inventory icons.",
+                	name = core.FIX_ITEM_ICONS_NAME,
 					-- width = "full",
-                    desc = "Display the icons of the equipped items (instead of their visuals) in inventory and inspect frame.",
+                    desc = core.FIX_ITEM_ICONS_DESC,
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "fixItemIcons",
@@ -105,10 +106,10 @@ core.options = {
 				ActiveSkinDropdown = {
                     type = "select",
                     order = 6,
-                    name = "Active skin selection",
+                    name = core.ACTIVE_SKIN_SELECTION_NAME,
 					-- width = "full",
-                    desc = "Select method to select active skin in the Characterframe.",
-					values = { _01_none = "None", _02_dropdown = "Dropdown", _03_button_left = "Button Left", _04_button_right = "Button Right"}, -- less cringe way to get the order right?
+                    desc = core.ACTIVE_SKIN_SELECTION_DESC,
+					values = { _01_none = core.NONE, _02_dropdown = core.DROPDOWN, _03_button_left = core.BUTTON_LEFT, _04_button_right = core.BUTTON_RIGHT}, -- less cringe way to get the order right?
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "activeSkinDropdown",
@@ -116,14 +117,14 @@ core.options = {
 				TooltipHeader = {
 					type = "header",
 					order = 20,
-					name = "Tooltip Options"
+					name = core.TOOLTIP_OPTIONS_NAME,
 				},
-				TooltipNoCollected = {
+				TooltipCollectedStatus = {
                     type = "toggle",
                     order = 21,
-                    name = "Show collected status",
+                    name = core.EXTRA_ITEM_TOOLTIP_NAME,
 					-- width = "full",
-                    desc = "Add a Tooltip line that indicates if a item or visual is not collected.",
+                    desc = core.EXTRA_ITEM_TOOLTIP_DESC,
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "tooltipCollectedStatus",
@@ -131,9 +132,9 @@ core.options = {
 				ExtraItemTooltip = {
                     type = "toggle",
                     order = 22,
-                    name = "Show visual source tooltip.",
+                    name = core.TOOLTIP_COLLECTED_STATUS_NAME,
 					-- width = "full",
-                    desc = "Display an extra tooltip for an item's visual by pressing shift.",
+                    desc = core.TOOLTIP_COLLECTED_STATUS_DESC,
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "extraItemTooltip",
@@ -141,9 +142,9 @@ core.options = {
 				ShowControlHints = {
                     type = "toggle",
                     order = 23,
-                    name = "Show usage hints.",
+                    name = core.SHOW_CONTROL_HINTS_NAME,
 					-- width = "full",
-                    desc = "Display usage hints in certain AddOn tooltips.",
+                    desc = core.SHOW_CONTROL_HINTS_DESC,
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "showControlHints",
@@ -151,14 +152,14 @@ core.options = {
 				CollectionHeader = {
 					type = "header",
 					order = 30,
-					name = "Collection Options"
+					name = core.COLLECTION_OPTIONS_NAME,
 				},		
                 ClothedMannequins = {
                     type = "toggle",
                     order = 31,
-                    name = "Clothed mannequins",
+                    name = core.CLOTHED_MANNEQUINS_NAME,
 					-- width = "full",
-                    desc = "...",
+                    desc = core.CLOTHED_MANNEQUINS_DESC,
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "clothedMannequins",
@@ -166,9 +167,9 @@ core.options = {
 				ShowUnavailableEnchants = {
                     type = "toggle",
                     order = 32,
-                    name = "List unavailable enchants.",
+                    name = core.SHOW_UNAVAILABLE_ENCHANTS_NAME,
 					-- width = "full",
-                    desc = "Display enchants in collection that are probably unavailable to the player.",
+                    desc = core.SHOW_UNAVAILABLE_ENCHANTS_DESC,
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "showQAEnchants",
@@ -176,14 +177,14 @@ core.options = {
 				DressingRoomHeader = {
 					type = "header",
 					order = 40,
-					name = "Dressing Room Options"
+					name = core.DRESSING_ROOM_OPTIONS_NAME,
 				},
 				DoNotResetDressUp = {
                     type = "toggle",
                     order = 41,
-                    name = "Prevent reset on closing.",
+                    name = core.DRESSING_ROOM_NO_RESET_NAME,
 					-- width = "full",
-                    desc = "Dressing Room remembers the selected items during a session instead of resetting to the player's inventory.",
+                    desc = core.DRESSING_ROOM_NO_RESET_DESC,
                     get = GetWidgetValue,
                     set = SetWidgetValue,
                     arg = "doNotResetDressUp",
@@ -207,18 +208,37 @@ core.options = {
 		About = {
 			order = 20,
 			type  = "group",
-			name  = "About",
+			name  = core.ABOUT_TAB_NAME,
 			args = {
-				description1 = {
-					type = "description",
+				AboutHeader = {
+					type = "header",
 					order = 1,
-					name = "Does transmog things.",
-				},
-				
-				description10 = {
+					name = core.ABOUT_HEADER_NAME:format(GetAddOnMetadata(folder, "title")),
+				},		
+				About1 = {
+					type = "description",
+					order = 2,
+					name = core.ABOUT_NAME1,
+				},		
+				About2 = {
+					type = "description",
+					order = 3,
+					name = core.ABOUT_NAME2,
+				},			
+				About3 = {
+					type = "description",
+					order = 4,
+					name = core.ABOUT_NAME3,
+				},		
+				About4 = {
+					type = "description",
+					order = 5,
+					name = core.ABOUT_NAME4,
+				},				
+				MadeBy = {
 					type = "description",
 					order = 10,
-					name = "Made by Qhoernchen - qhoernchen@gmail.com",
+					name = core.ABOUT_MADE_BY_NAME,
 				},
 			},
 		},
