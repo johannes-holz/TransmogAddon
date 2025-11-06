@@ -6,7 +6,7 @@ core.GetOutfits = function()
     return TransmoggyDB.outfits
 end
 
-core.IsInvalidOutfitName = function(name)    
+core.IsInvalidOutfitName = function(name)
 	local denyMessage
 	if string.len(name) < 1 then
 		denyMessage = core.OUTFIT_NAME_TOO_SHORT

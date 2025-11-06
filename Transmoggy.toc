@@ -7,7 +7,7 @@
 
 # libs
 #@no-lib-strip@
-libs\embeds.xml
+Libs\embeds.xml
 #@end-no-lib-strip@
 
 Localization.lua
@@ -25,14 +25,14 @@ Core.lua
 Hooks.lua
 
 # Enchant and item data
-data\DataUtils.lua
-data\Enchants.lua
-data\Items.lua
-data\ItemNamesEnglish.lua
-data\ItemNamesGerman.lua
-data\Recipes.lua
-data\MannequinPositions.lua
-#data\StringData.lua
+Data\DataUtils.lua
+Data\Enchants.lua
+Data\Items.lua
+Data\ItemNamesEnglish.lua
+Data\ItemNamesGerman.lua
+Data\Recipes.lua
+Data\MannequinPositions.lua
+#Data\StringData.lua
 
 # ItemCollectionFrame
 Frames\ItemCollectionFrame\CollectionSlotButton.lua

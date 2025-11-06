@@ -60,7 +60,7 @@ core.BACKDROP_ITEM_LIST = {
 ---- Search Box -----
 do  
     local alpha = 0.5
-    local tex = "Interface\\AddOns\\".. folder .."\\images\\CommonSearch"
+    local tex = "Interface\\AddOns\\".. folder .."\\Images\\SearchIcons"
 
     local SearchBox_OnEditFocusLost = function(self)
         if self:GetText() == "" then
@@ -74,7 +74,7 @@ do
 
         f.searchIcon = f:CreateTexture(nil, "OVERLAY")
         f.searchIcon:SetTexture(tex)
-        f.searchIcon:SetTexCoord(20/256, 43/256, 43/128, 66/128)
+        f.searchIcon:SetTexCoord(0/128, 23/128, 0/64, 23/64)
         f.searchIcon:SetSize(10, 10)
         f.searchIcon:SetAlpha(alpha)
         f.searchIcon:SetPoint("LEFT")
@@ -94,7 +94,7 @@ do
         
         f.clearButton.texture = f.clearButton:CreateTexture(nil, "ARTWORK")
         f.clearButton.texture:SetTexture(tex)
-        f.clearButton.texture:SetTexCoord(18/256, 40/256, 68/128, 90/128)
+        f.clearButton.texture:SetTexCoord(0/128, 23/128, 24/64, 50/64)
         f.clearButton.texture:SetSize(10, 10)
         f.clearButton.texture:SetPoint("TOPLEFT", 3, -3)
 

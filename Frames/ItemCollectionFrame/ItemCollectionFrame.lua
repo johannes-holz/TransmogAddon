@@ -584,6 +584,8 @@ local Mannequin_OnEnter = function(self)
 		end
 		GameTooltip:Show()
 	end
+	
+	self.highTex:Show()
 end
 
 local Mannequin_OnLeave = function(self)
@@ -592,6 +594,8 @@ local Mannequin_OnLeave = function(self)
 		ClearOverrideBindings(BindingManager)
 	end
 	GameTooltip:Hide()
+	
+	self.highTex:Hide()
 end
 
 local Mannequin_OnMouseWheel = function(self, delta)

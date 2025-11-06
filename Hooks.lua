@@ -1,10 +1,13 @@
 local folder, core = ...
 
--- Minimal scanning Tooltip to get correct player Setboni (https://wowwiki-archive.fandom.com/wiki/UIOBJECT_GameTooltip)
-core.ScanningTooltip = CreateFrame("GameTooltip", folder .. "ScanningTooltip")
-ScanningTooltip = core.ScanningTooltip
-ScanningTooltip:SetOwner( WorldFrame, "ANCHOR_NONE" )
-ScanningTooltip:AddFontStrings(ScanningTooltip:CreateFontString( "$parentTextLeft1", nil, "GameTooltipText" ), ScanningTooltip:CreateFontString( "$parentTextRight1", nil, "GameTooltipText" ))
+-- Minimal scanning Tooltip (https://wowwiki-archive.fandom.com/wiki/UIOBJECT_GameTooltip)
+core.ScanningTooltip = CreateFrame("GameTooltip", folder .. "ScanningTooltip", nil, "GameTooltipTemplate")
+local ScanningTooltip = core.ScanningTooltip
+ScanningTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
+ScanningTooltip:AddFontStrings(
+	ScanningTooltip:CreateFontString("$parentTextLeft1", nil, "GameTooltipText"),
+	ScanningTooltip:CreateFontString("$parentTextRight1", nil, "GameTooltipText")
+)
 
 -- Getting VisualID works differently for units, that are not the player
 local lastUnit, lastSlot
@@ -29,20 +32,173 @@ local OwnerFrame_GetUnitSlot = function(f)
 	end
 end
 
-local Tooltip_AddCollectedLine = function(tooltip, itemID)
+
+-- No easy way to know how many tooltip lines are from Blizzard?
+-- Depending on whether SetInventoryItem, SetHyperlink, etc. is called, there might be extra lines like
+	-- <Shift Right Click to Gem>, Equipment Sets: X, Soulbound, ...
+
+-- Idea 1:
+-- Identify which lines might be extra compared to hyperlinks
+-- Walk forward from last scanning tooltip line until we encounter a line that is not one of those lines
+
+local valid = {
+	["Ausrüstungs-S"] = true, -- Can an item be part of a set and not be collected?
+	-- ["Verkaufspreis:"] = true, -- this is text is in moneyFrame, not a tooltip line
+	["<Zum Sockeln S"] = true,
+	["Equipment Sets"] = true,
+	["<Shift Right C"] = true,
+}
+
+local BlizzNumLines = function(tooltip, link)
+	ScanningTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
+	ScanningTooltip:ClearLines()
+	ScanningTooltip:SetHyperlink(link)
+
+	local numLines = tooltip:NumLines()
+
+	-- Find last non empty line in scanning tooltip
+	local lastText
+	for i = ScanningTooltip:NumLines(), 1, -1 do
+		local line = _G[ScanningTooltip:GetName() .. "TextLeft" .. i]
+		if not line then return numLines end
+		lastText = line:GetText()
+		if not (lastText == " " or lastText == "") then
+			break
+		end
+	end
+
+	-- Find first money line in tooltip
+	local moneyLine
+	local moneyFrame = _G[tooltip:GetName() .. "MoneyFrame" .. 1]
+	if moneyFrame and moneyFrame:IsShown() then
+		local point, relativeTo, relativePoint, xOfs, yOfs = moneyFrame:GetPoint(1)
+		if relativeTo then
+			moneyLine = relativeTo
+		end
+	end
+
+	-- Iterate over tooltip up to lastText and possibly valid extra lines
+	local closeToEnd
+	for i = 1, tooltip:NumLines() do
+		local line = _G[tooltip:GetName() .. "TextLeft" .. i]
+		if not line then return numLines end
+		local text = line:GetText()
+		-- print(lastText, text, closeToEnd, valid[string.sub(text, 1, 14)], line == moneyLine, moneyFrame and moneyFrame:IsShown())
+		if text == lastText then
+			closeToEnd = true
+		elseif closeToEnd and not (valid[string.sub(text, 1, 14)] or line == moneyLine) then
+			numLines = i - 1
+			break
+		end
+	end
+
+	return numLines
+end
+
+
+
+-- Idea 2:
+-- Hook AddLine, AddDoubleLine and ClearLines (and GameTooltip_OnTooltipAddMoney? This could technically also be called from addons?)
+-- This somehow gets called for these special blizzard lines too, so no point?
+-- local lineCount = {}
+
+-- local OnAddLine = function(tooltip, ...)
+-- 	print(tooltip:NumLines(), ...)
+-- 	if lineCount[tooltip] then return end
+-- 	lineCount[tooltip] = tooltip:NumLines() - 1
+-- 	-- print(lineCount[tooltip])
+-- end
+
+-- local OnClearLines = function(tooltip)
+-- 	lineCount[tooltip] = nil
+-- 	-- print("cleared")
+-- end
+
+-- local AddLineTracking = function(tooltip)
+-- 	hooksecurefunc(tooltip, "AddLine", OnAddLine)
+-- 	hooksecurefunc(tooltip, "AddDoubleLine", OnAddLine)
+-- 	hooksecurefunc(tooltip, "ClearLines", OnClearLines)
+-- 	tooltip:HookScript("OnHide", OnClearLines)
+-- end
+
+-- AddLineTracking(GameTooltip)
+
+-- Idea3:
+-- Hook all the SetXItem functions of tooltip to know which function to call on scanning tooltip?
+
+
+local Tooltip_AddCollectedLine = function(tooltip, itemID, link)
 	if not core.db.profile.General.tooltipCollectedStatus then return end
 
 	local itemUnlocked = core.GetItemData(itemID)
 
-	if itemUnlocked and itemUnlocked ~= 1 then 	-- or just check for == 0? (nil: not a dressable item (or missing in our data), 0: not unlocked, 1: unlocked)
+	-- Hack to insert our line directly under blizzards lines
+	local blizzNumLines = BlizzNumLines(tooltip, link)
+	
+	if not tooltip.collectedText then	
+		tooltip.collectedText = tooltip:CreateFontString()
+		tooltip.collectedText:SetFontObject("GameTooltipText")
+		tooltip.collectedText:SetJustifyH("LEFT")
+		
+		tooltip:HookScript("OnHide", function(self)
+			self.collectedText:SetText("")
+			local line = self.collectedAnchor
+			if line and line.oldHeight then
+				line:SetHeight(line:GetStringHeight())
+				line:SetJustifyV("MIDDLE")
+				line.oldHeight = nil
+			end
+			local moneyFrame = _G[tooltip:GetName() .. "MoneyFrame" .. 1]
+			if moneyFrame then			
+				moneyFrame:ClearAllPoints()
+			end
+		end)
+	end	
+
+	local text
+	if itemUnlocked and itemUnlocked ~= 1 then
 		if core.requestUnlocksAllFailed then
-			tooltip:AddLine(core.APPEARANCE_NOT_COLLECTED_TEXT_NO, 1.0, 0.1, 0.1, 1.0)
+			text = RED_FONT_COLOR_CODE .. core.APPEARANCE_NOT_COLLECTED_TEXT_NO .. FONT_COLOR_CODE_CLOSE
 		else
-			local text = (core.IsVisualUnlocked(itemID) == 1) and core.APPEARANCE_NOT_COLLECTED_TEXT_B or core.APPEARANCE_NOT_COLLECTED_TEXT_A
-			local color = core.appearanceNotCollectedTooltipColor
-			tooltip:AddLine(text, color.r, color.g, color.b, color.a, 1)
+			text = (core.IsVisualUnlocked(itemID) == 1) and core.APPEARANCE_NOT_COLLECTED_TEXT_B or core.APPEARANCE_NOT_COLLECTED_TEXT_A
+			text = "|c" .. core.appearanceNotCollectedTooltipColor.hex .. text .. FONT_COLOR_CODE_CLOSE
 		end
 	end
+
+	if text then
+		tooltip.collectedText:SetText(text)
+
+		tooltip.collectedAnchor = _G[tooltip:GetName() .. "TextLeft" .. blizzNumLines]
+		tooltip.collectedAnchor.oldHeight = tooltip.collectedAnchor:GetHeight()
+		tooltip.collectedAnchor:SetJustifyV("TOP")	
+		tooltip.collectedAnchor:SetWidth(math.max(tooltip.collectedText:GetStringWidth(), tooltip:GetWidth()))
+		tooltip.collectedAnchor:SetHeight(tooltip.collectedAnchor:GetStringHeight() + tooltip.collectedText:GetHeight())
+
+		local moneyFrame = _G[tooltip:GetName() .. "MoneyFrame" .. 1]
+		if moneyFrame then				
+			local point, relativeTo, relativePoint, offsetX, offsetY = moneyFrame:GetPoint(1)
+			if relativeTo then
+				moneyFrame:ClearAllPoints()
+				moneyFrame:SetPoint("TOPLEFT", relativeTo, "TOPLEFT", offsetX, offsetY)
+			end
+		end
+
+		tooltip.collectedText:ClearAllPoints()
+		tooltip.collectedText:SetPoint("BOTTOMLEFT", tooltip.collectedAnchor, "BOTTOMLEFT")
+		
+		tooltip:Show()
+	end
+
+	-- If we do not care about the line's positioning, just remove all that scuffness above and call AddLine:
+	-- if itemUnlocked and itemUnlocked ~= 1 then 	-- or just check for == 0? (nil: not a dressable item (or missing in our data), 0: not unlocked, 1: unlocked)
+	-- 	if core.requestUnlocksAllFailed then
+	-- 		tooltip:AddLine(core.APPEARANCE_NOT_COLLECTED_TEXT_NO, 1.0, 0.1, 0.1, 1.0)
+	-- 	else
+	-- 		local text = (core.IsVisualUnlocked(itemID) == 1) and core.APPEARANCE_NOT_COLLECTED_TEXT_B or core.APPEARANCE_NOT_COLLECTED_TEXT_A
+	-- 		local color = core.appearanceNotCollectedTooltipColor
+	-- 		tooltip:AddLine(text, color.r, color.g, color.b, color.a, 1)
+	-- 	end
+	-- end
 end
 
  -- For the player we can get visualID and illusionID from the item link and skin information through the API via GetSkins()
@@ -78,7 +234,7 @@ local function OnTooltipSetItem(tooltip)
 	local skinVisualID = lastUnit and UnitGUID(lastUnit) == UnitGUID("player") and core.GetInventorySkinID(lastSlot)	-- For player inventory also show skin visual and illusion
 	local skinIllusionID = correspondingEnchantSlot and lastUnit and UnitGUID(lastUnit) == UnitGUID("player") and core.GetInventorySkinID(correspondingEnchantSlot)
 
-	Tooltip_AddCollectedLine(tooltip, itemID) -- TODO: Do we also want a collected status display for the visual?
+	Tooltip_AddCollectedLine(tooltip, itemID, link) -- TODO: Do we also want a collected status display for the visual?
 
 	local textLeft1, textLeft2
 	if strfind(tooltip:GetName(), "Shopping") then -- Compare Item tooltips have an extra "Currently equipped" line
@@ -332,6 +488,8 @@ local SetInventoryItem_SetFix = function(self, unit, slot, nameOnly)
 	if not link then return end
 
 	local offset = slot == 16 and GetInventoryItemLink("player", 17) and 2 or 1 -- if we have an OH equipped and current slot is MH, SetHyperLinkCompare shows MH in second ShoppingTooltip
+	ScanningTooltip:SetOwner(WorldFrame, "ANCHOR_NONE")
+	ScanningTooltip:ClearLines()
 	ScanningTooltip:SetHyperlinkCompareItem(link, offset) -- or just use SetHyperlink and search for correct start line in GameTooltip to avoid the scuffness of CompareItem?
 	local scanningTooltipTextLeft = ScanningTooltip:GetName() .. "TextLeft"
 

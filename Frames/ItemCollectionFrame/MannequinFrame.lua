@@ -171,9 +171,9 @@ local Model_UpdateBorders = function(self)
 		end
 		if self.pendingTexture:IsShown() then
 			if skinID then 
-				self.pendingTexture:SetTexCoord(196/512, 292/512, 218/512, 342/512)
+				self.pendingTexture:SetTexCoord(192/512, 290/512, 252/512, 378/512)
 			else
-				self.pendingTexture:SetTexCoord(5/512, 101/512, 3/512, 127/512)
+				self.pendingTexture:SetTexCoord(96/512, 192/512, 252/512, 378/512)
 			end
 		end
 	else
@@ -238,6 +238,8 @@ core.CreateMannequinFrame = function(parent, id, width, height)
 	m:EnableMouse()
 	m:EnableMouseWheel()
 
+	local FRAME_TEXTURE = "Interface\\AddOns\\".. folder .."\\Images\\Frames"
+
 	m.id = id
 	m.GetID = Model_GetID	
 
@@ -247,83 +249,77 @@ core.CreateMannequinFrame = function(parent, id, width, height)
 	m.SetPositionOld = m.SetPosition
 	m.SetPosition = Model_SetPosition
 	
-	-- m.borderFrame = CreateFrame("Frame", nil, m)
-	-- m.borderFrame:SetAllPoints()
+	m.borderFrame = CreateFrame("Frame", nil, m)
+	m.borderFrame:SetAllPoints()
+
+	local borderAnchor = m.borderFrame -- If we'd rather have the models above the border, set this to m
 	
 	m.opaqueBGTex = m:CreateTexture(nil, "BACKGROUND")
 	m.opaqueBGTex:SetTexture(0.1, 0.1, 0.1)
 	m.opaqueBGTex:SetPoint("BOTTOMLEFT", 1, 1)
 	m.opaqueBGTex:SetPoint("TOPRIGHT", -1, -1)
 
-	local offset = 0.05 * height
+	local offset = 0.08 * height
 
-	m.backTex = m:CreateTexture(nil, "BORDER")
-	m.backTex:SetTexture("Interface\\AddOns\\".. folder .."\\images\\Transmogrify")
-	m.backTex:SetTexCoord(5/512, 95/512, 131/512, 247/512)
+	m.backTex = borderAnchor:CreateTexture(nil, "BORDER")
+	m.backTex:SetTexture(FRAME_TEXTURE)
+	m.backTex:SetTexCoord(0/512, 96/512, 0/512, 126/512)
 	m.backTex:SetPoint("TOPLEFT", -offset, offset)
 	m.backTex:SetPoint("BOTTOMRIGHT", offset, -offset)
-	
-	m.highTex = m:CreateTexture(nil, "HIGHLIGHT")
-	m.highTex:SetTexture("Interface\\AddOns\\".. folder .."\\images\\Transmogrify")
-	m.highTex:SetTexCoord(5/512, 95/512, 255/512, 372/512)
-	--local scale = 0.025
-	--local left, top, right, bottom = 104/512, 225/512, 190/512,336/512
-	--m.highTex:SetTexCoord(left, top, left, bottom, right, top, right, bottom)
-	--m.highTex:SetAllPoints()
-	m.highTex:SetPoint("TOPLEFT", -offset, offset)
-	m.highTex:SetPoint("BOTTOMRIGHT", offset, -offset)
-	m.highTex:SetBlendMode("ADD")
-	m.highTex:SetAlpha(0.8)
+	m.backTex:SetVertexColor(0.8, 1, 1)
 
-	m.lockedTexture = m:CreateTexture(nil, "BORDER")
-	m.lockedTexture:SetTexture("Interface\\AddOns\\".. folder .."\\images\\Transmogrify")
-	m.lockedTexture:SetTexCoord(5/512, 95/512, 255/512, 372/512)
+	m.lockedTexture = borderAnchor:CreateTexture(nil, "BORDER")
+	m.lockedTexture:SetTexture(FRAME_TEXTURE)
+	m.lockedTexture:SetTexCoord(96/512, 192/512, 0/512, 126/512)
 	m.lockedTexture:SetPoint("TOPLEFT", -offset, offset)
 	m.lockedTexture:SetPoint("BOTTOMRIGHT", offset, -offset)
-	m.lockedTexture:SetAlpha(1)
-	m.lockedTexture:SetVertexColor(0.4, 0.4, 0.4)
-
-	m.equippedTexture = m:CreateTexture(nil, "ARTWORK")
-	m.equippedTexture:SetTexture("Interface\\AddOns\\".. folder .."\\images\\Transmogrify")
-	m.equippedTexture:SetTexCoord(104/512, 189/512, 0/512, 111/512)
-	m.equippedTexture:SetPoint("TOPLEFT", -offset * 0.5, offset * 0.5)
-	m.equippedTexture:SetPoint("BOTTOMRIGHT", offset * 0.5, -offset * 0.5)
-	m.equippedTexture:SetAlpha(0.5)
 	
-	m.visualTexture = m:CreateTexture(nil, "ARTWORK")
-	m.visualTexture:SetTexture("Interface\\AddOns\\".. folder .."\\images\\Transmogrify")
-	m.visualTexture:SetTexCoord(104/512, 189/512, 112/512, 223/512)
-	m.visualTexture:SetPoint("TOPLEFT", -offset * 0.5, offset * 0.5)
-	m.visualTexture:SetPoint("BOTTOMRIGHT", offset * 0.5, -offset * 0.5)
-	m.visualTexture:SetAlpha(0.5)
+	m.highTex = borderAnchor:CreateTexture(nil, "OVERLAY")
+	m.highTex:SetTexture("Interface\\Buttons\\ButtonHilight-Square")
+	m.highTex:SetTexCoord(0, 1, 0, 1)
+	m.highTex:SetPoint("TOPLEFT", -offset * 0.5, offset * 0.5)
+	m.highTex:SetPoint("BOTTOMRIGHT", offset * 0.5, -offset * 0.5)
+	m.highTex:SetBlendMode("ADD")
+	m.highTex:SetAlpha(0.4)
+	m.highTex:Hide()
 
-	m.skinVisualTexture = m:CreateTexture(nil, "ARTWORK")
-	m.skinVisualTexture:SetTexture("Interface\\AddOns\\".. folder .."\\images\\Transmogrify")
-	m.skinVisualTexture:SetTexCoord(104/512, 189/512, 224/512, 336/512)
-	m.skinVisualTexture:SetPoint("TOPLEFT", -offset * 0.5, offset * 0.5)
-	m.skinVisualTexture:SetPoint("BOTTOMRIGHT", offset * 0.5, -offset * 0.5)
-	m.skinVisualTexture:SetAlpha(0.5)
+	m.equippedTexture = borderAnchor:CreateTexture(nil, "ARTWORK")
+	m.equippedTexture:SetTexture(FRAME_TEXTURE)
+	m.equippedTexture:SetTexCoord(0/512, 96/512, 126/512, 252/512)
+	m.equippedTexture:SetPoint("TOPLEFT", -offset, offset)
+	m.equippedTexture:SetPoint("BOTTOMRIGHT", offset, -offset)
+	m.equippedTexture:SetAlpha(0.4)
+	m.equippedTexture:SetBlendMode("ADD")
 	
-	offset = 0.08 * height
-	m.pendingTexture = m:CreateTexture(nil, "ARTWORK")
-	m.pendingTexture:SetTexture("Interface\\AddOns\\".. folder .."\\images\\Transmogrify")
-	m.pendingTexture:SetTexCoord(5/512, 101/512, 3/512, 127/512)
+	m.visualTexture = borderAnchor:CreateTexture(nil, "ARTWORK")
+	m.visualTexture:SetTexture(FRAME_TEXTURE)
+	m.visualTexture:SetTexCoord(96/512, 192/512, 126/512, 252/512)
+	m.visualTexture:SetPoint("TOPLEFT", -offset, offset)
+	m.visualTexture:SetPoint("BOTTOMRIGHT", offset, -offset)
+	m.visualTexture:SetAlpha(0.4)
+	m.visualTexture:SetBlendMode("ADD")
+	
+
+	m.skinVisualTexture = borderAnchor:CreateTexture(nil, "ARTWORK")
+	m.skinVisualTexture:SetTexture(FRAME_TEXTURE)
+	m.skinVisualTexture:SetTexCoord(192/512, 290/512, 126/512, 252/512)
+	m.skinVisualTexture:SetPoint("TOPLEFT", -offset, offset)
+	m.skinVisualTexture:SetPoint("BOTTOMRIGHT", offset, -offset)
+	m.skinVisualTexture:SetAlpha(0.6)
+	m.skinVisualTexture:SetBlendMode("ADD")
+	
+	m.pendingTexture = borderAnchor:CreateTexture(nil, "ARTWORK")
+	m.pendingTexture:SetTexture(FRAME_TEXTURE)
+	m.pendingTexture:SetTexCoord(96/512, 192/512, 252/512, 378/512)
 	m.pendingTexture:SetPoint("TOPLEFT", -offset, offset)
 	m.pendingTexture:SetPoint("BOTTOMRIGHT", offset, -offset)
-	m.pendingTexture:SetAlpha(0.8)
+	-- m.pendingTexture:SetAlpha(0.8)
+	m.pendingTexture:SetBlendMode("ADD")
 
 	-- m.transmogPending = {5/512, 101/512, 3/512, 127/512}
 	-- m.skinPending = {196/512, 292/512, 218/512, 342/512}
 	-- m.transmogPending = {8/512, 98/512, 8/512, 122/512}
 	-- m.skinPending = {199/512, 289/512, 223/512, 337/512}
-
-
-	-- m.testFrame = CreateFrame("Frame", folder.."Mannequin"..id.."LoadingFrame", m)
-	-- m.testFrame:SetAllPoints()
-	-- m.testFrame.tex = m.testFrame:CreateTexture(nil, "OVERLAY")
-	-- m.testFrame.tex:SetAllPoints()
-	-- m.testFrame.tex:SetTexture(0,0,0)
-	-- m.testFrame.tex:SetAlpha(0.5)
 
 	m.loadingFrame = CreateFrame("Frame", folder.."Mannequin"..id.."LoadingFrame", m)
 	m.loadingFrame:SetAllPoints()

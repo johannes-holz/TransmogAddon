@@ -1384,11 +1384,23 @@ core.RequestApplyCurrentChanges = function()
 			-- RequestSkins() -- should not be needed as we are registered to skin change events
 		end
 	end):catch(function(err)
-		core.Debug("RequestApplyCurrentChanges: An error occured:", err.message)
-		-- We could try to restict the animation to successfully applied slots, but this should never happen anyway
-		core.PlayApplyAnimations(requestedChanges)
+		local applied = {}
+		for slot, pending in pairs(requestedChanges) do
+			local apiSlot = core.ToTransmogLocation(slot)
+			local message = err[apiSlot]
+			if message then
+				core.Debug("RequestApplyCurrentChanges: An error occured:", slot, message)
+				UIErrorsFrame:AddMessage(message, 1.0, 0.1, 0.1, 1.0)
+			else
+				applied[slot] = pending
+			end
+		end
+
+		if next(applied) then
+			PlaySound(core.sounds.applySuccess)
+			core.PlayApplyAnimations(applied)
+		end
 		core.SetCurrentChanges(core.GetCurrentChanges())
-		UIErrorsFrame:AddMessage(err.message, 1.0, 0.1, 0.1, 1.0)
 	end)
 end	
 
@@ -1578,16 +1590,6 @@ core.OpenTransmogWindow = function(fromGossip)
 	core.transmogFrame:Show()
 end
 
--- core.OpenTransmogFromGossip = function()
--- 	-- hide frame without calling CloseGossip()
--- 	local onHideScript = GossipFrame:GetScript("OnHide")
--- 	GossipFrame:SetScript("OnHide", nil)
--- 	HideUIPanel(GossipFrame)
--- 	GossipFrame:SetScript("OnHide", onHideScript)
-	
--- 	core.OpenTransmogWindow(true)
--- end
-
 core.gossipOpenTransmogButton = core.CreateMeATextButton(GossipFrame, 126, 22, core.TRANSMOG_WINDOW)
 core.gossipOpenTransmogButton:SetScript("OnClick", function()	
 	core.OpenTransmogWindow(true)
@@ -1632,6 +1634,7 @@ a:SetScript("OnEvent", function(self, event, ...)
 		-- BackgroundItemInfoWorker.Start()
 		
 		core.FixTooltip(core.extraItemTooltip)
+		core.FixTooltip(core.ScanningTooltip)
 		
 		if AtlasLootTooltip then
 			core.HookItemTooltip(AtlasLootTooltip)

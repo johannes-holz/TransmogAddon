@@ -189,32 +189,32 @@ do
 	end	
 	
 	f.BGTopLeft = f:CreateTexture(nil, "BORDER")
-	f.BGTopLeft:SetTexture("Interface\\AddOns\\".. folder .."\\images\\UI-AUCTIONFRAME-BID-TOPLEFT")
+	f.BGTopLeft:SetTexture("Interface\\AuctionFrame\\UI-AuctionFrame-Bid-TopLeft")
 	f.BGTopLeft:SetSize(256 * SCALE, 256 * SCALE)
 	f.BGTopLeft:SetPoint("TOPLEFT", f, "TOPLEFT")
 
 	f.BGTop = f:CreateTexture(nil, "BORDER")
-	f.BGTop:SetTexture("Interface\\AddOns\\".. folder .."\\images\\UI-AuctionFrame-Bid-Top")
+	f.BGTop:SetTexture("Interface\\AuctionFrame\\UI-AuctionFrame-Auction-Top")
 	f.BGTop:SetSize(320 * SCALE, 256 * SCALE)
 	f.BGTop:SetPoint("TOPLEFT", f.BGTopLeft, "TOPRIGHT")
 	
 	f.BGTopRight = f:CreateTexture(nil, "BORDER")
-	f.BGTopRight:SetTexture("Interface\\AddOns\\".. folder .."\\images\\UI-AuctionFrame-Bid-TopRight")
+	f.BGTopRight:SetTexture("Interface\\AuctionFrame\\UI-AuctionFrame-Auction-TopRight")
 	f.BGTopRight:SetSize(256* SCALE, 256 * SCALE)
 	f.BGTopRight:SetPoint("TOPLEFT", f.BGTop, "TOPRIGHT")
 	
 	f.BGBottomLeft = f:CreateTexture(nil, "BORDER")
-	f.BGBottomLeft:SetTexture("Interface\\AddOns\\".. folder .."\\images\\UI-AUCTIONFRAME-BID-BOTLEFT")
+	f.BGBottomLeft:SetTexture("Interface\\AuctionFrame\\UI-AuctionFrame-Bid-BotLeft")
 	f.BGBottomLeft:SetSize(256 * SCALE, 256 * SCALE)
 	f.BGBottomLeft:SetPoint("TOPLEFT", f.BGTopLeft, "BOTTOMLEFT")
 	
 	f.BGBottom = f:CreateTexture(nil, "BORDER")
-	f.BGBottom:SetTexture("Interface\\AddOns\\".. folder .."\\images\\UI-AuctionFrame-Bid-Bot")
+	f.BGBottom:SetTexture("Interface\\AuctionFrame\\UI-AuctionFrame-Auction-Bot")
 	f.BGBottom:SetSize(320 * SCALE, 256 * SCALE)
 	f.BGBottom:SetPoint("TOPLEFT", f.BGBottomLeft, "TOPRIGHT")
 	
 	f.BGBottomRight = f:CreateTexture(nil, "BORDER")
-	f.BGBottomRight:SetTexture("Interface\\AddOns\\".. folder .."\\images\\UI-AUCTIONFRAME-BID-BOTRIGHT")
+	f.BGBottomRight:SetTexture("Interface\\AuctionFrame\\UI-AuctionFrame-Auction-BotRight")
 	f.BGBottomRight:SetSize(256 * SCALE, 256 * SCALE)
 	f.BGBottomRight:SetPoint("TOPLEFT", f.BGBottom, "TOPRIGHT")
 	
@@ -270,8 +270,8 @@ do
 	end)
 	core.SetTooltip(f.cancelAllButton, core.RESET_ALL)
 	
-	local left, top, right, bottom = 451/512, 90/512, 481/512,118/512
-	f.removeAllMogButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\AddOns\\".. folder .."\\images\\Transmogrify", left, top, right, bottom) --CreateMeATextButton(bar, 70, 24, "Undress")
+	local left, right, top, bottom = 32/512, 64/512, 0/512, 32/512
+	f.removeAllMogButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\AddOns\\".. folder .."\\Images\\Buttons", left, top, right, bottom)
 	f.removeAllMogButton:SetPoint("RIGHT", f.cancelAllButton, "LEFT", -doAllButtonDistance * SCALE, 0)	
 	f.removeAllMogButton:SetScript("OnClick", function()
 		local tar = {}
@@ -282,8 +282,8 @@ do
 	end)	
 	core.SetTooltip(f.removeAllMogButton, core.UNMOG_ALL)
 	
-	local left, top, right, bottom = 417/512, 90/512, 443/512,116/512
-	f.undressAllButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\AddOns\\" .. folder .. "\\images\\Transmogrify", left, top, right, bottom)
+	local left, right, top, bottom = 0/512, 32/512, 0/512, 32/512
+	f.undressAllButton = core.CreateMeACustomTexButton(model, doAllButtonWidth * SCALE, doAllButtonWidth * SCALE, "Interface\\AddOns\\" .. folder .. "\\Images\\Buttons", left, top, right, bottom)
 	f.undressAllButton:SetPoint("TOPRIGHT", f.removeAllMogButton, "TOPLEFT", -doAllButtonDistance * SCALE, 0)	
 	f.undressAllButton:SetScript("OnClick", function()
 		local tar = {}
@@ -458,7 +458,7 @@ do
 
 	balanceFrame = CreateFrame("Frame", nil, f)
 	balanceFrame:SetPoint("BOTTOMRIGHT", -7 * SCALE, 14 * SCALE)
-	balanceFrame:SetSize(200, 22 * SCALE)
+	balanceFrame:SetSize(205 * SCALE, 22 * SCALE)
 	balanceFrame:EnableMouse()
 	balanceFrame:SetScript("OnEnter", function(self)
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -574,7 +574,6 @@ do
 		f.buttons["tab2"]:Hide()
 		f.buttons["tab2"]:Show()
 		f.buttons["tab2"]:Enable()
-		--f.buttons["tab2"]:SetNormalTexture("Interface\\AddOns\\".. folder .."\\images\\UI-AuctionFrame-Bid-Top")
 		
 		StaticPopup_Hide("ApplyTransmogPopup")		
 		StaticPopup_Hide("TransferVisualsToSkinPopup")

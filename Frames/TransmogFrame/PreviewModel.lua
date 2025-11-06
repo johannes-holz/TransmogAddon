@@ -167,15 +167,18 @@ core.CreatePreviewModel = function(parent, width, height)
 	end)
 	
 	local _, race = UnitRace("player")
-	--if race == "Gnome" then race = "Dwarf" end
-	--elseif race == "Troll" then race = "Orc" end
-	local path = "Interface\\DressUpFrame\\"
-	if race == "Gnome" or race == "Troll" or race == "Orc" then
-		-- race = "Nightborne"--"Nightborne"--"TROLL"--"Worgen"--"HighmountainTauren"
-		path = "Interface\\AddOns\\".. folder .."\\images\\DressUpFrame\\"
-		-- model.texRatio = 4/5 --spillt textur über
-		-- model:SetPosition(0.1, 0, -0.1)
+	if race == "Gnome" then
+		race = "Dwarf"
+	elseif race == "Troll" then
+		race = "Orc"
 	end
+	
+	local path = "Interface\\DressUpFrame\\"
+
+	-- Or use images from newer clients?
+	-- if race == "Gnome" or race == "Troll" or race == "Orc" then
+	-- 	path = "Interface\\AddOns\\".. folder .."\\Images\\DressUpFrame\\"
+	-- end
 	
 	model.BGTopLeft = model:CreateTexture(nil, "BACKGROUND")
 	model.BGTopLeft:SetWidth(model:GetWidth()*4/5)
@@ -267,6 +270,15 @@ core.CreatePreviewModel = function(parent, width, height)
 			if mhType == core.ITEM_SUB_CLASSES.FISHING_POLES and mhType ~= skinVisualType then
 				itemsToShow["MainHandSlot"] = itemID
 			end
+
+            local itemID, visualID, skinVisualID, pendingID = core.TransmogGetSlotInfo("OffHandSlot", skin)
+			local skinVisual = pendingID or skinVisualID
+			local ohType = itemID and select(7, GetItemInfo(itemID))
+			local skinVisualType = skinVisual and select(7, GetItemInfo(skinVisual))
+			if ohType ~= skinVisualType and (ohType == core.ITEM_SUB_CLASSES.SHIELDS or skinVisualType == core.ITEM_SUB_CLASSES.SHIELDS) then
+				itemsToShow["OffHandSlot"] = itemID
+			end
+			print(ohType, skinVisualType, core.ITEM_SUB_CLASSES.SHIELDS, itemID, skinVisual, itemsToShow["OffHandSlot"])
 		end
 
 		return itemsToShow

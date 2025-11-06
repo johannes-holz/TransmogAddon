@@ -173,7 +173,7 @@ L.deDE = {
 
     ENCHANT_UNLOCK_POPUP_TEXT = "Seid ihr sicher, dass ihr folgende Verzauberungen zur Transmogrifikation freischalten wollt? Die Gegenstände werden dabei zerstört.\n",
 
-    NO_UNLOCKS_HINT_TEXT1 = "Ihr habt keine verfügbaren Transmogrifikationen für den gewählten Slot und Gegenstandsart.",
+    NO_UNLOCKS_HINT_TEXT1 = "Ihr habt keine verfügbaren Transmogrifikationen für den gewählten Slot und Filter.",
     NO_UNLOCKS_HINT_TEXT2 = "\n\nIhr könnt Schriftrollen oder Gegenstände in eurem Inventar benutzen, um die entsprechende Verzauberung zur Transmogrifikation freizuschalten.\nNutzt dazu den Button in der rechten unteren Ecke oder das Dialogmenü des NPCs.",
 
     APPLY_TOOLTIP_NO_PENDING = "Keine ausstehenden Transmogrifikationen.",
@@ -277,7 +277,7 @@ L.deDE = {
     DRESSING_ROOM_OPTIONS_NAME = "Anprobe-Optionen",
 
     DRESSING_ROOM_NO_RESET_NAME = "Zurücksetzen verhindern",
-    DRESSING_ROOM_NO_RESET_DESC = "Die Anprobe merkt sich die ausgewählten Gegenstände während einer Sitzung, anstatt sie auf das Inventar des Spielers zurückzusetzen.",
+    DRESSING_ROOM_NO_RESET_DESC = "Die Anprobe merkt sich die ausgewählten Gegenstände während einer Sitzung, anstatt sie auf die aktuelle Ausrüstung zurückzusetzen.",
 
     ABOUT_TAB_NAME = "Über", 
 
@@ -285,11 +285,13 @@ L.deDE = {
 
     ABOUT_NAME1 = "Transmog-Features für WotLK.\n\n",
 
-    ABOUT_NAME2 = YELLOW_FONT_COLOR_CODE .. "Sammlung: " .. FONT_COLOR_CODE_CLOSE .. "Listet die im Spiel enthaltene Gegenstände und Aussehen. Mithilfe der API kann zudem angezeigt werden, welche Gegenstände bereits freigeschaltet sind.\n\n",
+    ABOUT_NAME2 = YELLOW_FONT_COLOR_CODE .. "Aussehen: " .. FONT_COLOR_CODE_CLOSE .. "Listet die im Spiel enthaltene Gegenstände und Aussehen und zeigt an, welche Gegenstände bereits freigeschaltet sind.\n\n",
     
     ABOUT_NAME3 = YELLOW_FONT_COLOR_CODE .. "Anprobe: " .. FONT_COLOR_CODE_CLOSE .. "Die Anprobe wird um eine Liste der angezeigten Gegenstände erweitert. Zudem können Outfits lokal gespeichert und im Chat als Outfit-Link geteilt werden.\n\n",
 
-    ABOUT_NAME4 = YELLOW_FONT_COLOR_CODE .. "Transmogrifizieren: " .. FONT_COLOR_CODE_CLOSE .. "Interface zum Transmogrifizieren der Ausrüstung oder Skins mittels der Rising Gods API. Im Gegensatz zur Sammlung werden hier nur freigeschaltete Gegenstände oder solche aus dem Inventar gelistet.\n\n",
+    ABOUT_NAME4 = YELLOW_FONT_COLOR_CODE .. "Transmogrifizieren: " .. FONT_COLOR_CODE_CLOSE .. "Interface zum Transmogrifizieren der Ausrüstung oder Skins. Im Gegensatz zur Sammlung werden hier nur freigeschaltete Gegenstände oder solche aus dem Inventar gelistet.\n\n",
+    
+    ABOUT_NAME5 = "Viele der Funktionen hängen von der Rising Gods Transmog-Implementierung ab.\n",
 
     ABOUT_MADE_BY_NAME = "Entwickelt von Qhoernchen. Für Feedback oder Anfragen zum AddOn bin ich unter |cfffff0b0qhoernchen@gmail.com|r erreichbar.",
 }
@@ -466,7 +468,7 @@ L.enEU = {
 
     ENCHANT_UNLOCK_POPUP_TEXT = "Are you sure you want to unlock the following enchants for transmogrification? The scrolls will be destroyed in the process.\n",
     
-    NO_UNLOCKS_HINT_TEXT1 = "You have no available transmogrifications for the selected slot and item type.",
+    NO_UNLOCKS_HINT_TEXT1 = "You have no available transmogrifications for the selected slot and filter.",
     NO_UNLOCKS_HINT_TEXT2 = "\n\nTo unlock weapon enchantments for transmogrifications, you can sacrifice the corresponding scrolls or consumables from your inventory. To do this, press the button in the lower right corner or use the NPC's dialogue menu.",
     
     APPLY_TOOLTIP_NO_PENDING = "No pending transmogrifications.",
@@ -570,7 +572,7 @@ L.enEU = {
     DRESSING_ROOM_OPTIONS_NAME = "Dressing Room Options",
 
     DRESSING_ROOM_NO_RESET_NAME = "Prevent reset",
-    DRESSING_ROOM_NO_RESET_DESC = "Dressing Room remembers the selected items during a session instead of resetting to the player's inventory.",
+    DRESSING_ROOM_NO_RESET_DESC = "Dressing Room remembers the selected items during a session instead of resetting to currently equipped items.",
 
     ABOUT_TAB_NAME = "About", 
 
@@ -578,11 +580,13 @@ L.enEU = {
 
     ABOUT_NAME1 = "Transmog-Features für WotLK.\n\n",
 
-    ABOUT_NAME2 = YELLOW_FONT_COLOR_CODE .. "Collection: " .. FONT_COLOR_CODE_CLOSE .. "Lists items and their visuals included in the game. Using the Rising Gods API, it can also show which items have already been unlocked.\n\n",
+    ABOUT_NAME2 = YELLOW_FONT_COLOR_CODE .. "Wardrobe: " .. FONT_COLOR_CODE_CLOSE .. "Lists items and their visuals included in the game and shows which items have already been collected.\n\n",
     
-    ABOUT_NAME3 = YELLOW_FONT_COLOR_CODE .. "Wardrobe: " .. FONT_COLOR_CODE_CLOSE .. "The wardrobe is extended with a list of displayed items. Additionally, outfits can be saved locally and shared in chat as outfit links.\n\n",
+    ABOUT_NAME3 = YELLOW_FONT_COLOR_CODE .. "Dressing Room: " .. FONT_COLOR_CODE_CLOSE .. "The Dressing Room is extended with a list of displayed items. Additionally, outfits can be saved locally and shared in chat as outfit links.\n\n",
 
-    ABOUT_NAME4 = YELLOW_FONT_COLOR_CODE .. "Transmogrify: " .. FONT_COLOR_CODE_CLOSE .. "Interface for transmogrifying equipment or skins via the API. Unlike the collection, only unlocked items or those from the inventory are listed here.\n\n",
+    ABOUT_NAME4 = YELLOW_FONT_COLOR_CODE .. "Transmogrify: " .. FONT_COLOR_CODE_CLOSE .. "Interface for transmogrifying equipment and skins. Unlike the collection, only collected items or those from the inventory are listed here.\n\n",
+
+    ABOUT_NAME5 = "Many of the features depent on the Rising Gods transmog implementation.\n",
 
     ABOUT_MADE_BY_NAME = "Made by Qhoernchen. Feel free to send feedback or requests regarding the AddOn to |cfffff0b0qhoernchen@gmail.com|r",
 }

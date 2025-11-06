@@ -194,6 +194,9 @@ DressUpModel.SetAll = function(self, set)
     for _, slot in pairs(core.enchantSlots) do 
 		self:SetSlot(slot, set[slot], true)
     end
+
+    -- Reset where to equip 1H weapons after undress, reset or equipping a set
+    self.lastWeaponSlot = nil
 	
 	core.UpdateListeners("dressUpModel")
 end
@@ -215,18 +218,20 @@ DressUpModel.TryOn = function(self, itemLink, itemSlot)
         return
     end
 
-    -- Try to determine itemSlot from equipLocation
-    itemSlot = itemSlot or core.equipLocToInventorySlot[itemEquipLoc]
-    
-    -- Not one of the visible itemSlots. Don't have to do anything in this case
     if not itemSlot then
-        return
-    end
+        -- Try to determine itemSlot from equipLocation
+        itemSlot = core.equipLocToInventorySlot[itemEquipLoc]
+        
+        -- Not one of the visible itemSlots. Don't have to do anything in this case
+        if not itemSlot then
+            return
+        end
 
-    -- Check if its time to equip weapon to OffHand instead
-    if itemSlot == "MainHandSlot" and self.lastWeaponSlot == "MainHandSlot" and core.CanDualWield() then
-        if itemEquipLoc == "INVTYPE_WEAPON" or itemEquipLoc == "INVTYPE_2HWEAPON" and core.CanBeTitanGripped(itemSubClass) and core.HasTitanGrip() then
-            itemSlot = "ShieldHandWeaponSlot"
+        -- Check if its time to equip weapon to OffHand instead
+        if itemSlot == "MainHandSlot" and self.lastWeaponSlot == "MainHandSlot" and core.CanDualWield() then
+            if itemEquipLoc == "INVTYPE_WEAPON" or itemEquipLoc == "INVTYPE_2HWEAPON" and core.CanBeTitanGripped(itemSubClass) and core.HasTitanGrip() then
+                itemSlot = "ShieldHandWeaponSlot"
+            end
         end
     end
 
@@ -398,7 +403,7 @@ DressUpModel:HookScript("OnShow", function(self)
         self:SetSlot(slot, itemID, true)
     end
     self:update()
-    core.SetShown(DressUpFrame.itemListFrame, TransmoggyDB.ShowItemListFrame)
+    core.SetShown(DressUpFrame.itemListFrame, not TransmoggyDB.HideItemListFrame)
     core.MyWaitFunction(0.01, self.SetShadowForm, self, self:GetShadowForm()) -- model alpha gets overwritten, if we do not delay this -.-
 end)
 
@@ -582,7 +587,7 @@ end)
 DressUpFrame.listButton = core.CreateMeACustomTexButton(DressUpFrame, 28, 28, GetItemIcon(2725), 9/64, 9/64, 54/64, 54/64)
 DressUpFrame.listButton:SetPoint("TOPRIGHT", -44, -40)
 DressUpFrame.listButton:SetScript("OnClick", function(self)
-    TransmoggyDB.ShowItemListFrame = not TransmoggyDB.ShowItemListFrame
-    core.SetShown(self:GetParent().itemListFrame, TransmoggyDB.ShowItemListFrame)
+    TransmoggyDB.HideItemListFrame = not TransmoggyDB.HideItemListFrame
+    core.SetShown(self:GetParent().itemListFrame, not TransmoggyDB.HideItemListFrame)
 end)
 

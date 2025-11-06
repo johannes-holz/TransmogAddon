@@ -234,6 +234,11 @@ core.options = {
 					type = "description",
 					order = 5,
 					name = core.ABOUT_NAME4,
+				},			
+				About5 = {
+					type = "description",
+					order = 6,
+					name = core.ABOUT_NAME5,
 				},				
 				MadeBy = {
 					type = "description",

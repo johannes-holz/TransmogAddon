@@ -233,3 +233,19 @@ TestToApiSet = function()
 	core.am(apiSet)
 	core.am(itemSet)
 end
+
+
+
+PrintTexturePaths = function(frame)
+    local regions = { frame:GetRegions() }
+    for _, region in ipairs(regions) do
+        if region:IsObjectType("Texture") then
+            local texturePath = region:GetTexture()
+            if texturePath then
+                print("Texture path:", texturePath)
+            else
+                print("Texture path is not available or not set for this texture.")
+            end
+        end
+    end
+end

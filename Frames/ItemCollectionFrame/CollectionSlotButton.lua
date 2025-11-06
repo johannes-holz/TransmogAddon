@@ -21,9 +21,23 @@ core.CreateSlotButtonFrame = function(parent, transmogLocation, size)
 	local f = core.CreateMeACustomTexButton(parent, size, size, textureName, 9/64, 9/64, 54/64, 54/64)
 	
 	f.selectedTexture = f:CreateTexture(nil, "OVERLAY")
-	f.selectedTexture:SetTexture("Interface\\AddOns\\".. folder .."\\images\\Transmogrify")
-	f.selectedTexture:SetTexCoord(106/512, 166/512, 338/512,397/512)
-	f.selectedTexture:SetSize(1.26 * size, 1.26 * size)
+	
+	-- custom frame
+	f.selectedTexture:SetTexture("Interface\\AddOns\\".. folder .."\\Images\\Buttons")
+	f.selectedTexture:SetTexCoord(0, 66/512, 146/512, 212/512)
+	f.selectedTexture:SetSize(1.28 * size, 1.28 * size)
+
+	-- achievement icon frame, is this always loaded?
+	-- f.selectedTexture:SetTexture("Interface\\AchievementFrame\\UI-Achievement-IconFrame")
+	-- f.selectedTexture:SetTexCoord(0, 72/128, 0, 72/128)
+	-- f.selectedTexture:SetSize(1.26 * size, 1.26 * size)
+
+	-- standard button highlight
+	-- f.selectedTexture:SetTexture("Interface\\Buttons\\CheckButtonHilight")
+	-- f.selectedTexture:SetTexCoord(0, 1, 0, 1)
+	-- f.selectedTexture:SetBlendMode("ADD")
+	-- f.selectedTexture:SetSize(size, size)
+	
 	f.selectedTexture:SetPoint("CENTER")
 	f.selectedTexture:Hide()
 
@@ -59,10 +73,21 @@ end
 core.CreateEnchantSlotButton = function(parent, slot, size)
 	local f = core.CreateMeACustomTexButton(parent, size, size, "Interface\\Icons\\INV_Scroll_04", 9/64, 9/64, 54/64, 54/64)
 
-	f.selectedTexture = f:CreateTexture(nil, "ARTWORK")
-	f.selectedTexture:SetTexture("Interface\\AddOns\\".. folder .."\\images\\Transmogrify")
-	f.selectedTexture:SetTexCoord(106/512, 166/512, 338/512,397/512)
-	f.selectedTexture:SetSize(1.26 * size, 1.26 * size)
+	f.selectedTexture = f:CreateTexture(nil, "OVERLAY")
+
+	f.selectedTexture:SetTexture("Interface\\AddOns\\".. folder .."\\Images\\Buttons")
+	f.selectedTexture:SetTexCoord(0, 66/512, 146/512, 212/512)
+	f.selectedTexture:SetSize(1.28 * size, 1.28 * size)
+
+	-- f.selectedTexture:SetTexture("Interface\\AchievementFrame\\UI-Achievement-IconFrame")
+	-- f.selectedTexture:SetTexCoord(0, 72/128, 0, 72/128)
+	-- f.selectedTexture:SetSize(1.26 * size, 1.26 * size)
+	
+	-- f.selectedTexture:SetTexture("Interface\\Buttons\\CheckButtonHilight")
+	-- f.selectedTexture:SetTexCoord(0, 1, 0, 1)
+	-- f.selectedTexture:SetBlendMode("ADD")
+	-- f.selectedTexture:SetSize(size, size)
+
 	f.selectedTexture:SetPoint("CENTER")
 	f.selectedTexture:Hide()
 	
