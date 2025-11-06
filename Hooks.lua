@@ -63,7 +63,7 @@ local BlizzNumLines = function(tooltip, link)
 	for i = ScanningTooltip:NumLines(), 1, -1 do
 		local line = _G[ScanningTooltip:GetName() .. "TextLeft" .. i]
 		if not line then return numLines end
-		lastText = line:GetText()
+		lastText = line:GetText():gsub("^%(%d+%)%s*", "")
 		if not (lastText == " " or lastText == "") then
 			break
 		end
@@ -84,7 +84,7 @@ local BlizzNumLines = function(tooltip, link)
 	for i = 1, tooltip:NumLines() do
 		local line = _G[tooltip:GetName() .. "TextLeft" .. i]
 		if not line then return numLines end
-		local text = line:GetText()
+		local text = line:GetText():gsub("^%(%d+%)%s*", "")
 		-- print(lastText, text, closeToEnd, valid[string.sub(text, 1, 14)], line == moneyLine, moneyFrame and moneyFrame:IsShown())
 		if text == lastText then
 			closeToEnd = true
