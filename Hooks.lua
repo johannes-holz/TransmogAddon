@@ -45,8 +45,10 @@ local valid = {
 	["Ausrüstungs-S"] = true, -- Can an item be part of a set and not be collected?
 	-- ["Verkaufspreis:"] = true, -- this is text is in moneyFrame, not a tooltip line
 	["<Zum Sockeln S"] = true,
+	["|cff00ff00<Her"] = true,
 	["Equipment Sets"] = true,
 	["<Shift Right C"] = true,
+	["|cff00ff00<Mad"] = true,
 }
 
 local BlizzNumLines = function(tooltip, link)
@@ -140,13 +142,13 @@ local Tooltip_AddCollectedLine = function(tooltip, itemID, link)
 		tooltip.collectedText:SetFontObject("GameTooltipText")
 		tooltip.collectedText:SetJustifyH("LEFT")
 		
-		tooltip:HookScript("OnHide", function(self)
+		tooltip:HookScript("OnTooltipCleared", function(self)
 			self.collectedText:SetText("")
-			local line = self.collectedAnchor
-			if line and line.oldHeight then
-				line:SetHeight(line:GetStringHeight())
-				line:SetJustifyV("MIDDLE")
-				line.oldHeight = nil
+			local anchor = self.collectedAnchor
+			if anchor then
+				anchor:SetHeight(anchor:GetStringHeight())
+				anchor:SetJustifyV("MIDDLE")
+				self.collectedAnchor = nil
 			end
 			local moneyFrame = _G[tooltip:GetName() .. "MoneyFrame" .. 1]
 			if moneyFrame then			
@@ -169,7 +171,6 @@ local Tooltip_AddCollectedLine = function(tooltip, itemID, link)
 		tooltip.collectedText:SetText(text)
 
 		tooltip.collectedAnchor = _G[tooltip:GetName() .. "TextLeft" .. blizzNumLines]
-		tooltip.collectedAnchor.oldHeight = tooltip.collectedAnchor:GetHeight()
 		tooltip.collectedAnchor:SetJustifyV("TOP")	
 		tooltip.collectedAnchor:SetWidth(math.max(tooltip.collectedText:GetStringWidth(), tooltip:GetWidth()))
 		tooltip.collectedAnchor:SetHeight(tooltip.collectedAnchor:GetStringHeight() + tooltip.collectedText:GetHeight())
@@ -286,7 +287,7 @@ local function OnTooltipSetItem(tooltip)
 			end			
 		end
 
-		tooltip:HookScript("OnHide", tooltip.HideTransmogLine)
+		tooltip:HookScript("OnTooltipCleared", tooltip.HideTransmogLine)
 	end
 
 	textLeft1.justifyHOld = textLeft1:GetJustifyH()
